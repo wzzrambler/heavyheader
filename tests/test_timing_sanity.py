@@ -9,6 +9,7 @@ authoritative and is useless, which is why this check exists.
 from __future__ import annotations
 
 import pytest
+from pathlib import Path
 
 from heavyheader.parse.timereport import (
     PhaseTiming,
@@ -134,3 +135,113 @@ def test_summarise_ignores_a_missing_total():
     buckets = summarise(timings)
     assert buckets["total"] == 0.0  # no TOTAL row -> zero, not a guess
     assert buckets["preprocessing"] == 0.35
+
+
+# --------------------------------------------------------------------------
+# wiring: broken compiler output must reach the user, not be silently fixed
+# --------------------------------------------------------------------------
+
+
+def test_driver_records_discarded_timings_on_the_tu():
+    """The chain that matters: broken stderr -> TU.timing_discarded.
+
+    Verified at the driver level rather than end-to-end because GCC's broken
+    timer is intermittent -- an end-to-end test would be flaky, and a flaky
+    test that sometimes passes teaches nobody anything.
+    """
+    from heavyheader.drivers.base import GccLikeDriver
+
+    driver = GccLikeDriver("g++")
+    source = Path("/proj/os.cc")
+
+    # -H tree for one project header, followed by a broken timing table.
+    stderr = (
+        f". {source}\n"
+        ".. /proj/os.h\n"
+        + _BROKEN_REPORT
+    )
+    tu = driver.interpret(
+        source=source,
+        returncode=0,
+        stdout="",
+        stderr=stderr,
+        wall_seconds=0.95,
+    )
+
+    assert tu.ok
+    assert tu.timing_discarded, "broken timings were silently accepted"
+    assert any("phase parsing" in d for d in tu.timing_discarded)
+    # The include tree is unaffected: we still learned what was included.
+    assert [e.included for e in tu.include_events] == [Path("/proj/os.h")]
+    # And the surviving rows are still usable.
+    assert any(t.name == "preprocessing" for t in tu.timings)
+
+
+def test_driver_keeps_good_timings_clean():
+    from heavyheader.drivers.base import GccLikeDriver
+
+    driver = GccLikeDriver("g++")
+    source = Path("/proj/a.cc")
+    stderr = f". {source}\n.. /proj/a.h\n" + (
+        " phase parsing : 0.30 (60%)\n"
+        " TOTAL : 0.50\n"
+    )
+    tu = driver.interpret(source, 0, "", stderr, wall_seconds=0.9)
+    assert tu.ok
+    assert tu.timing_discarded == []
+    assert tu.total_wall_seconds() == 0.50
+
+
+# --------------------------------------------------------------------------
+# wiring: broken compiler output must reach the user, not be silently fixed
+# --------------------------------------------------------------------------
+
+
+def test_driver_records_discarded_timings_on_the_tu():
+    """The chain that matters: broken stderr -> TU.timing_discarded.
+
+    Verified at the driver level rather than end-to-end because GCC's broken
+    timer is intermittent -- an end-to-end test would be flaky, and a flaky
+    test that sometimes passes teaches nobody anything.
+    """
+    from heavyheader.drivers.base import GccLikeDriver
+
+    driver = GccLikeDriver("g++")
+    source = Path("/proj/os.cc")
+
+    # -H tree for one project header, followed by a broken timing table.
+    stderr = (
+        f". {source}\n"
+        ".. /proj/os.h\n"
+        + _BROKEN_REPORT
+    )
+    tu = driver.interpret(
+        source=source,
+        returncode=0,
+        stdout="",
+        stderr=stderr,
+        wall_seconds=0.95,
+    )
+
+    assert tu.ok
+    assert tu.timing_discarded, "broken timings were silently accepted"
+    assert any("phase parsing" in d for d in tu.timing_discarded)
+    # The include tree is unaffected: we still learned what was included.
+    assert [e.included for e in tu.include_events] == [Path("/proj/os.h")]
+    # And the surviving rows are still usable.
+    assert any(t.name == "preprocessing" for t in tu.timings)
+
+
+def test_driver_keeps_good_timings_clean():
+    from heavyheader.drivers.base import GccLikeDriver
+
+    driver = GccLikeDriver("g++")
+    source = Path("/proj/a.cc")
+    stderr = f". {source}\n.. /proj/a.h\n" + (
+        " phase parsing : 0.30 (60%)\n"
+        " TOTAL : 0.50\n"
+    )
+    tu = driver.interpret(source, 0, "", stderr, wall_seconds=0.9)
+    assert tu.ok
+    assert tu.timing_discarded == []
+    assert tu.total_wall_seconds() == 0.50

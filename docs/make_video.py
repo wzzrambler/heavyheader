@@ -50,6 +50,10 @@ FONT_SUB = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", 18)
 
 FPS = 15
 
+# 全局时间缩放。视频必须在 3-5 分钟内（大赛要求），内容扩充后曾到 6:56，
+# 因此把停顿和打字速度统一压缩，而不是砍内容——每一段都是 PDF 里有的证据。
+TIME_SCALE = 0.48
+
 
 def _is_cjk(char: str) -> bool:
     code = ord(char)
@@ -174,7 +178,7 @@ def build_frames(script: Script, frames_dir: Path) -> int:
         count += 1
 
     # Opening title card, held for 2.5s.
-    for _ in range(int(2.5 * FPS)):
+    for _ in range(int(2.5 * TIME_SCALE * FPS)):
         emit(render_title(
             "HeavyHeader",
             "C/C++ 构建效能治理平台",
@@ -182,26 +186,22 @@ def build_frames(script: Script, frames_dir: Path) -> int:
         ))
 
     for (text, color, bold), hold in zip(script.lines, script.holds):
-        # Type the line out character by character at a readable pace.
-        typed = ""
-        # Long lines (reports) appear in chunks; short ones (commands) char by char.
-        step = 3 if len(text) > 90 else 1
-        chars = range(0, len(text) + 1, step)
-        for end in chars:
-            partial = text[:end]
-            img = render(term, cursor=partial + "▌")
-            emit(img)
-            # Only emit intermediate frames for reasonably short lines.
+        # Type the line out at a bounded pace: however long the line, typing
+        # takes at most ~25 frames (~1.7s).  Without the bound, a long table
+        # row would crawl and blow the runtime budget.
+        step = max(1, len(text) // 25)
+        for end in range(0, len(text) + 1, step):
+            emit(render(term, cursor=text[:end] + "▌"))
             if len(text) > 200:
                 break
         term.push(Line(text, color, bold))
         emit(render(term))
         if hold > 0:
-            for _ in range(int(hold * FPS)):
+            for _ in range(int(hold * TIME_SCALE * FPS)):
                 emit(render(term))
 
     # Closing hold.
-    for _ in range(int(2.0 * FPS)):
+    for _ in range(int(2.0 * TIME_SCALE * FPS)):
         emit(render(term))
 
     return count
@@ -315,6 +315,112 @@ def build_script() -> Script:
     s.print("# 第一次误报就会被人关掉。", DIM, hold=1.2)
     s.blank(0.4)
 
+    s.blank(0.4)
+
+    # ---- 模板实例化成本：没人展示过的数字 ----
+    s.print("# -ftime-report 一直都报告 template instantiation 阶段，", DIM, hold=0.5)
+    s.print("# 但对模板重型 C++ 它常是最大单项。没人把这个数字摆到人面前。", DIM, hold=0.9)
+    s.blank(0.2)
+    s.print("$ heavyheader scan /tmp/bench/nlohmann-json --std c++17 \\", BLUE, hold=0.3)
+    s.print("    -I include --exclude test", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 模板实例化成本", WHITE, True, hold=0.4)
+    s.print("全项目模板实例化合计 28.16 s，占总构建时间 42.8%。", YELLOW, True, hold=1.0)
+    s.print("模板实例化占比超过 25% 的编译单元：22 / 25", YELLOW, hold=0.7)
+    s.blank(0.2)
+    s.print("| 头文件 | template< 声明数 | 被引用 TU | 模板表面 |", DIM, hold=0.3)
+    s.print("| include\\nlohmann\\json.hpp | 173 | 24 | 4152 |", FG, True, hold=1.0)
+    s.blank(0.3)
+    s.print("# 每个 TU 的数字来自 -ftime-report，精确；", DIM, hold=0.5)
+    s.print("# 按头文件的「模板表面」是启发式，报告里明确标注。", DIM, hold=1.0)
+    s.blank(0.4)
+
+    # ---- PCH 收益估算 ----
+    s.print("$ heavyheader scan /tmp/bench/nlohmann-json --pch --pch-top 5", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 预编译头（PCH）收益估算", WHITE, True, hold=0.4)
+    s.print("建议纳入 5 个头文件，传递闭包 139,180 行，", FG, hold=0.5)
+    s.print("24/25 个编译单元已全部包含它们（覆盖率 96%）。", FG, hold=0.7)
+    s.print("估算净收益：3,201,140 行（占全项目 65.8%）——值得做。", GREEN, True, hold=1.2)
+    s.blank(0.3)
+    s.print("# 四条限制写进报告：行数是代理不是秒数、上限估计、", DIM, hold=0.5)
+    s.print("# 未计 PCH 失效、本工具不生成 PCH。", DIM, hold=1.0)
+    s.blank(0.4)
+
+    # ---- 前向声明建议 ----
+    s.print("$ heavyheader scan /tmp/bench/cpp-httplib --forward-decl", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 可改为前向声明的 include", WHITE, True, hold=0.4)
+    s.print("| example\\hello.cc | httplib.h | Request | 14 | Response、Server |", FG, hold=0.8)
+    s.print("「阻断类型」非空 → 不能整个 include 换掉，只能拆出去。", YELLOW, hold=1.0)
+    s.blank(0.4)
+
+    # ---- 四项目横向对比 ----
+    s.print("# 4 个真实开源项目，54 个成功编译单元，1430 万行解析量", DIM, hold=0.6)
+    s.print("| 项目 | TU | 依赖边 | 解析量 | 候选 | 疑似未使用 |", DIM, hold=0.3)
+    s.print("| fmt            |  3/1  |    651 |   331,016 |  6 | 0 |", FG, hold=0.2)
+    s.print("| nlohmann-json  | 25/0  |  9,294 | 4,866,676 | 60 | 2 |", FG, hold=0.2)
+    s.print("| spdlog         |  8/17 |  3,246 | 1,579,902 | 36 | 0 |", FG, hold=0.2)
+    s.print("| cpp-httplib    | 18/7  | 14,724 | 7,523,316 | 28 | 0 |", FG, hold=0.2)
+    s.print("| 合计           | 54    | 27,915 |14,300,910 |130 | 2 |", WHITE, True, hold=1.2)
+    s.blank(0.3)
+    s.print("# 130 个候选里只有 2 个疑似未使用。", DIM, hold=0.5)
+    s.print("# 成熟项目的 include 大多是干净的——没有为了凑数字而喊。", DIM, hold=1.2)
+    s.blank(0.4)
+
+    s.blank(0.4)
+
+    # ---- 模板实例化成本：没人展示过的数字 ----
+    s.print("# -ftime-report 一直都报告 template instantiation 阶段，", DIM, hold=0.5)
+    s.print("# 但对模板重型 C++ 它常是最大单项。没人把这个数字摆到人面前。", DIM, hold=0.9)
+    s.blank(0.2)
+    s.print("$ heavyheader scan /tmp/bench/nlohmann-json --std c++17 \\", BLUE, hold=0.3)
+    s.print("    -I include --exclude test", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 模板实例化成本", WHITE, True, hold=0.4)
+    s.print("全项目模板实例化合计 28.16 s，占总构建时间 42.8%。", YELLOW, True, hold=1.0)
+    s.print("模板实例化占比超过 25% 的编译单元：22 / 25", YELLOW, hold=0.7)
+    s.blank(0.2)
+    s.print("| 头文件 | template< 声明数 | 被引用 TU | 模板表面 |", DIM, hold=0.3)
+    s.print("| include\\nlohmann\\json.hpp | 173 | 24 | 4152 |", FG, True, hold=1.0)
+    s.blank(0.3)
+    s.print("# 每个 TU 的数字来自 -ftime-report，精确；", DIM, hold=0.5)
+    s.print("# 按头文件的「模板表面」是启发式，报告里明确标注。", DIM, hold=1.0)
+    s.blank(0.4)
+
+    # ---- PCH 收益估算 ----
+    s.print("$ heavyheader scan /tmp/bench/nlohmann-json --pch --pch-top 5", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 预编译头（PCH）收益估算", WHITE, True, hold=0.4)
+    s.print("建议纳入 5 个头文件，传递闭包 139,180 行，", FG, hold=0.5)
+    s.print("24/25 个编译单元已全部包含它们（覆盖率 96%）。", FG, hold=0.7)
+    s.print("估算净收益：3,201,140 行（占全项目 65.8%）——值得做。", GREEN, True, hold=1.2)
+    s.blank(0.3)
+    s.print("# 四条限制写进报告：行数是代理不是秒数、上限估计、", DIM, hold=0.5)
+    s.print("# 未计 PCH 失效、本工具不生成 PCH。", DIM, hold=1.0)
+    s.blank(0.4)
+
+    # ---- 前向声明建议 ----
+    s.print("$ heavyheader scan /tmp/bench/cpp-httplib --forward-decl", BLUE, hold=0.9)
+    s.blank(0.2)
+    s.print("## 可改为前向声明的 include", WHITE, True, hold=0.4)
+    s.print("| example\\hello.cc | httplib.h | Request | 14 | Response、Server |", FG, hold=0.8)
+    s.print("「阻断类型」非空 → 不能整个 include 换掉，只能拆出去。", YELLOW, hold=1.0)
+    s.blank(0.4)
+
+    # ---- 四项目横向对比 ----
+    s.print("# 4 个真实开源项目，54 个成功编译单元，1430 万行解析量", DIM, hold=0.6)
+    s.print("| 项目 | TU | 依赖边 | 解析量 | 候选 | 疑似未使用 |", DIM, hold=0.3)
+    s.print("| fmt            |  3/1  |    651 |   331,016 |  6 | 0 |", FG, hold=0.2)
+    s.print("| nlohmann-json  | 25/0  |  9,294 | 4,866,676 | 60 | 2 |", FG, hold=0.2)
+    s.print("| spdlog         |  8/17 |  3,246 | 1,579,902 | 36 | 0 |", FG, hold=0.2)
+    s.print("| cpp-httplib    | 18/7  | 14,724 | 7,523,316 | 28 | 0 |", FG, hold=0.2)
+    s.print("| 合计           | 54    | 27,915 |14,300,910 |130 | 2 |", WHITE, True, hold=1.2)
+    s.blank(0.3)
+    s.print("# 130 个候选里只有 2 个疑似未使用。", DIM, hold=0.5)
+    s.print("# 成熟项目的 include 大多是干净的——没有为了凑数字而喊。", DIM, hold=1.2)
+    s.blank(0.4)
+
     s.print("$ heavyheader gate /tmp/fmt --baseline fmt-baseline.json", BLUE, hold=1.0)
     s.print("头文件解析量：331,016 → 331,016 (+0.0%)", WHITE, hold=0.5)
     s.print("门禁通过：成本回归在 +5.0% 预算内。", GREEN, True, hold=1.2)
@@ -333,7 +439,9 @@ def build_script() -> Script:
 
 
 def main() -> None:
-    out_dir = Path("video_build")
+    # 每次用带序号的目录，避免残留帧被 ffmpeg 的 f%05d.png 模式拾取
+    # （上一次帧数更多时会静默污染输出）。不删除旧目录——构建产物归用户管。
+    out_dir = Path(f"video_build_{len(list(Path('.').glob('video_build_*')))}")
     output = Path("HeavyHeader-演示视频.mp4")
     script = build_script()
     print(f"script has {len(script.lines)} lines")

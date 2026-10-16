@@ -220,6 +220,42 @@ def render_markdown(scan: ProjectScan) -> str:
             lines.append(f"> - {caveat}")
         lines.append("")
 
+    # -- forward declarations --------------------------------------------
+    forwards = getattr(scan, "forward_candidates", None) or []
+    if forwards:
+        lines.append("## 可改为前向声明的 include")
+        lines.append("")
+        lines.append(
+            "把 include 换成前向声明，是编译时间优化里收益最高的一类改动："
+            "编译器读一行文本，而不是整个头文件的传递闭包。"
+        )
+        lines.append("")
+        lines.append(
+            "> **这是启发式，必须人工确认。**「只以指针/引用形式使用」是语义属性，"
+            "我们用正则判断，可能被宏、typedef、模板参数欺骗。下表给出具体类型名、"
+            "使用行号和阻断类型，供你在数秒内确认或否决——说不出理由的建议不可操作。"
+        )
+        lines.append("")
+        lines.append("| 编译单元 | include | 可前向声明的类型 | 使用行号 | 阻断类型 |")
+        lines.append("|---|---|---|---|---|")
+        for candidate in forwards[:15]:
+            blocking = (
+                "、".join(f"`{t}`" for t in candidate.blocking_types) or "—"
+            )
+            lines.append(
+                f"| `{_rel(candidate.tu, root)}` "
+                f"| `{_rel(candidate.header, root)}` "
+                f"| {'、'.join(f'`{t}`' for t in candidate.forwardable_types)} "
+                f"| {', '.join(str(n) for n in candidate.evidence_lines[:6])} "
+                f"| {blocking} |"
+            )
+        lines.append("")
+        lines.append(
+            "「阻断类型」非空表示该头文件里还有其他类型需要完整定义，"
+            "**不能整个 include 换掉**，只能把可前向声明的类型拆出去。"
+        )
+        lines.append("")
+
     # -- failures ---------------------------------------------------------
     if scan.failed_tus:
         lines.append("## 编译失败的单元")

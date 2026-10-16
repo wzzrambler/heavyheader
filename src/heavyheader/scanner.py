@@ -32,6 +32,7 @@ from .attrib.graph import (
     find_removal_candidates,
     redundant_reparse_warnings,
 )
+from .attrib.forward import find_forward_declaration_candidates
 from .attrib.pch import estimate_pch
 from .attrib.templates import profile_project
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
@@ -87,6 +88,8 @@ class ScanOptions:
     pch: bool = False
     #: How many headers to consider putting in the PCH.
     pch_top: int = 5
+    #: Look for includes that could become forward declarations.
+    forward_decl: bool = False
 
     def driver_options(self) -> DriverOptions:
         return DriverOptions(
@@ -282,6 +285,8 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
     scan.template_profile = profile_project(scan)
     if options.pch:
         scan.pch = estimate_pch(scan, top_k=options.pch_top)
+    if options.forward_decl:
+        scan.forward_candidates = find_forward_declaration_candidates(scan)
 
     # Surface the redundant-reparse findings as warnings too, so a plain
     # `scan` run never hides a guaranteed win.

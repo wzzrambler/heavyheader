@@ -241,6 +241,8 @@ class ProjectScan:
     template_profile: object | None = None
     #: Precompiled-header recommendation, only when ``--pch`` is passed.
     pch: object | None = None
+    #: Forward-declaration candidates, only when ``--forward-decl`` is passed.
+    forward_candidates: list = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     # -- convenience accessors -------------------------------------------

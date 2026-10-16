@@ -32,6 +32,9 @@ history.jsonl
 /fmt-report.html
 /fmt_baseline.json
 
+# 视频构建中间产物（3012 帧 PNG，约 1.5 GB）
+video_build/
+
 # Editors / OS
 .idea/
 .vscode/

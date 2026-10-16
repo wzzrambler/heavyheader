@@ -41,17 +41,25 @@ $ heavyheader scan ./src --format html -o report.html
 | `gate` | CI 门禁：头文件成本相对基线回归超阈值则流水线失败 |
 | `compare` | 对比两份扫描结果，定位成本上升的具体头文件 |
 
+`scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
+前向声明的 include。两者都是估算，报告内附限制说明。
+
 ### 1. 成本归因（`scan`）
 
 归因行数 = `头文件行数 × 引用它的编译单元数`。它衡量一个头文件让整个项目多解析了多少行
 代码——这是构建耗损最直接的代理指标，且对同一份代码是确定性的。
 
-同时给出两个确定性的发现：
+同时给出四类发现：
 
 - **缺少 include guard 的头文件**：同一个编译单元内被重复解析。对带 guard 的头文件来说
   这在物理上不可能发生，所以这是确定性信号；补上 `#pragma once` 永远安全且收益立竿见影。
 - **独占闭包**：删掉某条 include 后，只有它会停止被解析的头文件集合。如果某个头文件还能
   从别的 include 到达，删掉当前这条**并不省钱**——这是本工具与普通 lint 工具的本质区别。
+- **模板实例化成本**（始终输出）：`-ftime-report` 从 GCC 9 起就报告这个阶段，但对模板重型
+  C++ 它常是最大单项——实测包含 `nlohmann/json.hpp` 的文件，**39% 的构建时间**花在这里。
+  每个编译单元的秒数与占比是精确的；按头文件的「模板表面」是启发式，报告里明确标注。
+- **可改为前向声明的 include**（`--forward-decl`）：编译时间优化里收益最高的一类。
+  保守规则 + 给出具体类型名、使用行号和阻断类型，供人在数秒内确认或否决。
 
 ### 2. 实测验证（`verify`）
 
@@ -111,6 +119,9 @@ heavyheader scan ./my-project --format html -o report.html
 # 3. 实测验证前 5 个候选
 heavyheader verify ./my-project --top 5 --runs 3
 
+# 4. 附带估算预编译头收益与前向声明机会
+heavyheader scan ./my-project --pch --forward-decl
+
 # 4. 接入 CI：保存基线，之后每次 PR 对比
 heavyheader scan ./my-project --save baseline.json
 heavyheader gate ./my-project --baseline baseline.json --max-regression 5
@@ -134,6 +145,9 @@ heavyheader gate ./my-project --baseline baseline.json --max-regression 5
 - **不判定 include 是否「未使用」的语义真相**。文本启发式只回答「源码里有没有出现该头文件
   声明的标识符」，为副作用而包含的头文件（如 `<iostream>` 的流初始化）会被误判。权威结论
   来自 `verify`：真的删掉、重新编译。
+- **前向声明建议必须人工确认**。「只以指针/引用形式使用」是语义属性，我们用正则判断，
+  可能被宏、typedef、模板参数欺骗。报告给出具体类型名、使用行号和阻断类型，就是为让人
+  在数秒内确认或否决。
 - **不做精确的 AST 级分析**。要精确判定需要 libclang，那会把工具的使用门槛抬到需要装一整套
   LLVM 工具链——这是我们刻意避开的 trade-off，精确模式在 [ROADMAP](ROADMAP.md) 里。
 - **不改写你的代码**。`verify` 只在临时目录里做实验，原始文件一个字节都不会动。

@@ -1,0 +1,36 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: 覆盖率
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装
+        run: pip install -e ".[dev]" pytest-cov
+
+      # --cov 不带 fail-under：覆盖率数字进 Codecov，不当门禁。
+      # 一个为了覆盖率数字而写的测试，比没有测试更糟。
+      - name: 测量覆盖率
+        run: pytest --cov=heavyheader --cov-report=term-missing --cov-report=xml
+
+      - name: 上报 Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          verbose: true

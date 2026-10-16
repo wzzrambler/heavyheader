@@ -1,0 +1,69 @@
+name: Release
+
+# 打 tag 即发布：v* 形式的 tag 触发构建并推到 PyPI。
+# 刻意不用手动 dispatch——一个需要人记得点的发布流程，最终会没人点。
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: 构建分发包
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装构建工具
+        run: pip install build
+
+      - name: 构建 sdist 与 wheel
+        run: python -m build
+
+      - name: 校验产物可安装且 CLI 可用
+        run: |
+          pip install dist/*.whl
+          heavyheader --version
+          heavyheader scan --help > /dev/null
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: 发布到 PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write   # Trusted Publishing，不需要长期 API token
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: 发布
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: 创建 GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            安装：`pip install heavyheader==${{ github.ref_name }}`
+
+            变更见 [CHANGELOG.md](CHANGELOG.md)。

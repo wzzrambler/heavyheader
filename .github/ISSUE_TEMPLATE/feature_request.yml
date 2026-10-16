@@ -1,0 +1,62 @@
+name: 功能请求
+description: 建议一个新能力——请先读「什么最被需要」，避免力气花错方向
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **先开 Issue 再写代码。** 早期项目方向变得快，一个没人讨论过的 PR 有很高概率白写。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题
+      description: |
+        描述场景，不要描述解决方案。什么项目、什么编译器、多大代码量、你卡在哪一步。
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: 现在你是怎么绕过去的
+      description: 如果有 workaround，说明它为什么不够好
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 你建议怎么做
+      description: 如果你有想法。没有也可以空着。
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 涉及哪个模块
+      options:
+        - drivers（编译器驱动）
+        - parse（输出解析）
+        - attrib（成本归因）
+        - verify（实测验证）
+        - scanner（扫描编排）
+        - baseline / gate（基线与门禁）
+        - report（报告渲染）
+        - cli（命令行）
+        - 文档
+        - 其他
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过现有 Issue，没有重复
+          required: true
+        - label: 我理解这可能与项目既定方向不符，维护者可能建议不改
+          required: true

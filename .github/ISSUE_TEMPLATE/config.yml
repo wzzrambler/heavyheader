@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题
+    url: https://github.com/heavyheader/heavyheader/blob/main/SECURITY.md
+    about: 安全漏洞请勿通过公开 Issue 报告，请按 SECURITY.md 的说明私下联系维护者。
+  - name: 讨论与提问
+    url: https://github.com/heavyheader/heavyheader/discussions
+    about: 「这个工具适合我的场景吗」这类问题，去 Discussions 问比开 Issue 更合适。

@@ -1,0 +1,80 @@
+name: Bug 报告
+description: 报告一个缺陷——尤其是「工具说能删，删了就编译不过」这类误报
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请确认：这不是一个「语义上未使用」的误判。HeavyHeader 的文本启发式
+        明确不为这类判断负责，权威结论来自 `heavyheader verify`。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 描述实际行为与预期行为的差异
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现
+      description: |
+        能复现问题的最小 C++ 工程 + 命令。请附上目录结构和文件内容。
+        如果涉及商业代码，请构造一个等价的最小样本。
+      render: bash
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: HeavyHeader 版本
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python 版本
+      placeholder: "3.12.0"
+    validations:
+      required: true
+
+  - type: input
+    id: compiler
+    attributes:
+      label: 编译器及版本
+      placeholder: "g++ (GCC) 13.2.0 / clang++ 17.0.6 / MSVC 19.38"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Linux
+        - Windows
+        - macOS
+    validations:
+      required: true
+
+  - type: textarea
+    id: compiler-output
+    attributes:
+      label: 编译器输出样本
+      description: |
+        如果问题与解析相关，请贴出几行真实的 `-H` / `-ftime-report` / `/showIncludes` 输出。
+        不同编译器版本的格式差异是我们最想知道的。
+      render: text
+
+  - type: textarea
+    id: report
+    attributes:
+      label: HeavyHeader 报告
+      description: 如果有，附上报告的相关片段（脱敏后）
+      render: markdown

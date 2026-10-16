@@ -1,0 +1,29 @@
+# 统一行尾：仓库内存 LF，检出时按平台转换。
+# 没有这条，Windows 上每次 touch 文件都会产生全文件 diff。
+* text=auto eol=lf
+
+# 明确为文本的文件
+*.py text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.json text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.hpp text eol=lf
+*.cc text eol=lf
+*.cxx text eol=lf
+
+# 二进制文件不做转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary

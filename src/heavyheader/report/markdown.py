@@ -137,6 +137,57 @@ def render_markdown(scan: ProjectScan) -> str:
             )
         lines.append("")
 
+    # -- template instantiation cost -------------------------------------
+    profile = getattr(scan, "template_profile", None)
+    if profile is not None and profile.is_significant:
+        lines.append("## 模板实例化成本")
+        lines.append("")
+        lines.append(
+            f"全项目模板实例化合计 **{_fmt_seconds(profile.total_seconds)}**，"
+            f"占总构建时间 **{profile.overall_percent:.1f}%**。"
+        )
+        lines.append("")
+        lines.append(
+            "> 每个编译单元的数字来自 `-ftime-report`，是精确的；"
+            "下面「模板表面」一列是**文本启发式**（`template<` 声明数 × 引用它的 TU 数），"
+            "用于提示成本可能来自哪里，不是实测归因。"
+        )
+        lines.append("")
+        if profile.heavy_tus:
+            lines.append("**模板实例化占比超过 25% 的编译单元：**")
+            lines.append("")
+            for source, seconds, percent in profile.per_tu:
+                if percent >= 25.0:
+                    lines.append(
+                        f"- `{_rel(source, root)}`：{percent:.1f}%"
+                        f"（{_fmt_seconds(seconds)}）"
+                    )
+            lines.append("")
+        # 只列项目自己的头文件。系统头（<type_traits> 之类）模板声明数最多，
+        # 但用户改不了它们，把它们排在前面只会淹没真正可操作的线索。
+        surface = [
+            (h, d, r)
+            for h, d, r in profile.by_surface
+            if d * r > 0
+            and scan.header_stats.get(h) is not None
+            and scan.header_stats[h].kind is HeaderKind.PROJECT
+        ][:10]
+        if surface:
+            lines.append("| 头文件 | template< 声明数 | 被引用 TU | 模板表面 |")
+            lines.append("|---|---:|---:|---:|")
+            for header, declarations, reach in surface:
+                lines.append(
+                    f"| `{_rel(header, root)}` | {declarations} "
+                    f"| {reach} | {declarations * reach} |"
+                )
+            lines.append("")
+            lines.append(
+                "模板表面大、又被大量 TU 引用的头文件，是模板实例化成本的主要嫌疑对象。"
+                "这是**调查线索，不是结论**——编译器只报告阶段总量，不做按头文件的归因。"
+                "系统头文件（如 `<type_traits>`）的模板声明数通常更高，但用户改不了，故未列入。"
+            )
+            lines.append("")
+
     # -- failures ---------------------------------------------------------
     if scan.failed_tus:
         lines.append("## 编译失败的单元")

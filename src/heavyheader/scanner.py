@@ -32,6 +32,7 @@ from .attrib.graph import (
     find_removal_candidates,
     redundant_reparse_warnings,
 )
+from .attrib.templates import profile_project
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import CompilerFamily, ProjectScan, TranslationUnit
 
@@ -271,6 +272,9 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
     kinds = classify_headers(root, set(scan.header_stats))
     scan.candidates = find_removal_candidates(scan, sizes, kinds)
     scan.baseline_seconds = sum(tu.total_wall_seconds() for tu in scan.ok_tus)
+    # Template instantiation cost.  This also fills each header's
+    # template_declarations / template_surface, which the reports read.
+    scan.template_profile = profile_project(scan)
 
     # Surface the redundant-reparse findings as warnings too, so a plain
     # `scan` run never hides a guaranteed win.

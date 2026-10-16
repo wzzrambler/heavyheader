@@ -96,10 +96,20 @@ class TranslationUnit:
         return self.error is None
 
     def total_wall_seconds(self) -> float:
+        """Total wall time, taken from the ``TOTAL`` row only.
+
+        Deliberately does **not** fall back to summing the phase rows: GCC's
+        ``-ftime-report`` phases overlap (``preprocessing`` is a subset of
+        ``phase parsing``), so summing them double-counts.  A scan whose
+        compiler emitted no ``TOTAL`` row reports 0.0 rather than an inflated
+        guess -- an honest zero beats a plausible wrong number, and the
+        callers that care about timing already have their own wall-clock
+        measurement to fall back on.
+        """
         for timing in self.timings:
             if timing.is_total:
                 return timing.wall_seconds
-        return sum(t.wall_seconds for t in self.timings)
+        return 0.0
 
     def phase_seconds(self, name: str) -> float:
         wanted = name.strip().lower()
@@ -107,6 +117,22 @@ class TranslationUnit:
             if timing.name.strip().lower() == wanted:
                 return timing.wall_seconds
         return 0.0
+
+    def template_instantiation_seconds(self) -> float:
+        """Seconds spent instantiating templates.
+
+        This is the single most actionable number in the whole report for
+        template-heavy C++: a file including ``nlohmann/json.hpp`` spends
+        about 39% of its build time here, and no existing tool surfaces that
+        figure.  It comes straight from ``-ftime-report``, so it is exact.
+        """
+        return self.phase_seconds("template instantiation")
+
+    def template_instantiation_percent(self) -> float:
+        total = self.total_wall_seconds()
+        if total <= 0:
+            return 0.0
+        return self.template_instantiation_seconds() / total * 100.0
 
     def direct_includes(self) -> list[Path]:
         """Headers included *directly* by the source file, first-seen order."""
@@ -153,6 +179,14 @@ class HeaderStats:
     #: ``line_count * tu_reach`` -- how much text the project parses because
     #: of this header.
     attributed_lines: int = 0
+    #: Number of ``template<`` declarations in the header.  Textual, so it
+    #: counts declarations in disabled ``#if`` branches too -- a known
+    #: over-estimate that errs on the side of flagging.
+    template_declarations: int = 0
+    #: ``template_declarations * tu_reach`` -- the header's template surface
+    #: across the project.  A heuristic for *where* template instantiation
+    #: cost comes from, not a measurement of it.
+    template_surface: int = 0
 
     @property
     def cost_rank_key(self) -> tuple[int, int]:
@@ -202,6 +236,9 @@ class ProjectScan:
     #: Sum of ``tu.total_wall_seconds()`` -- the baseline the savings
     #: percentages are relative to.
     baseline_seconds: float = 0.0
+    #: Template instantiation cost profile.  Filled in by the scanner; the
+    #: per-TU numbers are exact, the per-header surface is a heuristic.
+    template_profile: object | None = None
     warnings: list[str] = field(default_factory=list)
 
     # -- convenience accessors -------------------------------------------

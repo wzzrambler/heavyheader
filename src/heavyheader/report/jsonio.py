@@ -97,6 +97,42 @@ def scan_to_dict(scan: ProjectScan) -> dict:
             for candidate in scan.candidates
         ],
         "warnings": list(scan.warnings),
+        "template_profile": _template_profile_to_dict(scan),
+    }
+
+
+def _template_profile_to_dict(scan: ProjectScan) -> dict | None:
+    """Serialise the template cost profile, if the scanner produced one.
+
+    Per-TU figures are exact (from -ftime-report); the per-header surface is
+    a heuristic and is labelled as such in the output.
+    """
+    profile = getattr(scan, "template_profile", None)
+    if profile is None:
+        return None
+    return {
+        "total_seconds": round(profile.total_seconds, 4),
+        "overall_percent": round(profile.overall_percent, 2),
+        "significant": profile.is_significant,
+        "per_tu": [
+            {
+                "source": str(source),
+                "seconds": round(seconds, 4),
+                "percent": round(percent, 2),
+            }
+            for source, seconds, percent in profile.per_tu
+        ],
+        "heavy_tus": [str(p) for p in profile.heavy_tus],
+        "by_surface": [
+            {
+                "path": str(path),
+                "template_declarations": declarations,
+                "tu_reach": reach,
+                "surface": declarations * reach,
+            }
+            for path, declarations, reach in profile.by_surface[:20]
+        ],
+        "note": "per_tu 数字来自 -ftime-report，精确；by_surface 是文本启发式，非实测",
     }
 
 

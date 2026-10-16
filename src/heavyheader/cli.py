@@ -84,6 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument("--flag", dest="flags", action="append", default=[], help="额外编译参数，可重复")
         sub.add_argument("--compile-commands", type=Path, default=None, help="compile_commands.json 路径")
         sub.add_argument("--max-tus", type=int, default=500, help="最多分析的编译单元数（默认 500）")
+        sub.add_argument("--exclude", dest="excludes", action="append", default=[], help="扫描时跳过的目录名，可重复（如 test、third_party）")
         sub.add_argument("--jobs", "-j", type=int, default=0, help="并行编译数（默认 CPU 核数）")
         sub.add_argument("--full-compile", action="store_true", help="完整编译而非 -fsyntax-only（更慢，但含代码生成阶段）")
         sub.add_argument("--timeout", type=float, default=300.0, help="单个编译单元超时秒数")
@@ -133,6 +134,7 @@ def _scan_options_from_args(args) -> ScanOptions:
         jobs=args.jobs,
         full_compile=args.full_compile,
         timeout=args.timeout,
+        exclude_dirs=set(getattr(args, "excludes", []) or []),
     )
 
 

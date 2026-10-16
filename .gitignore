@@ -25,10 +25,12 @@ env/
 htmlcov/
 .tox/
 
-# HeavyHeader's own output
+# HeavyHeader's own ad-hoc output (benchmarks/results/ 下的受控产物除外)
 heavyheader-report.*
 baseline.json
 history.jsonl
+/fmt-report.html
+/fmt_baseline.json
 
 # Editors / OS
 .idea/

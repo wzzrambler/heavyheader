@@ -32,6 +32,7 @@ from .attrib.graph import (
     find_removal_candidates,
     redundant_reparse_warnings,
 )
+from .attrib.pch import estimate_pch
 from .attrib.templates import profile_project
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import CompilerFamily, ProjectScan, TranslationUnit
@@ -82,6 +83,10 @@ class ScanOptions:
     timeout: float = 300.0
     #: Extra directories to skip during the recursive walk.
     exclude_dirs: set[str] = field(default_factory=set)
+    #: Estimate a precompiled-header recommendation.
+    pch: bool = False
+    #: How many headers to consider putting in the PCH.
+    pch_top: int = 5
 
     def driver_options(self) -> DriverOptions:
         return DriverOptions(
@@ -275,6 +280,8 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
     # Template instantiation cost.  This also fills each header's
     # template_declarations / template_surface, which the reports read.
     scan.template_profile = profile_project(scan)
+    if options.pch:
+        scan.pch = estimate_pch(scan, top_k=options.pch_top)
 
     # Surface the redundant-reparse findings as warnings too, so a plain
     # `scan` run never hides a guaranteed win.

@@ -239,6 +239,8 @@ class ProjectScan:
     #: Template instantiation cost profile.  Filled in by the scanner; the
     #: per-TU numbers are exact, the per-header surface is a heuristic.
     template_profile: object | None = None
+    #: Precompiled-header recommendation, only when ``--pch`` is passed.
+    pch: object | None = None
     warnings: list[str] = field(default_factory=list)
 
     # -- convenience accessors -------------------------------------------

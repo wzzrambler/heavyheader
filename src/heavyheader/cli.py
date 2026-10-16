@@ -87,6 +87,8 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument("--exclude", dest="excludes", action="append", default=[], help="扫描时跳过的目录名，可重复（如 test、third_party）")
         sub.add_argument("--jobs", "-j", type=int, default=0, help="并行编译数（默认 CPU 核数）")
         sub.add_argument("--full-compile", action="store_true", help="完整编译而非 -fsyntax-only（更慢，但含代码生成阶段）")
+        sub.add_argument("--pch", action="store_true", help="附带估算预编译头（PCH）收益")
+        sub.add_argument("--pch-top", type=int, default=5, help="PCH 考虑纳入的头文件数（默认 5）")
         sub.add_argument("--timeout", type=float, default=300.0, help="单个编译单元超时秒数")
 
     scan = subparsers.add_parser("scan", help="分析源码树并生成报告")
@@ -135,6 +137,8 @@ def _scan_options_from_args(args) -> ScanOptions:
         full_compile=args.full_compile,
         timeout=args.timeout,
         exclude_dirs=set(getattr(args, "excludes", []) or []),
+        pch=getattr(args, "pch", False),
+        pch_top=getattr(args, "pch_top", 5),
     )
 
 

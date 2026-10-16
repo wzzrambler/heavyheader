@@ -188,6 +188,38 @@ def render_markdown(scan: ProjectScan) -> str:
             )
             lines.append("")
 
+    # -- precompiled header ----------------------------------------------
+    pch = getattr(scan, "pch", None)
+    if pch is not None and pch.headers:
+        lines.append("## 预编译头（PCH）收益估算")
+        lines.append("")
+        lines.append(
+            f"建议将下列 {len(pch.headers)} 个头文件纳入 PCH。"
+            f"它们的传递闭包共 **{_fmt_int(pch.closure_lines)} 行**，"
+            f"其中 **{pch.eligible_tus}/{pch.total_tus}** 个编译单元已全部包含它们"
+            f"（覆盖率 {pch.coverage:.0f}%）。"
+        )
+        lines.append("")
+        lines.append("| 头文件 | 行数 | 被引用 TU |")
+        lines.append("|---|---:|---:|")
+        for header in pch.headers:
+            stats = scan.header_stats.get(header)
+            if stats:
+                lines.append(
+                    f"| `{_rel(header, root)}` | {_fmt_int(stats.line_count)} | {stats.tu_reach} |"
+                )
+        lines.append("")
+        verdict = "值得做" if pch.is_worthwhile else "收益有限，谨慎采纳"
+        lines.append(
+            f"**估算净收益：{_fmt_int(pch.net_lines_saved)} 行"
+            f"（占全项目头文件解析量 {pch.percent_of_project:.1f}%）——{verdict}。**"
+        )
+        lines.append("")
+        lines.append("> 这是估算，不是承诺。四条限制：")
+        for caveat in pch.caveats:
+            lines.append(f"> - {caveat}")
+        lines.append("")
+
     # -- failures ---------------------------------------------------------
     if scan.failed_tus:
         lines.append("## 编译失败的单元")

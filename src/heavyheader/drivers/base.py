@@ -33,7 +33,11 @@ from ..parse.includetree import (
     parse_include_tree,
     parse_show_includes,
 )
-from ..parse.timereport import TimeReportError, parse_time_report
+from ..parse.timereport import (
+    TimeReportError,
+    parse_time_report,
+    sanitise_timings,
+)
 
 __all__ = [
     "CompilerDriver",
@@ -178,9 +182,14 @@ class GccLikeDriver(CompilerDriver):
 
         events = parse_include_tree(stderr, source)
         try:
-            timings = parse_time_report(stderr)
+            raw_timings = parse_time_report(stderr)
         except TimeReportError:
-            timings = []
+            raw_timings = []
+        # Cross-check the compiler's self-reported timings against the wall
+        # time we measured ourselves.  A phase cannot outlast its process;
+        # when the compiler's timer is broken (GCC on MinGW does this) we
+        # drop the impossible rows rather than report them.
+        timings, sanity = sanitise_timings(raw_timings, wall_seconds)
         guards = parse_include_guards(stderr)
 
         # -M is not usable in the same invocation as a real compile (it
@@ -196,6 +205,7 @@ class GccLikeDriver(CompilerDriver):
             include_events=events,
             timings=timings,
             unguarded_headers=guards,
+            timing_discarded=list(sanity.discarded),
         )
 
 

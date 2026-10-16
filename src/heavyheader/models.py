@@ -84,6 +84,10 @@ class TranslationUnit:
     timings: list[PhaseTiming] = field(default_factory=list)
     #: Headers the compiler flagged as missing an include guard.
     unguarded_headers: list[Path] = field(default_factory=list)
+    #: Timing rows the sanity check rejected as physically impossible.
+    #: Non-empty means the compiler's own timer misbehaved (GCC on MinGW
+    #: does); the surviving rows are still usable.
+    timing_discarded: list[str] = field(default_factory=list)
     #: Non-empty when the compiler refused to compile this file.
     error: str | None = None
 

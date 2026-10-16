@@ -22,14 +22,28 @@ Memory suffixes are binary (``k`` = 1024, ``M`` = 1024**2, ``G`` =
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 
 from ..models import PhaseTiming
 
-__all__ = ["TimeReportError", "parse_time_report", "summarise"]
+__all__ = [
+    "TimeReportError",
+    "parse_time_report",
+    "summarise",
+    "sanitise_timings",
+    "TimingSanityReport",
+]
 
 
 class TimeReportError(ValueError):
     """Raised when ``-ftime-report`` output cannot be understood."""
+
+
+#: A compiler phase cannot take longer than the process that contains it, so
+#: anything above ``measured_wall + _WALL_SLACK`` is not a measurement, it is
+#: a broken timer.  The slack absorbs the difference between the compiler's
+#: internal clock and our ``perf_counter`` reading.
+_WALL_SLACK = 1.0
 
 
 _ROW = re.compile(
@@ -83,6 +97,59 @@ def parse_time_report(stderr_text: str) -> list[PhaseTiming]:
             "-ftime-report and was its stderr captured?"
         )
     return timings
+
+
+@dataclass(slots=True)
+class TimingSanityReport:
+    """What the sanity check threw away, and why.
+
+    Kept on the scan rather than logged and forgotten: a user who sees a
+    build cost of 584 years deserves to know the compiler lied, not to
+    quietly receive a corrected number.
+    """
+
+    discarded: list[str] = field(default_factory=list)
+    total_was_discarded: bool = False
+
+    @property
+    def clean(self) -> bool:
+        return not self.discarded
+
+
+def sanitise_timings(
+    timings: list[PhaseTiming], measured_wall_seconds: float
+) -> tuple[list[PhaseTiming], TimingSanityReport]:
+    """Drop timing rows that cannot physically be true.
+
+    A compiler phase cannot take longer than the process that contains it.
+    We already measure that process with ``perf_counter`` around the
+    subprocess, so we have an independent upper bound to check against.
+
+    This is not defensive programming for its own sake.  GCC on MinGW has a
+    real bug where ``-ftime-report`` prints ``2**64 / 1e9`` seconds for some
+    phases -- roughly 584 years -- and a tool that faithfully reports that
+    number is worse than one that reports nothing, because the output looks
+    authoritative.  Observed on GCC 16.2.0 (MinGW-w64) compiling files that
+    include ``<windows.h>``.
+
+    Returns the surviving rows plus a report of what was dropped.
+    """
+    ceiling = measured_wall_seconds + _WALL_SLACK
+    report = TimingSanityReport()
+    kept: list[PhaseTiming] = []
+
+    for timing in timings:
+        if timing.wall_seconds > ceiling:
+            report.discarded.append(
+                f"{timing.name}={timing.wall_seconds:.2f}s "
+                f"(exceeds measured wall {measured_wall_seconds:.2f}s)"
+            )
+            if timing.is_total:
+                report.total_was_discarded = True
+            continue
+        kept.append(timing)
+
+    return kept, report
 
 
 def summarise(timings: list[PhaseTiming]) -> dict[str, float]:

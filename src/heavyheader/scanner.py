@@ -281,4 +281,15 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
                 "-- missing include guard?"
             )
 
+    # Likewise surface compiler timers that misbehaved.  Silently correcting
+    # the numbers would hide a real defect in the toolchain the user is
+    # running, and they would have no way to find out.
+    for tu in scan.ok_tus:
+        for discarded in tu.timing_discarded:
+            scan.warnings.append(
+                f"{tu.source}: discarded impossible timing ({discarded}) "
+                "-- the compiler's -ftime-report timer is unreliable here; "
+                "remaining timings are still usable"
+            )
+
     return scan

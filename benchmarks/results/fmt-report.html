@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>HeavyHeader 构建成本报告</title>
+<style>
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --border: #e3e6ea;
+  --text: #1c2128;
+  --muted: #5b6470;
+  --accent: #2f6feb;
+  --warn: #b25e09;
+  --bad: #c9372c;
+  --good: #1a7f52;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 32px 20px 64px;
+  background: var(--bg); color: var(--text);
+  font: 15px/1.6 -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 18px; margin: 36px 0 12px; }
+.sub { color: var(--muted); margin: 0 0 24px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.card .v { font-size: 24px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.card .n { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-top: 14px; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+td.num, th.num { text-align: right; }
+tr:last-child td { border-bottom: none; }
+code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
+.path { word-break: break-all; }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; border: 1px solid var(--border); color: var(--muted); }
+.tag.high { color: var(--bad); border-color: #f0c6c2; background: #fdf1f0; }
+.tag.medium { color: var(--warn); border-color: #f0dcc0; background: #fdf7ee; }
+.tag.low { color: var(--muted); }
+.note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+.bar-row { display: grid; grid-template-columns: minmax(160px, 300px) 1fr 90px; gap: 10px; align-items: center; padding: 3px 0; }
+.bar-track { background: #eef0f3; border-radius: 4px; height: 16px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+.bar-fill.system { background: #b9c2cf; }
+.bar-val { text-align: right; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+footer { margin-top: 48px; color: var(--muted); font-size: 12.5px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>HeavyHeader 构建成本报告</h1>
+  <p class="sub">项目 <code>C:\Users\31879\AppData\Local\Temp\fmtbench</code> · 编译器 <code>g++</code>
+  · 标准 <code>c++17</code></p>
+
+  <div class="cards"><div class="card"><div class="k">头文件解析量</div><div class="v">331,016</div><div class="n">行 · 全项目累计</div></div><div class="card"><div class="k">编译单元</div><div class="v">3</div><div class="n">1 个失败</div></div><div class="card"><div class="k">依赖边</div><div class="v">651</div><div class="n">条 include 关系</div></div><div class="card"><div class="k">累计编译耗时</div><div class="v">1.54 s</div><div class="n">wall clock 合计</div></div><div class="card"><div class="k">可精简 include</div><div class="v">6</div><div class="n">已按收益排序</div></div></div>
+
+  
+
+  <h2>成本热点 Top 15</h2>
+  <p class="note">归因行数 = 头文件行数 × 引用它的编译单元数，衡量该头文件让整个项目多解析了多少行代码。</p>
+  <div class="panel"><div class="bar-row"><div class="mono path" title="include\fmt\format.h">include\fmt\format.h</div><div class="bar-track"><div class="bar-fill" style="width:100.0%"></div></div><div class="bar-val">9,418 行</div></div><div class="bar-row"><div class="mono path" title="include\fmt\core.h">include\fmt\core.h</div><div class="bar-track"><div class="bar-fill" style="width:94.4%"></div></div><div class="bar-val">8,886 行</div></div><div class="bar-row"><div class="mono path" title="include\fmt\format-inl.h">include\fmt\format-inl.h</div><div class="bar-track"><div class="bar-fill" style="width:21.1%"></div></div><div class="bar-val">1,991 行</div></div><div class="bar-row"><div class="mono path" title="include\fmt\os.h">include\fmt\os.h</div><div class="bar-track"><div class="bar-fill" style="width:4.5%"></div></div><div class="bar-val">421 行</div></div><div class="bar-row"><div class="mono path" title="include\fmt\fmt-c.h">include\fmt\fmt-c.h</div><div class="bar-track"><div class="bar-fill" style="width:2.3%"></div></div><div class="bar-val">218 行</div></div></div>
+
+  <h2>可精简的 include</h2>
+  <p class="note">独占闭包 = 删掉这条 include 后才会停止解析的头文件。若某头文件仍可从其他 include 到达，删除当前这条并不省钱。</p>
+  <div class="panel"><table><thead><tr><th>编译单元</th><th>include</th><th class='num'>独占闭包</th><th class='num'>预计省行数</th><th class='num'>预计占比</th><th>置信度</th></tr></thead><tbody><tr><td class="mono path">src\os.cc</td><td class="mono path">include\windows.h</td><td class="num">192</td><td class="num">129,748</td><td class="num">62.4%</td><td><span class="tag high">high</span></td></tr><tr><td class="mono path">src\format.cc</td><td class="mono path">include\fmt\format-inl.h</td><td class="num">175</td><td class="num">102,672</td><td class="num">98.1%</td><td><span class="tag high">high</span></td></tr><tr><td class="mono path">src\os.cc</td><td class="mono path">include\fmt\os.h</td><td class="num">127</td><td class="num">74,208</td><td class="num">35.7%</td><td><span class="tag high">high</span></td></tr><tr><td class="mono path">src\fmt-c.cc</td><td class="mono path">include\fmt\core.h</td><td class="num">11</td><td class="num">10,113</td><td class="num">54.9%</td><td><span class="tag high">high</span></td></tr><tr><td class="mono path">src\fmt-c.cc</td><td class="mono path">include\fmt\fmt-c.h</td><td class="num">14</td><td class="num">5,114</td><td class="num">27.8%</td><td><span class="tag high">high</span></td></tr><tr><td class="mono path">src\os.cc</td><td class="mono path">sys\stat.h</td><td class="num">1</td><td class="num">115</td><td class="num">0.1%</td><td><span class="tag low">low</span></td></tr></tbody></table></div>
+
+  <h2>缺少 include guard 的头文件</h2>
+  <p class="note">同一编译单元内被重复解析，对带 guard 的头文件不可能发生——这是确定性信号，补 <code>#pragma once</code> 即可，永远安全。</p>
+  <div class="panel"><table><thead><tr><th>头文件</th><th class='num'>解析次数</th><th class='num'>涉及 TU</th><th class='num'>多解析次数</th></tr></thead><tbody><tr><td class="mono path">bits\version.h</td><td class="num">34</td><td class="num">3</td><td class="num">31</td></tr><tr><td class="mono path">include\poppack.h</td><td class="num">14</td><td class="num">1</td><td class="num">13</td></tr><tr><td class="mono path">include\stddef.h</td><td class="num">11</td><td class="num">3</td><td class="num">8</td></tr><tr><td class="mono path">include\stddef.h</td><td class="num">11</td><td class="num">3</td><td class="num">8</td></tr><tr><td class="mono path">include\limits.h</td><td class="num">9</td><td class="num">3</td><td class="num">6</td></tr><tr><td class="mono path">c++\stdlib.h</td><td class="num">7</td><td class="num">2</td><td class="num">5</td></tr><tr><td class="mono path">include\pshpack2.h</td><td class="num">6</td><td class="num">1</td><td class="num">5</td></tr><tr><td class="mono path">bits\stdexcept_throw.h</td><td class="num">6</td><td class="num">2</td><td class="num">4</td></tr><tr><td class="mono path">include\pshpack4.h</td><td class="num">5</td><td class="num">1</td><td class="num">4</td></tr><tr><td class="mono path">include\_mingw.h</td><td class="num">6</td><td class="num">3</td><td class="num">3</td></tr><tr><td class="mono path">include\stdio.h</td><td class="num">6</td><td class="num">3</td><td class="num">3</td></tr><tr><td class="mono path">include\string.h</td><td class="num">6</td><td class="num">3</td><td class="num">3</td></tr><tr><td class="mono path">include\wchar.h</td><td class="num">4</td><td class="num">2</td><td class="num">2</td></tr><tr><td class="mono path">include\corecrt_wconio.h</td><td class="num">4</td><td class="num">2</td><td class="num">2</td></tr><tr><td class="mono path">include\stdlib.h</td><td class="num">4</td><td class="num">2</td><td class="num">2</td></tr><tr><td class="mono path">include\guiddef.h</td><td class="num">3</td><td class="num">1</td><td class="num">2</td></tr><tr><td class="mono path">sys\timeb.h</td><td class="num">2</td><td class="num">1</td><td class="num">1</td></tr><tr><td class="mono path">include\prfchwintrin.h</td><td class="num">2</td><td class="num">1</td><td class="num">1</td></tr><tr><td class="mono path">include\stralign.h</td><td class="num">2</td><td class="num">1</td><td class="num">1</td></tr><tr><td class="mono path">include\xmmintrin.h</td><td class="num">2</td><td class="num">1</td><td class="num">1</td></tr></tbody></table></div>
+
+  <h2>编译失败的单元</h2><div class='panel'><ul><li><code>src\fmt.cc</code> — C:\Users\31879\AppData\Local\Temp\fmtbench\src\fmt.cc:8:1: error: &#x27;module&#x27; does not name a type</li></ul></div>
+
+  <footer>由 HeavyHeader 生成 · 指标定义见 docs/methodology.md</footer>
+</div>
+</body>
+</html>

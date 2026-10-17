@@ -197,6 +197,35 @@ $ heavyheader toolchains ./my-project --compilers g++,clang++ --format json
 （TU / 归因行数 / 依赖边）才是确定性的；**逐头文件差异只比项目自己的头**——系统头在
 不同工具链下路径各不相同，按路径比较只会制造假差异。
 
+## 真实工程上的完整构建对照
+
+先前的基准都在证明「工具能读到正确的数据」。这个实验回答另一个问题：**按它的结论
+动手，完整构建到底快了多少**。
+
+对象是 nlohmann/json v3.11.3 的测试目标（63 个编译单元，源码按 SHA-256 固定），
+两臂各 5 次干净构建：
+
+| 指标 | 基线 | 加 PCH | 结果 |
+|---|---:|---:|---|
+| 完整构建墙上时间（中位数） | 43.2 s | 40.1 s | **−7.1%** |
+| 编译 CPU 合计（中位数） | 292 s | 259 s | **−11.4%** |
+| 63 个测试套件断言数 | 4,264,414 | 4,264,414 | **逐个一致** |
+
+估算与实测**分两张表**，从不合并：工具估算「消掉 91.2% 的头文件解析量」，实测是
+「编译 CPU −11.4%」。反推下来头文件解析约占编译 CPU 的 17%——两个数不同是因为
+它们量的不是同一件事。
+
+对照实验（`experiments/control.py`）在同一个工程上还得出一个**对工具不利**的结论：
+在「逐个删 include」这件事上，按调用频次排序的经验法则命中 3/12，而工具的候选排序
+命中 0/5——因为它按收益排序，而收益最大的头正是所有单元都必需的头。这条缺陷连同
+复现代码一起写在 [experiments/README.md](experiments/README.md) 里。
+
+```bash
+python experiments/fetch.py            # 拉取并校验固定快照
+python experiments/run_experiment.py   # 完整构建前后对照
+python experiments/control.py          # 与经验法则的对照
+```
+
 ## 支持的工具链
 
 | 编译器 | 依赖树 | 分阶段计时 |
@@ -222,6 +251,10 @@ $ heavyheader toolchains ./my-project --compilers g++,clang++ --format json
   LLVM 工具链——这是我们刻意避开的 trade-off，精确模式在 [ROADMAP](ROADMAP.md) 里。
 - **不改写你的代码**。`verify` 只在临时目录里做实验，原始文件一个字节都不会动。
 - **不跨机器比较绝对耗时**。墙钟时间随负载波动，门禁因此只对比确定性的归因行数和相对比例。
+- **候选排序的精度不够**。`experiments/control.py` 的对照实验显示：在 nlohmann/json 上，
+  工具按收益排序的候选**全部编译失败**（0/5），不如「按 include 频次排序」的经验法则
+  （3/12）。原因是排序只看收益、不看「能不能删」，且 token 级用法匹配看不见宏展开。
+  这是已知缺陷而不是噪声，修它的路径在 [ROADMAP](ROADMAP.md) 的 v0.3。
 
 完整的方法论、指标定义和已知局限见 [docs/methodology.md](docs/methodology.md)。
 

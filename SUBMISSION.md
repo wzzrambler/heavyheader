@@ -7,21 +7,22 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 85 文件 / 36 commit | `src/heavyheader/` |
-| 测试 | ✅ 296 个全绿 | `tests/` |
+| 代码 | ✅ 95 文件 / 40 commit | `src/heavyheader/` |
+| 测试 | ✅ 305 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
+| 完整构建实验 | ✅ 真实工程 63 TU，完整构建 −7.1% 墙上 / −11.4% CPU，断言逐个一致 | `experiments/` + `experiments/results/` |
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 36 commit / 85 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 40 commit / 95 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，36 commit，85 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，40 commit，95 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）
@@ -78,7 +79,10 @@
 
 - 路演核心就一句话：「现有工具告诉你该不该删，我们告诉你它能让你多等几秒，
   并且真的删给你看。」
-- 最有说服力的 30 秒：fmt 上 6 个候选取 3 个实测，全部正确判定「删了会编译失败」
-  ——证明不乱喊；构造工程上准确识别并省 38.5%——证明真有用。
+- 最有说服力的 30 秒：真实工程（nlohmann/json，63 个 TU）完整构建 −7.1% 墙上时间、
+  −11.4% 编译 CPU，4,264,414 条断言逐个一致——这是可复现的实测，不是估算。
+- 更要准备的一条：对照实验里**工具输了**（候选排序命中 0/5，经验法则 3/12）。
+  主动说，并说清为什么（按收益排序会把「所有单元都要的头」排在前面）、修法在
+  ROADMAP v0.3。这比只报好消息可信得多。
 - 评委可能问：「这和 IWYU 什么关系？」答：互补。IWYU 管正确性（AST 级），
   我们管成本（编译输出级），Roadmap v0.3 会做 libclang 后端做精确模式。

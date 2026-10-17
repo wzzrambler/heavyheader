@@ -30,10 +30,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/heavyheader/heavyheader"
-Documentation = "https://github.com/heavyheader/heavyheader/tree/main/docs"
-Repository = "https://github.com/heavyheader/heavyheader"
-Issues = "https://github.com/heavyheader/heavyheader/issues"
+Homepage = "https://github.com/https://github.com/wzzrambler/heavyheader"
+Documentation = "https://github.com/https://github.com/wzzrambler/heavyheader/tree/main/docs"
+Repository = "https://github.com/https://github.com/wzzrambler/heavyheader"
+Issues = "https://github.com/https://github.com/wzzrambler/heavyheader/issues"
 
 [project.scripts]
 heavyheader = "heavyheader.cli:main"

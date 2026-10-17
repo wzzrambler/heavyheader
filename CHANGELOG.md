@@ -50,5 +50,5 @@
 - 使用状态是文本启发式，为副作用而包含的头文件会被误判；
 - 跨机器不比较绝对墙钟时间。
 
-[未发布]: https://github.com/heavyheader/heavyheader/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/heavyheader/heavyheader/releases/tag/v0.1.0
+[未发布]: https://github.com/https://github.com/wzzrambler/heavyheader/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/https://github.com/wzzrambler/heavyheader/releases/tag/v0.1.0

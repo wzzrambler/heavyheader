@@ -32,7 +32,7 @@
 ## 开发环境
 
 ```bash
-git clone https://github.com/heavyheader/heavyheader.git
+git clone https://github.com/https://github.com/wzzrambler/heavyheader.git
 cd heavyheader
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"

@@ -13,29 +13,23 @@
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 | `benchmarks/` |
 | 作品介绍文档 | ✅ 12 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 演示视频 | ✅ 3 分 20 秒 MP4 | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ⬜ 待推 GitHub | 见下 |
-| 报名表 | ⬜ 待填写 | 见下 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 已推送
+| 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
-## 第 1 步：推 GitHub 公开仓库（需要你）
+## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-大赛要求提交「代码仓库链接」，必须是公开可访问的。
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，18 commit，69 文件）
 
-```bash
-cd C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader
-# 1. 在 GitHub 网页上建一个空仓库（不要勾选 Add README，否则要 merge）
-# 2. 然后：
-git remote add origin https://github.com/<你的用户名>/heavyheader.git
-git branch -M main
-git push -u origin main
-```
+- 远程为空仓库，直接推送成功，无需 merge
+- 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）
 
 **推送前检查**：
 - [ ] `.gitignore` 已排除 `video_build/`（3012 帧 PNG，约 1.5 GB）
 - [ ] PDF 和 MP4 是否要一起推？视频 4.2 MB，可以推；如果不想让仓库臃肿，
       可以只推代码，视频单独传网盘/ B 站，报名表填链接即可。
       **建议**：都推，大赛要的是可验证性。
-- [ ] README 里的 GitHub 链接目前是 `heavyheader/heavyheader` 占位，
+- [ ] README 里的 GitHub 链接目前是 `https://github.com/wzzrambler/heavyheader` 占位，
       推完后要改成真实地址（README、pyproject.toml、SECURITY.md、CONTRIBUTING.md
       里都有）。
 

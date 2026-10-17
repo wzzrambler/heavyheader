@@ -204,7 +204,7 @@ def build(path: str) -> None:
         topMargin=22 * mm,
         bottomMargin=20 * mm,
         title="HeavyHeader 作品介绍文档",
-        author="项目负责人",
+        author="王子周",
         subject="第四届开放原子大赛·2026 开源行业解决方案创新赛 赛道一",
     )
 
@@ -232,9 +232,15 @@ def build(path: str) -> None:
         P("第四届开放原子大赛 · 2026 开源行业解决方案创新赛", "meta"),
         P("赛道一 · 开源基础软件与解决方案", "meta"),
         SP(34),
-        P("项目负责人：（待填写）", "meta"),
+        P("项目负责人：王子周", "meta"),
         P("申报主体类型：开源社区（个人）", "meta"),
         P("日期：2026 年 10 月 17 日", "meta"),
+        SP(6),
+        P(
+            "代码仓库：<font face='%s'>https://github.com/wzzrambler/heavyheader</font>"
+            % _MONO,
+            "meta",
+        ),
         PageBreak(),
     ]
 
@@ -976,7 +982,14 @@ def build(path: str) -> None:
         SP(10),
         P(
             "本作品以 Apache-2.0 许可证开源提交。代码仓库、测试、治理文件与基准数据"
-            "均已随作品材料提交。", "quote"
+            "均已随作品材料提交。"
+        ),
+        P(
+            "代码仓库：<font face='%s'>https://github.com/wzzrambler/heavyheader</font><br/>"
+            "演示视频：随作品材料提交（3-5 分钟完整片）<br/>"
+            "复现方式：见仓库 <font face='%s'>benchmarks/README.md</font>，"
+            "本文所有实测数字均可一键重跑。" % (_MONO, _MONO),
+            "quote",
         ),
     ]
 

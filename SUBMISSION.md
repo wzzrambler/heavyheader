@@ -7,31 +7,29 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 54 文件 / 8 commit | `src/heavyheader/` |
-| 测试 | ✅ 72 个全绿 | `tests/` |
+| 代码 | ✅ 81 文件 / 30 commit | `src/heavyheader/` |
+| 测试 | ✅ 274 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 | `benchmarks/` |
-| 作品介绍文档 | ✅ 12 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
-| 演示视频 | ✅ 3 分 20 秒 MP4 | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 已推送
+| 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
+| 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
+| 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 30 commit / 81 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，18 commit，69 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，30 commit，81 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）
 
-**推送前检查**：
-- [ ] `.gitignore` 已排除 `video_build/`（3012 帧 PNG，约 1.5 GB）
-- [ ] PDF 和 MP4 是否要一起推？视频 4.2 MB，可以推；如果不想让仓库臃肿，
-      可以只推代码，视频单独传网盘/ B 站，报名表填链接即可。
-      **建议**：都推，大赛要的是可验证性。
-- [ ] README 里的 GitHub 链接目前是 `https://github.com/wzzrambler/heavyheader` 占位，
-      推完后要改成真实地址（README、pyproject.toml、SECURITY.md、CONTRIBUTING.md
-      里都有）。
+**推送前检查（均已完成）**：
+- [x] `.gitignore` 已排除 `video_build/`（3012 帧 PNG，约 1.5 GB）
+- [x] PDF 与 MP4 均已一并推送；视频另传 B 站/网盘，报名表填链接即可
+- [x] README / pyproject / SECURITY / CONTRIBUTING 里的仓库地址均为真实地址
+      （`docs/finalize.py` 已统一替换）
 
 ## 第 2 步：填写报名表（需要你）
 
@@ -60,9 +58,8 @@
 
 1. **代码仓库链接** — 第 1 步推好的 GitHub 地址
 2. **作品介绍文档** — `HeavyHeader-作品介绍文档.pdf`
-   - ⚠️ **PDF 封面「项目负责人」是 `（待填写）`占位符，发送前必须改成你的名字**
-   - 改法：编辑 `docs/make_pdf.py` 搜「待填写」，改完重新
-     `python docs/make_pdf.py "HeavyHeader-作品介绍文档.pdf"`
+   - ✅ 封面「项目负责人」已填「王子周」（`docs/finalize.py` 已应用），无需再改
+   - 若日后需重填作者：`python docs/finalize.py --author "王子周" --repo "https://github.com/wzzrambler/heavyheader" --apply`
 3. **演示视频链接** — `HeavyHeader-演示视频.mp4` 传 B 站/网盘后的链接
    （大赛要的是链接，不是附件）
 

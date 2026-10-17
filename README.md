@@ -134,6 +134,13 @@ heavyheader scan ./my-project --history cost.jsonl
 heavyheader history cost.jsonl                      # 终端摘要（可直接进 CI 日志）
 heavyheader history cost.jsonl --html board.html    # 导出一份自包含网页
 heavyheader history cost.jsonl --serve              # 本地看板（http://127.0.0.1:8080）
+
+# 7. PR 评论：把两次扫描对比渲染成评论，可选经 gh 发布到 PR
+heavyheader scan ./my-project --save base.json
+heavyheader scan ./my-project --save pr.json
+heavyheader pr-comment base.json pr.json                       # 只看渲染正文
+heavyheader pr-comment base.json pr.json --post                # 经 gh 发布（需 Actions 环境）
+heavyheader pr-comment base.json pr.json --post --fail-on-regression
 ```
 
 ### 增量扫描
@@ -151,6 +158,22 @@ $ heavyheader scan ./my-project --cache .cache.json
 编译选项变化会自动退回全量扫描，不会给出过时的结论。**编译失败的单元不进缓存**：
 它的依赖集不完整，等缺失的头文件被补上，缓存里那批依赖「看起来没变」，
 会一直重复报同一个错误。
+
+### PR 评论
+
+把两次扫描（`--before` 基线、`--after` PR 扫描）的对比渲染成一段 GitHub 风格
+Markdown 评论——含门禁结论、指标对比表、上升/下降的头文件、可精简的 include 候选。
+加 `--post` 会经 `gh` 发布到 PR；不加则只把正文打印到标准输出，方便落进 CI 日志
+或自行粘贴。发布是**幂等**的：带隐藏 marker，PR 反复推送时编辑旧评论而不是堆积新评论。
+
+```
+$ heavyheader pr-comment base.json pr.json --post
+已发布 PR #42 的评论（仓库 owner/repo）。
+```
+
+`--fail-on-regression` 让成本回归超阈值时退出码为 1，使 CI 步骤失败；`gh` 缺失或
+拿不到 PR 号时退出码为 2，且正文照常打印，绝不静默丢失。发布依赖 GitHub Actions
+自带的 `gh` CLI，不引入任何第三方库。
 
 ## 支持的工具链
 

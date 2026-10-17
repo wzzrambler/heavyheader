@@ -235,7 +235,7 @@ def evaluate_gate(
         )
         for delta in comparison.regressed_headers[:3]:
             reasons.append(
-                f"  worst offender: {delta.path} "
+                f"  worst offender: {delta.path.as_posix()} "
                 f"{delta.before} -> {delta.after} lines ({delta.percent:+.1f}%)"
             )
 
@@ -250,7 +250,7 @@ def evaluate_gate(
             "entered the build"
         )
         for path in heavy_new[:3]:
-            reasons.append(f"  new heavy header: {path}")
+            reasons.append(f"  new heavy header: {path.as_posix()}")
 
     if fail_on_new_unguarded and comparison.unguarded_after > comparison.unguarded_before:
         reasons.append(

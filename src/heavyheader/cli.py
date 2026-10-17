@@ -1,6 +1,6 @@
 """HeavyHeader command line interface.
 
-Five verbs, each doing one thing:
+Six verbs, each doing one thing:
 
 ======================  ====================================================
 ``scan``                analyse a tree, write a report
@@ -8,6 +8,7 @@ Five verbs, each doing one thing:
 ``gate``                fail a build when header cost regresses
 ``compare``             diff two saved scans
 ``history``             show the cost trend built from ``--history`` logs
+``pr-comment``          render (and post) a PR comment from a scan comparison
 ======================  ====================================================
 
 ``argparse`` is used deliberately rather than ``click``/``typer``: the CLI is
@@ -65,6 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
         "  %(prog)s gate ./src --baseline baseline.json --max-regression 5\n"
         "  %(prog)s scan ./src --history cost.jsonl\n"
         "  %(prog)s history cost.jsonl --serve\n"
+        "  %(prog)s pr-comment --before baseline.json --after pr.json --post\n"
         ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -142,6 +144,56 @@ def build_parser() -> argparse.ArgumentParser:
     )
     history.add_argument(
         "--html", type=Path, default=None, help="把看板 HTML 写到文件（不自启服务）"
+    )
+
+    prc = subparsers.add_parser(
+        "pr-comment",
+        help="把两次扫描的对比渲染成 PR 评论（可选经 gh 发布）",
+    )
+    prc.add_argument("before", type=Path, help="基线 JSON（如主分支的扫描结果）")
+    prc.add_argument("after", type=Path, help="本次 PR 的扫描 JSON")
+    prc.add_argument(
+        "--post",
+        action="store_true",
+        help="经 gh 发布到 PR（需 gh CLI；默认只渲染到标准输出）",
+    )
+    prc.add_argument(
+        "--pr",
+        default=None,
+        help="PR 编号；缺省时从 GITHUB_REF / PR_NUMBER 等环境变量推断",
+    )
+    prc.add_argument(
+        "--fail-on-regression",
+        action="store_true",
+        help="成本回归超阈值时退出码为 1（让 CI 步骤失败）",
+    )
+    prc.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="门禁通过时用 after 覆盖 before 基线",
+    )
+    prc.add_argument(
+        "--max-regression",
+        type=float,
+        default=5.0,
+        help="允许的归因行数回归百分比（默认 5）",
+    )
+    prc.add_argument(
+        "--heavy-header-lines",
+        type=int,
+        default=2000,
+        help="判定「新增重型头文件」的行数阈值（默认 2000）",
+    )
+    prc.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="同时把评论 Markdown 写到文件",
+    )
+    prc.add_argument(
+        "--title",
+        default="HeavyHeader 构建成本报告",
+        help="评论标题",
     )
 
     return parser
@@ -502,12 +554,30 @@ def _cmd_history(args) -> int:
     return 0
 
 
+def _cmd_pr_comment(args) -> int:
+    from .prcomment import run_pr_comment
+
+    return run_pr_comment(
+        before=args.before,
+        after=args.after,
+        pr=args.pr,
+        post=args.post,
+        fail_on_regression=args.fail_on_regression,
+        update_baseline=args.update_baseline,
+        max_regression=args.max_regression,
+        heavy_header_lines=args.heavy_header_lines,
+        out=args.out,
+        title=args.title,
+    )
+
+
 _COMMANDS = {
     "scan": _cmd_scan,
     "verify": _cmd_verify,
     "gate": _cmd_gate,
     "compare": _cmd_compare,
     "history": _cmd_history,
+    "pr-comment": _cmd_pr_comment,
 }
 
 

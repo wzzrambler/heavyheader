@@ -81,6 +81,10 @@ class UsageSignal:
     #: Reported verbatim: "``TEST_CASE`` 由 ``doctest.h`` 提供" is actionable,
     #: "这个头在用" is not.
     provided_by: Path | None = None
+    #: 命中了、但因为在消失集合里声明得过于普遍而**不能**当作使用证据的
+    #: 标识符。留着它是为了把「为什么判不了」说清楚，而不是扔一个
+    #: 「无法判定」让人猜。
+    ambient_identifiers: tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
@@ -279,21 +283,64 @@ def analyse_usage(
 
     total = 0
     first_nonempty: Path | None = None
+    # name -> (declaring header, how many headers of this set declare it)
+    hits: dict[str, tuple[Path, int]] = {}
+    headers_with_text = 0
+
     for path in ordered:
         ids = index.header_ids(path)
         if not ids:
             continue
+        headers_with_text += 1
         total += len(ids)
         if first_nonempty is None:
             first_nonempty = path
-        shared = ids & source_ids
-        if shared:
+        for name in ids & source_ids:
+            # 第一次见到的声明者先记下；次数在整轮遍历完后才算得准。
+            hits.setdefault(name, (path, 0))
+            provider, count = hits[name]
+            hits[name] = (provider, count + 1)
+
+    if hits:
+        # **特异性**：命中一个标识符不等于这个 include 被使用。
+        #
+        # 实测数据（nlohmann/json 的 locale 候选）把这个问题摆得很清楚：
+        # 源码确实「命中」了闭包里的标识符，但命中的是 `config`（108 个头
+        # 里 40 个都声明它）、`value`（23 个）、`move`（20 个）——这类词是
+        # 标准库的环境噪音，不是依赖证据。第一版判定因此把 218/222 个候选
+        # 全判成「正在使用」，过度保守到几乎不再给任何建议。
+        #
+        # 规则：只有「在消失集合里足够罕见」的命中才算证据。阈值随集合大小
+        # 浮动，但设下限 2——只有一两个头声明的名字才是具体依赖。
+        threshold = max(2, headers_with_text // 25)
+        specific = {
+            name: provider
+            for name, (provider, count) in hits.items()
+            if count <= threshold
+        }
+        if specific:
+            # 具体的命中：按声明者路径排序，保证输出稳定可复现。
+            name = sorted(specific)[0]
             return UsageSignal(
                 verdict=UsageVerdict.IN_USE,
-                shared_identifiers=tuple(sorted(shared)[:8]),
+                shared_identifiers=tuple(sorted(specific)[:8]),
                 header_identifier_count=total,
-                provided_by=path,
+                provided_by=specific[name],
+                ambient_identifiers=tuple(
+                    sorted(
+                        n
+                        for n, (_p, c) in hits.items()
+                        if c > threshold
+                    )[:8]
+                ),
             )
+        # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
+        return UsageSignal(
+            verdict=UsageVerdict.UNKNOWN,
+            shared_identifiers=tuple(sorted(hits)[:8]),
+            header_identifier_count=total,
+            ambient_identifiers=tuple(sorted(hits)[:8]),
+        )
 
     if total == 0:
         # Includes nothing, declares nothing, or could not be read.  Saying

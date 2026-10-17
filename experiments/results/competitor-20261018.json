@@ -1,0 +1,585 @@
+{
+  "generated": "2026-10-18 00:52:49",
+  "project": "nlohmann/json v3.11.3",
+  "compiler": "g++ (x86_64-win32-seh-rev1, Built by MinGW-Builds project) 16.2.0",
+  "competitor": {
+    "name": "clang-include-cleaner",
+    "version": "LLVM version 23.1.3 (Optimized build)",
+    "units": 64,
+    "units_failed": [
+      "unit-windows_h"
+    ],
+    "removal_recommendations": 0,
+    "units_with_removals": 0,
+    "wall_seconds": 90.3,
+    "per_unit": [
+      {
+        "unit": "unit-32bit",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-algorithms",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-allocator",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-alt-string",
+        "removals": [],
+        "insertions": [
+          "nlohmann/adl_serializer.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-assert_macro",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-binary_formats",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-bjdata",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/input/input_adapters.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-bson",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-byte_container_with_subtype",
+        "removals": [],
+        "insertions": [
+          "nlohmann/byte_container_with_subtype.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-capacity",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-cbor",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-class_const_iterator",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-class_iterator",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/iterators/json_reverse_iterator.hpp",
+          "nlohmann/detail/iterators/primitive_iterator.hpp",
+          "nlohmann/detail/meta/detected.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-class_lexer",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/input/input_adapters.hpp",
+          "nlohmann/detail/input/lexer.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-class_parser",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/input/input_adapters.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-comparison",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/detail/value_t.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-concepts",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-constructor1",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-constructor2",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-convenience",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/output/output_adapters.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-conversions",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-custom-base-class",
+        "removals": [],
+        "insertions": [
+          "nlohmann/adl_serializer.hpp",
+          "nlohmann/detail/value_t.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-deserialization",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/input/input_adapters.hpp",
+          "nlohmann/detail/input/json_sax.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-diagnostics",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-disabled_exceptions",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-element_access1",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-element_access2",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-hash",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-inspection",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-items",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-iterators1",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-iterators2",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-json_patch",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-json_pointer",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-large_json",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-merge_patch",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-meta",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-modifiers",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-msgpack",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-no-mem-leak-on-adl-serialize",
+        "removals": [],
+        "insertions": [
+          "nlohmann/adl_serializer.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-noexcept",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/conversions/to_json.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-ordered_json",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-ordered_map",
+        "removals": [],
+        "insertions": [
+          "nlohmann/ordered_map.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-pointer_access",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-readme",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-reference_access",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-regression1",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/abi_macros.hpp",
+          "nlohmann/detail/conversions/from_json.hpp",
+          "nlohmann/detail/conversions/to_json.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-regression2",
+        "removals": [],
+        "insertions": [
+          "nlohmann/adl_serializer.hpp",
+          "nlohmann/detail/conversions/to_json.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-serialization",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-testsuites",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-to_chars",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/conversions/to_chars.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-type_traits",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/meta/type_traits.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-ubjson",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-udl",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-udt",
+        "removals": [],
+        "insertions": [
+          "nlohmann/adl_serializer.hpp",
+          "nlohmann/detail/conversions/from_json.hpp",
+          "nlohmann/detail/conversions/to_json.hpp",
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-udt_macro",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/macro_scope.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-unicode1",
+        "removals": [],
+        "insertions": [
+          "nlohmann/detail/string_escape.hpp",
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-unicode2",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-unicode3",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-unicode4",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-unicode5",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-user_defined_input",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      },
+      {
+        "unit": "unit-windows_h",
+        "removals": [],
+        "insertions": [],
+        "ok": false
+      },
+      {
+        "unit": "unit-wstring",
+        "removals": [],
+        "insertions": [
+          "nlohmann/json_fwd.hpp"
+        ],
+        "ok": true
+      }
+    ]
+  },
+  "heavyheader": {
+    "units": 63,
+    "candidates": 222,
+    "probed": 222,
+    "compiled_after_removal": 35,
+    "measured_improved": 1,
+    "scan_seconds": 55.0,
+    "probe_seconds": 302.9,
+    "improvements": [
+      {
+        "unit": "unit-windows_h",
+        "header": "windows.h",
+        "baseline_ms": 1620,
+        "patched_ms": 950,
+        "saved_percent": 41.4
+      }
+    ]
+  },
+  "note": "同一工程、同一任务（找出可删除的 include），两侧都用同一台机器判定「删了之后还能不能编译」。竞品侧只记录它**建议删什么**；HeavyHeader 侧记录建议 + 实测。两侧的口径差异在报告里写明，不做跨口径的数值比较。"
+}

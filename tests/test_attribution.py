@@ -514,3 +514,85 @@ def test_usage_reports_unknown_when_a_file_is_unreadable(tmp_path):
     source.write_text("int main() { return 0; }\n", encoding="utf-8")
     signal = analyse_usage(source, tmp_path / "does_not_exist.h")
     assert signal.verdict is UsageVerdict.UNKNOWN
+
+
+# --------------------------------------------------------------------------
+# identifier specificity: a hit is not automatically evidence of use
+# --------------------------------------------------------------------------
+
+
+def test_usage_ignores_identifiers_too_common_to_be_evidence(tmp_path):
+    """`config` declared by 40 headers is ambient noise, not a dependency.
+
+    The closure-level fix made the verdict correct about *which* files matter,
+    but it introduced the opposite failure: with a 100-header closure, the
+    source is almost guaranteed to share *some* identifier with it, and the
+    shared ones turned out to be stdlib vocabulary (`config`, `value`, `move`)
+    rather than dependencies.  On nlohmann/json that pushed 218 of 222
+    candidates to "in use" -- a heuristic that never says "maybe" is not
+    conservative, it is uninformative.
+    """
+    root = tmp_path
+    # 一个「聚合头」，拉进 30 个都声明 config/value/move 的头。
+    for index in range(30):
+        (root / f"noise{index}.h").write_text(
+            "#pragma once\n#define config 1\n#define value 2\n#define move 3\n",
+            encoding="utf-8",
+        )
+    aggregator = root / "agg.h"
+    aggregator.write_text(
+        "#pragma once\n" + "\n".join(f'#include "noise{i}.h"' for i in range(30)),
+        encoding="utf-8",
+    )
+    source = root / "main.cpp"
+    # 源码用到了这些通用词（作为变量名），但没有任何具体依赖。
+    source.write_text(
+        '#include "agg.h"\nint main() { int config = 1, value = 2, move = 3; '
+        "return config + value + move; }\n",
+        encoding="utf-8",
+    )
+
+    closure = [aggregator] + [root / f"noise{i}.h" for i in range(30)]
+    signal = analyse_usage(source, aggregator, closure=closure)
+
+    assert signal.verdict is UsageVerdict.UNKNOWN
+    assert set(signal.ambient_identifiers) >= {"config", "value", "move"}
+    assert not signal.shared_identifiers or set(signal.shared_identifiers) <= set(
+        signal.ambient_identifiers
+    )
+
+
+def test_usage_still_flags_a_rare_identifier_as_real_use(tmp_path):
+    """The other side of the same rule: a rare identifier is still evidence.
+
+    Without this test the specificity filter could be tuned into "never says
+    in use", which would be just as wrong as the opposite.
+    """
+    root = tmp_path
+    for index in range(30):
+        (root / f"noise{index}.h").write_text(
+            "#pragma once\n#define config 1\n", encoding="utf-8"
+        )
+    aggregator = root / "agg.h"
+    aggregator.write_text(
+        "#pragma once\n" + "\n".join(f'#include "noise{i}.h"' for i in range(30)),
+        encoding="utf-8",
+    )
+    special = root / "special.h"
+    special.write_text("#pragma once\n#define RARE_MACRO 1\n", encoding="utf-8")
+    source = root / "main.cpp"
+    # 同时用到通用词和稀有标识符：通用词必须被划为「不能当证据」。
+    source.write_text(
+        '#include "agg.h"\n#include "special.h"\n'
+        "int main() { int config = 1; return RARE_MACRO + config; }\n",
+        encoding="utf-8",
+    )
+
+    closure = [aggregator, special] + [root / f"noise{i}.h" for i in range(30)]
+    signal = analyse_usage(source, aggregator, closure=closure)
+
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert "RARE_MACRO" in signal.shared_identifiers
+    assert signal.provided_by == special
+    # 通用词仍然被单独标出来，不混进证据里。
+    assert "config" in signal.ambient_identifiers

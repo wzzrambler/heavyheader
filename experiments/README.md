@@ -121,6 +121,35 @@ PCH 真的生效了吗？`results/experiment-*.md` 的 4.1 节逐单元对照：
   但最终判定权在 `verify`：它真的注释掉那一行、重编、测时间。扫描排序的
   意义是少花构建试验，不是替代构建试验。
 
+## 三之五、同类竞品真实对比（`competitor.py`）
+
+评审问「与现有工具相比优势是否成立」。这个问题只有跑一个真竞品才算回答，
+所以 `competitor.py` 把 **clang-include-cleaner（LLVM 23.1.3，本机 LLVM 工具链自带）**
+拉到同一工程、同一任务上：找出可删除的 include。它是这个问题的业内标准做法，
+用真 clang AST 判定，和本工具的文本启发式正好构成对照。
+
+实测（`results/competitor-20261018.md`，64 个单元）：
+
+| | clang-include-cleaner | HeavyHeader（`scan --probe`） |
+|---|---|---|
+| 删除类建议 | **0 条** | 222 个候选全部探针实测 |
+| 补充类建议 | **101 条**（63 个单元） | 0 条（我们不假装做 AST 级分析） |
+| 删除后仍能编译 | —（不编译验证） | 35 个 |
+| 实测变快 | — | **1 个**：`unit-windows_h` 去掉 `windows.h`，1620 ms → 950 ms（−41.4%） |
+| 墙钟 | 90.3 s（纯分析） | 55 s 扫描 + 303 s 探针 |
+| 分析失败 | 1 个单元 | 0 |
+
+**两条必须一起读的诚实事实：**
+
+1. 竞品分析失败的那一个单元是 `unit-windows_h`——**正是我们实测到 −41.4% 的那个**。
+   所以「竞品 0 条删除建议」是在少了这一个单元的前提下成立的，
+   「竞品没发现它」里有一部分是「竞品没能看这个单元」，不全是「竞品不关心成本」。
+2. 竞品给出了 101 条我们给不出的补充建议（`nlohmann/json_fwd.hpp` 之类）。
+   它在正常工作，只是在回答另一个问题：它管**正确性**，我们管**成本**。
+
+结论因此是互补而非胜出：把竞品输出当成本输入、把我们的成本排序当竞品的优先级，
+是更现实的组合用法。单方面宣布「我们赢了」会同时歪曲两边。
+
 ## 四、复现
 
 ```bash
@@ -129,6 +158,7 @@ python experiments/fetch.py            # 下载 + 校验固定快照（约 400 M
 python experiments/run_experiment.py   # 主实验：约 9 分钟
 python experiments/control.py          # 对照实验：约 10 分钟（含 A/A 空对照）
 python experiments/rank_check.py       # 回顾性检验：一次扫描 + 零次构建试验
+python experiments/competitor.py       # 竞品对比：约 8 分钟（clang-include-cleaner）
 python experiments/run_experiment.py --render-only experiments/results/experiment-YYYYMMDD.json
                                        # 只重渲染 Markdown，不重跑构建
 ```
@@ -141,11 +171,18 @@ python experiments/run_experiment.py --render-only experiments/results/experimen
 | `results/experiment-*.md` | 人类可读报告（由上者渲染，`--render-only` 可重生成） |
 | `results/control-*.json` / `.md` | 对照实验的 A/A 噪声底、两臂逐次试验记录与判读 |
 | `results/rank-check-*.json` / `.md` | 回顾性检验：新排序 vs 已实测的 17 个结局 |
+| `results/competitor-*.json` / `.md` | 竞品对比：clang-include-cleaner vs 本工具，同工程同任务 |
 | `_work/` | 拉取的源码、语料、对象文件（已 gitignore，可随时重建） |
 
 ## 五、失败案例与局限（如实写）
 
-1. **候选排序曾全面失败**（第三节）：工具排在最前的 5 个候选全部编译失败。
+1. **探针阶段曾给出假编译失败**（已修，`b1e8902`）：它原来用 `ScanOptions` 级的
+   参数重建单元，把 `compile_commands.json` 里每个单元自己的 `-I` 全丢了，
+   编译器找不到项目头文件，于是每个候选都报「移除后编译失败」——结论看起来是
+   「这里没有可删的」，实际是「我们问错了问题」。这个 bug 之所以能活过测试套队，
+   是因为兜底路径足够合理：不崩，只是答错。现在 `TranslationUnit.compile_options`
+   记录每个单元真实的编译参数。
+2. **候选排序曾全面失败**（第三节）：工具排在最前的 5 个候选全部编译失败。
    已修（判定覆盖独占闭包 + 排序改为「可采纳性优先」），修复由
    `rank_check.py` 的零次试验检验背书；但**修复只改善排序，不改变一个事实**：
    「这行能不能删」的最终判定只能来自真的编译一次。

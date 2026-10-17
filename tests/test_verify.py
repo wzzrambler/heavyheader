@@ -329,3 +329,73 @@ def test_probe_uses_the_unit_own_options_not_the_shared_ones(tmp_path, captured)
     # 每一侧都必须带着单元自己的 -I，而不是调用方那份空的。
     for _path, options in captured:
         assert tmp_path / "include" in options.include_dirs
+
+
+# --------------------------------------------------------------------------
+# UTF-8 BOM: the first include of a Windows-edited file
+# --------------------------------------------------------------------------
+
+_BOM_SOURCE = "\ufeff" + '#include "heavy.h"\nint main() { return 0; }\n'
+
+
+def test_include_on_the_first_line_of_a_bom_file_is_found():
+    """BOM 不是 \\s：``^\\s*#\\s*include`` 匹配不到带 BOM 的首行，
+    于是 Windows 编辑器保存的源码里第一个 include 永远「找不到该注释哪一行」——
+    结论从「建议删除」悄悄降级成「需人工判断」，而文件明明就在那儿。"""
+    from heavyheader.verify import _comment_out, find_include_lines
+
+    header = Path("/proj/include/heavy.h")
+    assert find_include_lines(_BOM_SOURCE, header) == [1]
+
+    patched = _comment_out(_BOM_SOURCE, 1)
+    # BOM 必须留在文件最前面，注释标记插在它后面。
+    assert patched.startswith("\ufeff// [heavyheader] #include")
+    assert patched.count("#include") == 1  # 行数没变，只是被注释掉
+
+
+def test_hint_line_also_survives_a_bom():
+    """编译器上报的行号同样要过 BOM 这一关——否则带行号的工具链
+    （未来的 /showIncludes 扩展）会在首行上静默失效。"""
+    from heavyheader.verify import locate_include_line
+
+    location = locate_include_line(_BOM_SOURCE, Path("/proj/include/heavy.h"), 1)
+
+    assert location.line == 1
+    assert location.status == ""
+
+
+def test_verify_on_a_bom_project_does_not_report_not_found(tmp_path, captured):
+    """端到端：带 BOM 的工程不能被报成「定位不到」。"""
+    (tmp_path / "include").mkdir()
+    (tmp_path / "src").mkdir()
+    header = tmp_path / "include" / "heavy.h"
+    header.write_text("#pragma once\nstruct Heavy { int x; };\n", encoding="utf-8")
+    source = tmp_path / "src" / "app.cpp"
+    source.write_text(
+        "\ufeff" + '#include "heavy.h"\nint main() { return 0; }\n', encoding="utf-8"
+    )
+
+    tu = TranslationUnit(source=source, dependencies=[header])
+    scan = ProjectScan(
+        root=tmp_path,
+        compiler="g++",
+        compiler_family=CompilerFamily.GCC,
+        standard="c++17",
+        tus=[tu],
+        header_stats={header: _header_stats(header, 2, 1)},
+    )
+    scan.candidates = [
+        RemovalCandidate(
+            tu=source,
+            header=header,
+            line=None,
+            kind=HeaderKind.PROJECT,
+            exclusive_headers=[header],
+            estimated_lines_saved=2,
+            estimated_percent=100.0,
+        )
+    ]
+
+    results = verify_candidates(scan, _RecordingDriver(), DriverOptions(standard="c++17"))
+
+    assert results[0].status != "not-found"

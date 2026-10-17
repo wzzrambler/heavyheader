@@ -31,6 +31,16 @@
 - `drivers/base.py`：`DriverOptions` 新增 `output_path`，GCC 走 `-o`、
   MSVC 走 `/Fo`，并剥离与「产出对象文件」冲突的 `-fsyntax-only` / `/Zs`
   与 `-MD`/`-MF` 系依赖文件参数（后者会把 `.d` 写到调用方工作目录）。
+- `scanner.py` / `drivers/base.py`：**compile_commands 模式下源文件被传了
+  两次**（数据库自带的 `-c foo.cpp` 留在 flags 里，驱动又追加一次），GCC
+  静默编译两遍并打出两条 `-ftime-report` TOTAL，读取方只取第一条——
+  扫描/探针/基线的计时与 include 树全部建立在错误命令上。现已在构造任务
+  时剥离源文件 token，并加第二道防线；GCC 计时损坏（TOTAL 缺失）时回退
+  驱动实测墙钟并标明口径，不再让 0.0 冒充「节省 100%」。
+- `verify.py`：带 UTF-8 BOM 的源码（Windows 编辑器默认产出）首行
+  `#include` 定位不到——BOM 不是 `\s`，正则匹配不到，于是一个真实存在的
+  include 被判「找不到该注释哪一行」，结论从「建议删除」降级为
+  「需人工判断」。定位与打补丁两条路径均已处理，补丁保留 BOM。
 
 ## [0.1.0] - 2026-10-17
 

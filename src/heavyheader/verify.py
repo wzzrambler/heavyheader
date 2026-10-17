@@ -143,6 +143,23 @@ _INCLUDE_RE = re.compile(
 )
 
 
+#: UTF-8 BOM.  Windows editors（VS、Notepad、vcpkg 抓下来的一批文件）默认
+#: 会给源码加它。它不是 ``\s``，所以 ``^\s*#\s*include`` 匹配不到带 BOM 的
+#: 首行——一个真实工程的第一个 include 就这样被判成「找不到该注释哪一行」，
+#: 结论从「建议删除」悄悄变成「需人工判断」。扫描侧不受影响：编译器自己
+#: 认识 BOM；受影响的只有我们自己做文本匹配的这一层。
+_BOM = "\ufeff"
+
+
+def _strip_bom(text: str) -> str:
+    """Remove a leading BOM without changing the line count.
+
+    行号是定位 include 的唯一坐标，所以只能去掉 BOM 字符本身——
+    把首行删掉会让后面所有行号错一位。
+    """
+    return text[len(_BOM) :] if text.startswith(_BOM) else text
+
+
 def _strip_comments(source: str) -> str:
     """Blank out comments while preserving line structure.
 
@@ -153,7 +170,7 @@ def _strip_comments(source: str) -> str:
     """
     out: list[str] = []
     in_block = False
-    for line in source.splitlines():
+    for line in _strip_bom(source).splitlines():
         result: list[str] = []
         index = 0
         while index < len(line):
@@ -264,7 +281,8 @@ def locate_include_line(
     if hint_line is not None:
         lines = source_text.splitlines()
         if 1 <= hint_line <= len(lines):
-            match = _INCLUDE_RE.match(lines[hint_line - 1])
+            # 带 BOM 的文件首行以 \ufeff 开头，它不是 \s，正则匹配不到。
+            match = _INCLUDE_RE.match(_strip_bom(lines[hint_line - 1]))
             if match and Path(match.group("target")).name == header.name:
                 return IncludeLocation(hint_line, "", 1)
 
@@ -281,8 +299,14 @@ def _comment_out(source_text: str, line_number: int) -> str:
     index = line_number - 1
     if not 0 <= index < len(lines):
         return source_text
-    indent = len(lines[index]) - len(lines[index].lstrip())
-    lines[index] = " " * indent + "// [heavyheader] " + lines[index].lstrip()
+    target = lines[index]
+    # BOM 待在文件最前面：注释标记插到它后面，否则补丁文件会丢掉 BOM，
+    # 而「实验必须可逆」连编码头都不该动。
+    bom = ""
+    if target.startswith(_BOM):
+        bom, target = _BOM, target[len(_BOM) :]
+    indent = len(target) - len(target.lstrip())
+    lines[index] = bom + " " * indent + "// [heavyheader] " + target.lstrip()
     return "\n".join(lines) + "\n"
 
 

@@ -1,0 +1,1094 @@
+{
+  "generated": "2026-10-17 22:03:25",
+  "environment": {
+    "project": "nlohmann/json",
+    "tag": "v3.11.3",
+    "archive_sha256": "0d8ef5af7f9794e3263480193c491549b2ba6cc74bb018906202ada498a79406",
+    "test_data_commit": "a1375cea09d27cc1c4cadb8d00470375b421ac37",
+    "compiler": "g++ (x86_64-win32-seh-rev1, Built by MinGW-Builds project) 16.2.0",
+    "flags": [
+      "-std=c++11",
+      "-O0",
+      "-DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
+      "-DJSON_TEST_KEEP_MACROS",
+      "-DJSON_TEST_USING_MULTIPLE_HEADERS=0"
+    ],
+    "include_dirs": [
+      "include",
+      "tests",
+      "tests/thirdparty/doctest",
+      "tests/src"
+    ],
+    "jobs": 8,
+    "runs": 5,
+    "units": 63,
+    "pch_incompatible_units": {
+      "unit-allocator": "JSON_TESTS_PRIVATE",
+      "unit-assert_macro": "JSON_ASSERT",
+      "unit-bjdata": "JSON_TESTS_PRIVATE",
+      "unit-class_const_iterator": "JSON_TESTS_PRIVATE",
+      "unit-class_iterator": "JSON_TESTS_PRIVATE",
+      "unit-class_lexer": "JSON_TESTS_PRIVATE",
+      "unit-class_parser": "JSON_TESTS_PRIVATE",
+      "unit-comparison": "JSON_TESTS_PRIVATE",
+      "unit-constructor1": "JSON_TESTS_PRIVATE",
+      "unit-convenience": "JSON_TESTS_PRIVATE",
+      "unit-conversions": "JSON_TESTS_PRIVATE",
+      "unit-diagnostics": "JSON_DIAGNOSTICS",
+      "unit-iterators1": "JSON_TESTS_PRIVATE",
+      "unit-json_pointer": "JSON_TESTS_PRIVATE",
+      "unit-regression1": "JSON_TESTS_PRIVATE",
+      "unit-regression2": "JSON_TESTS_PRIVATE"
+    },
+    "machine": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel / Windows 11 / Python 3.13.14",
+    "test_data": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json_test_data"
+  },
+  "estimate": {
+    "scan_seconds": 55.811,
+    "translation_units": 63,
+    "failed_translation_units": 0,
+    "attributed_lines": 10872819,
+    "dependency_edges": 41408,
+    "candidate_count": 147,
+    "top_project_headers": [
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\thirdparty\\doctest\\doctest.h",
+        "reach": 63,
+        "line_count": 7106,
+        "attributed_lines": 447678
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "reach": 63,
+        "line_count": 5258,
+        "attributed_lines": 331254
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+        "reach": 63,
+        "line_count": 3009,
+        "attributed_lines": 189567
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\thirdparty\\hedley\\hedley.hpp",
+        "reach": 63,
+        "line_count": 2045,
+        "attributed_lines": 128835
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\output\\binary_writer.hpp",
+        "reach": 63,
+        "line_count": 1838,
+        "attributed_lines": 115794
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\lexer.hpp",
+        "reach": 63,
+        "line_count": 1633,
+        "attributed_lines": 102879
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\to_chars.hpp",
+        "reach": 63,
+        "line_count": 1118,
+        "attributed_lines": 70434
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\json_pointer.hpp",
+        "reach": 63,
+        "line_count": 988,
+        "attributed_lines": 62244
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\output\\serializer.hpp",
+        "reach": 63,
+        "line_count": 988,
+        "attributed_lines": 62244
+      },
+      {
+        "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\meta\\type_traits.hpp",
+        "reach": 63,
+        "line_count": 795,
+        "attributed_lines": 50085
+      }
+    ],
+    "pch": {
+      "headers": [
+        "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+        "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\output\\serializer.hpp",
+        "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp"
+      ],
+      "closure_lines": 159995,
+      "eligible_tus": 63,
+      "total_tus": 63,
+      "coverage_percent": 100.0,
+      "net_lines_saved": 9919690,
+      "percent_of_project": 91.23,
+      "is_worthwhile": true,
+      "caveats": [
+        "基于行数代理，不是秒数。模板重型头文件的实际成本会被低估。",
+        "上限估计：真实 PCH 必须是每个使用它的 TU 的第一个 include，且各 TU 间字节一致。include 顺序不一致的项目实际收益会更低。",
+        "未计入 PCH 失效：改动 PCH 中任何一个头文件都会让所有 TU 的 PCH 作废，因此 PCH 只应放稳定的头文件（第三方库、极少改动的内部基础库）。",
+        "本工具不生成 PCH，只做估算。"
+      ]
+    }
+  },
+  "arms": {
+    "baseline": {
+      "build": {
+        "wall_median": 43.17,
+        "wall_min": 42.517,
+        "wall_max": 45.383,
+        "cpu_median": 335.6,
+        "compile_cpu_median": 292.2,
+        "pch_seconds": 0.0,
+        "ok": true,
+        "runs": [
+          42.517,
+          42.827,
+          43.17,
+          45.383,
+          44.384
+        ],
+        "pch_excluded": [],
+        "pch_diagnostics": [],
+        "per_unit_min": {
+          "__main__": 3.572,
+          "unit-algorithms": 3.362,
+          "unit-allocator": 3.167,
+          "unit-alt-string": 3.786,
+          "unit-assert_macro": 2.099,
+          "unit-binary_formats": 3.42,
+          "unit-bjdata": 11.561,
+          "unit-bson": 7.292,
+          "unit-byte_container_with_subtype": 1.84,
+          "unit-capacity": 2.435,
+          "unit-cbor": 9.519,
+          "unit-class_const_iterator": 2.508,
+          "unit-class_iterator": 2.534,
+          "unit-class_lexer": 1.754,
+          "unit-class_parser": 7.387,
+          "unit-comparison": 2.834,
+          "unit-concepts": 2.019,
+          "unit-constructor1": 7.279,
+          "unit-constructor2": 2.555,
+          "unit-convenience": 1.977,
+          "unit-conversions": 12.646,
+          "unit-custom-base-class": 4.363,
+          "unit-deserialization": 17.116,
+          "unit-diagnostics": 3.322,
+          "unit-disabled_exceptions": 2.619,
+          "unit-element_access1": 3.273,
+          "unit-element_access2": 9.242,
+          "unit-hash": 3.058,
+          "unit-inspection": 3.823,
+          "unit-items": 2.938,
+          "unit-iterators1": 3.442,
+          "unit-iterators2": 3.201,
+          "unit-json_patch": 4.784,
+          "unit-json_pointer": 5.305,
+          "unit-large_json": 2.325,
+          "unit-merge_patch": 2.904,
+          "unit-meta": 2.885,
+          "unit-modifiers": 4.426,
+          "unit-msgpack": 7.883,
+          "unit-no-mem-leak-on-adl-serialize": 2.021,
+          "unit-noexcept": 1.545,
+          "unit-ordered_json": 3.684,
+          "unit-ordered_map": 1.98,
+          "unit-pointer_access": 3.298,
+          "unit-readme": 5.694,
+          "unit-reference_access": 3.116,
+          "unit-regression1": 13.063,
+          "unit-regression2": 12.464,
+          "unit-serialization": 3.005,
+          "unit-testsuites": 3.739,
+          "unit-to_chars": 2.044,
+          "unit-type_traits": 1.546,
+          "unit-ubjson": 8.648,
+          "unit-udl": 2.671,
+          "unit-udt": 6.688,
+          "unit-udt_macro": 4.757,
+          "unit-unicode1": 3.205,
+          "unit-unicode2": 2.693,
+          "unit-unicode3": 2.661,
+          "unit-unicode4": 2.695,
+          "unit-unicode5": 2.683,
+          "unit-user_defined_input": 2.915,
+          "unit-windows_h": 2.575,
+          "unit-wstring": 2.515
+        }
+      },
+      "tests": {
+        "ok": true,
+        "passed": 4264414,
+        "failed": 2,
+        "suites": 63,
+        "crashed": [],
+        "wall_seconds": 6.44,
+        "detail": {
+          "unit-algorithms": [
+            45,
+            0,
+            0
+          ],
+          "unit-allocator": [
+            17,
+            0,
+            0
+          ],
+          "unit-alt-string": [
+            30,
+            0,
+            0
+          ],
+          "unit-assert_macro": [
+            3,
+            0,
+            0
+          ],
+          "unit-binary_formats": [
+            1,
+            0,
+            0
+          ],
+          "unit-bjdata": [
+            691983,
+            0,
+            0
+          ],
+          "unit-bson": [
+            472,
+            0,
+            0
+          ],
+          "unit-byte_container_with_subtype": [
+            28,
+            0,
+            0
+          ],
+          "unit-capacity": [
+            120,
+            0,
+            0
+          ],
+          "unit-cbor": [
+            1640908,
+            0,
+            0
+          ],
+          "unit-class_const_iterator": [
+            78,
+            0,
+            0
+          ],
+          "unit-class_iterator": [
+            90,
+            0,
+            0
+          ],
+          "unit-class_lexer": [
+            213,
+            0,
+            0
+          ],
+          "unit-class_parser": [
+            9093,
+            0,
+            0
+          ],
+          "unit-comparison": [
+            4054,
+            0,
+            0
+          ],
+          "unit-concepts": [
+            33,
+            0,
+            0
+          ],
+          "unit-constructor1": [
+            303,
+            0,
+            0
+          ],
+          "unit-constructor2": [
+            21,
+            0,
+            0
+          ],
+          "unit-convenience": [
+            55,
+            0,
+            0
+          ],
+          "unit-conversions": [
+            236,
+            0,
+            0
+          ],
+          "unit-custom-base-class": [
+            99,
+            0,
+            0
+          ],
+          "unit-deserialization": [
+            492,
+            0,
+            0
+          ],
+          "unit-diagnostics": [
+            15,
+            0,
+            0
+          ],
+          "unit-disabled_exceptions": [
+            2,
+            0,
+            0
+          ],
+          "unit-element_access1": [
+            217,
+            0,
+            0
+          ],
+          "unit-element_access2": [
+            1048,
+            0,
+            0
+          ],
+          "unit-hash": [
+            2,
+            0,
+            0
+          ],
+          "unit-inspection": [
+            175,
+            0,
+            0
+          ],
+          "unit-items": [
+            222,
+            0,
+            0
+          ],
+          "unit-iterators1": [
+            662,
+            0,
+            0
+          ],
+          "unit-iterators2": [
+            1344,
+            0,
+            0
+          ],
+          "unit-json_patch": [
+            211,
+            0,
+            0
+          ],
+          "unit-json_pointer": [
+            279,
+            0,
+            0
+          ],
+          "unit-large_json": [
+            1,
+            0,
+            0
+          ],
+          "unit-merge_patch": [
+            17,
+            0,
+            0
+          ],
+          "unit-meta": [
+            8,
+            0,
+            0
+          ],
+          "unit-modifiers": [
+            211,
+            0,
+            0
+          ],
+          "unit-msgpack": [
+            1216401,
+            0,
+            0
+          ],
+          "unit-no-mem-leak-on-adl-serialize": [
+            0,
+            0,
+            0
+          ],
+          "unit-noexcept": [
+            6,
+            0,
+            0
+          ],
+          "unit-ordered_json": [
+            18,
+            0,
+            0
+          ],
+          "unit-ordered_map": [
+            123,
+            0,
+            0
+          ],
+          "unit-pointer_access": [
+            223,
+            0,
+            0
+          ],
+          "unit-readme": [
+            0,
+            0,
+            0
+          ],
+          "unit-reference_access": [
+            78,
+            0,
+            0
+          ],
+          "unit-regression1": [
+            539,
+            1,
+            1
+          ],
+          "unit-regression2": [
+            57,
+            0,
+            0
+          ],
+          "unit-serialization": [
+            76,
+            0,
+            0
+          ],
+          "unit-testsuites": [
+            1616,
+            1,
+            1
+          ],
+          "unit-to_chars": [
+            433,
+            0,
+            0
+          ],
+          "unit-type_traits": [
+            18,
+            0,
+            0
+          ],
+          "unit-ubjson": [
+            691533,
+            0,
+            0
+          ],
+          "unit-udl": [
+            10,
+            0,
+            0
+          ],
+          "unit-udt": [
+            64,
+            0,
+            0
+          ],
+          "unit-udt_macro": [
+            47,
+            0,
+            0
+          ],
+          "unit-unicode1": [
+            352,
+            0,
+            0
+          ],
+          "unit-unicode2": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode3": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode4": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode5": [
+            1,
+            0,
+            0
+          ],
+          "unit-user_defined_input": [
+            21,
+            0,
+            0
+          ],
+          "unit-windows_h": [
+            1,
+            0,
+            0
+          ],
+          "unit-wstring": [
+            6,
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "pch": {
+      "build": {
+        "wall_median": 40.12,
+        "wall_min": 39.633,
+        "wall_max": 41.178,
+        "cpu_median": 304.2,
+        "compile_cpu_median": 259.0,
+        "pch_seconds": 1.821,
+        "ok": true,
+        "runs": [
+          40.531,
+          40.12,
+          39.832,
+          41.178,
+          39.633
+        ],
+        "pch_excluded": [
+          "unit-allocator",
+          "unit-assert_macro",
+          "unit-bjdata",
+          "unit-class_const_iterator",
+          "unit-class_iterator",
+          "unit-class_lexer",
+          "unit-class_parser",
+          "unit-comparison",
+          "unit-constructor1",
+          "unit-convenience",
+          "unit-conversions",
+          "unit-diagnostics",
+          "unit-iterators1",
+          "unit-json_pointer",
+          "unit-regression1",
+          "unit-regression2"
+        ],
+        "pch_diagnostics": [
+          "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\build\\pch\\hh_prefix.h:6:9: warning: 'DOCTEST_CONFIG_SUPER_FAST_ASSERTS' redefined",
+          "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\build\\pch\\hh_prefix.h:7:9: warning: 'JSON_TEST_KEEP_MACROS' redefined",
+          "unit-alt-string: from C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\build\\pch\\hh_prefix.h:10:",
+          "unit-bson: from C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\build\\pch\\hh_prefix.h:9:",
+          "unit-bson: In file included from C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\build\\pch\\hh_prefix.h:10:"
+        ],
+        "per_unit_min": {
+          "__main__": 3.531,
+          "unit-algorithms": 2.6,
+          "unit-allocator": 3.195,
+          "unit-alt-string": 3.055,
+          "unit-assert_macro": 2.157,
+          "unit-binary_formats": 2.687,
+          "unit-bjdata": 11.77,
+          "unit-bson": 6.528,
+          "unit-byte_container_with_subtype": 1.003,
+          "unit-capacity": 1.708,
+          "unit-cbor": 8.892,
+          "unit-class_const_iterator": 2.574,
+          "unit-class_iterator": 2.524,
+          "unit-class_lexer": 1.76,
+          "unit-class_parser": 7.585,
+          "unit-comparison": 2.988,
+          "unit-concepts": 1.328,
+          "unit-constructor1": 7.493,
+          "unit-constructor2": 1.967,
+          "unit-convenience": 1.93,
+          "unit-conversions": 12.673,
+          "unit-custom-base-class": 3.546,
+          "unit-deserialization": 15.858,
+          "unit-diagnostics": 3.336,
+          "unit-disabled_exceptions": 1.932,
+          "unit-element_access1": 2.613,
+          "unit-element_access2": 8.165,
+          "unit-hash": 2.41,
+          "unit-inspection": 3.19,
+          "unit-items": 2.374,
+          "unit-iterators1": 3.546,
+          "unit-iterators2": 2.537,
+          "unit-json_patch": 3.871,
+          "unit-json_pointer": 5.295,
+          "unit-large_json": 1.622,
+          "unit-merge_patch": 2.112,
+          "unit-meta": 2.09,
+          "unit-modifiers": 3.623,
+          "unit-msgpack": 7.353,
+          "unit-no-mem-leak-on-adl-serialize": 1.411,
+          "unit-noexcept": 0.887,
+          "unit-ordered_json": 3.051,
+          "unit-ordered_map": 1.287,
+          "unit-pointer_access": 2.511,
+          "unit-readme": 4.95,
+          "unit-reference_access": 2.384,
+          "unit-regression1": 13.018,
+          "unit-regression2": 12.288,
+          "unit-serialization": 2.304,
+          "unit-testsuites": 3.035,
+          "unit-to_chars": 1.344,
+          "unit-type_traits": 0.842,
+          "unit-ubjson": 7.861,
+          "unit-udl": 2.064,
+          "unit-udt": 6.003,
+          "unit-udt_macro": 3.775,
+          "unit-unicode1": 2.632,
+          "unit-unicode2": 2.112,
+          "unit-unicode3": 2.155,
+          "unit-unicode4": 2.025,
+          "unit-unicode5": 2.035,
+          "unit-user_defined_input": 2.164,
+          "unit-windows_h": 1.898,
+          "unit-wstring": 1.953
+        }
+      },
+      "tests": {
+        "ok": true,
+        "passed": 4264414,
+        "failed": 2,
+        "suites": 63,
+        "crashed": [],
+        "wall_seconds": 6.63,
+        "detail": {
+          "unit-algorithms": [
+            45,
+            0,
+            0
+          ],
+          "unit-allocator": [
+            17,
+            0,
+            0
+          ],
+          "unit-alt-string": [
+            30,
+            0,
+            0
+          ],
+          "unit-assert_macro": [
+            3,
+            0,
+            0
+          ],
+          "unit-binary_formats": [
+            1,
+            0,
+            0
+          ],
+          "unit-bjdata": [
+            691983,
+            0,
+            0
+          ],
+          "unit-bson": [
+            472,
+            0,
+            0
+          ],
+          "unit-byte_container_with_subtype": [
+            28,
+            0,
+            0
+          ],
+          "unit-capacity": [
+            120,
+            0,
+            0
+          ],
+          "unit-cbor": [
+            1640908,
+            0,
+            0
+          ],
+          "unit-class_const_iterator": [
+            78,
+            0,
+            0
+          ],
+          "unit-class_iterator": [
+            90,
+            0,
+            0
+          ],
+          "unit-class_lexer": [
+            213,
+            0,
+            0
+          ],
+          "unit-class_parser": [
+            9093,
+            0,
+            0
+          ],
+          "unit-comparison": [
+            4054,
+            0,
+            0
+          ],
+          "unit-concepts": [
+            33,
+            0,
+            0
+          ],
+          "unit-constructor1": [
+            303,
+            0,
+            0
+          ],
+          "unit-constructor2": [
+            21,
+            0,
+            0
+          ],
+          "unit-convenience": [
+            55,
+            0,
+            0
+          ],
+          "unit-conversions": [
+            236,
+            0,
+            0
+          ],
+          "unit-custom-base-class": [
+            99,
+            0,
+            0
+          ],
+          "unit-deserialization": [
+            492,
+            0,
+            0
+          ],
+          "unit-diagnostics": [
+            15,
+            0,
+            0
+          ],
+          "unit-disabled_exceptions": [
+            2,
+            0,
+            0
+          ],
+          "unit-element_access1": [
+            217,
+            0,
+            0
+          ],
+          "unit-element_access2": [
+            1048,
+            0,
+            0
+          ],
+          "unit-hash": [
+            2,
+            0,
+            0
+          ],
+          "unit-inspection": [
+            175,
+            0,
+            0
+          ],
+          "unit-items": [
+            222,
+            0,
+            0
+          ],
+          "unit-iterators1": [
+            662,
+            0,
+            0
+          ],
+          "unit-iterators2": [
+            1344,
+            0,
+            0
+          ],
+          "unit-json_patch": [
+            211,
+            0,
+            0
+          ],
+          "unit-json_pointer": [
+            279,
+            0,
+            0
+          ],
+          "unit-large_json": [
+            1,
+            0,
+            0
+          ],
+          "unit-merge_patch": [
+            17,
+            0,
+            0
+          ],
+          "unit-meta": [
+            8,
+            0,
+            0
+          ],
+          "unit-modifiers": [
+            211,
+            0,
+            0
+          ],
+          "unit-msgpack": [
+            1216401,
+            0,
+            0
+          ],
+          "unit-no-mem-leak-on-adl-serialize": [
+            0,
+            0,
+            0
+          ],
+          "unit-noexcept": [
+            6,
+            0,
+            0
+          ],
+          "unit-ordered_json": [
+            18,
+            0,
+            0
+          ],
+          "unit-ordered_map": [
+            123,
+            0,
+            0
+          ],
+          "unit-pointer_access": [
+            223,
+            0,
+            0
+          ],
+          "unit-readme": [
+            0,
+            0,
+            0
+          ],
+          "unit-reference_access": [
+            78,
+            0,
+            0
+          ],
+          "unit-regression1": [
+            539,
+            1,
+            1
+          ],
+          "unit-regression2": [
+            57,
+            0,
+            0
+          ],
+          "unit-serialization": [
+            76,
+            0,
+            0
+          ],
+          "unit-testsuites": [
+            1616,
+            1,
+            1
+          ],
+          "unit-to_chars": [
+            433,
+            0,
+            0
+          ],
+          "unit-type_traits": [
+            18,
+            0,
+            0
+          ],
+          "unit-ubjson": [
+            691533,
+            0,
+            0
+          ],
+          "unit-udl": [
+            10,
+            0,
+            0
+          ],
+          "unit-udt": [
+            64,
+            0,
+            0
+          ],
+          "unit-udt_macro": [
+            47,
+            0,
+            0
+          ],
+          "unit-unicode1": [
+            352,
+            0,
+            0
+          ],
+          "unit-unicode2": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode3": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode4": [
+            1,
+            0,
+            0
+          ],
+          "unit-unicode5": [
+            1,
+            0,
+            0
+          ],
+          "unit-user_defined_input": [
+            21,
+            0,
+            0
+          ],
+          "unit-windows_h": [
+            1,
+            0,
+            0
+          ],
+          "unit-wstring": [
+            6,
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "analysis": {
+    "wall": {
+      "saved": 3.05,
+      "percent": 7.07,
+      "meaningful": true
+    },
+    "cpu": {
+      "saved": 31.4,
+      "percent": 9.36,
+      "meaningful": true
+    },
+    "compile_cpu": {
+      "saved": 33.2,
+      "percent": 11.36,
+      "meaningful": true
+    },
+    "predicted_header_share_percent": 91.23,
+    "predicted_ceiling_percent": 91.23,
+    "measured_wall_percent": 7.07,
+    "measured_cpu_percent": 9.36,
+    "covered_units": 47,
+    "excluded_units": 16,
+    "covered_fraction": 0.746,
+    "pch_speedup_top": [
+      {
+        "unit": "unit-byte_container_with_subtype",
+        "covered": true,
+        "baseline": 1.84,
+        "pch": 1.003,
+        "saved_percent": 45.52
+      },
+      {
+        "unit": "unit-type_traits",
+        "covered": true,
+        "baseline": 1.546,
+        "pch": 0.842,
+        "saved_percent": 45.51
+      },
+      {
+        "unit": "unit-noexcept",
+        "covered": true,
+        "baseline": 1.545,
+        "pch": 0.887,
+        "saved_percent": 42.56
+      },
+      {
+        "unit": "unit-ordered_map",
+        "covered": true,
+        "baseline": 1.98,
+        "pch": 1.287,
+        "saved_percent": 35.0
+      },
+      {
+        "unit": "unit-to_chars",
+        "covered": true,
+        "baseline": 2.044,
+        "pch": 1.344,
+        "saved_percent": 34.25
+      },
+      {
+        "unit": "unit-concepts",
+        "covered": true,
+        "baseline": 2.019,
+        "pch": 1.328,
+        "saved_percent": 34.2
+      }
+    ],
+    "excluded_unchanged": [
+      {
+        "unit": "unit-json_pointer",
+        "covered": false,
+        "baseline": 5.305,
+        "pch": 5.295,
+        "saved_percent": 0.19
+      },
+      {
+        "unit": "unit-conversions",
+        "covered": false,
+        "baseline": 12.646,
+        "pch": 12.673,
+        "saved_percent": -0.21
+      },
+      {
+        "unit": "unit-class_lexer",
+        "covered": false,
+        "baseline": 1.754,
+        "pch": 1.76,
+        "saved_percent": -0.33
+      },
+      {
+        "unit": "unit-regression1",
+        "covered": false,
+        "baseline": 13.063,
+        "pch": 13.018,
+        "saved_percent": 0.34
+      }
+    ],
+    "covered_median_saved": 21.57,
+    "excluded_median_saved": -0.66,
+    "implied_header_share_percent": 13.8,
+    "gap_explanation": "估算给出的是「头文件解析量中可被 PCH 消掉的比例」，实测给出的是「完整构建墙上时间里省掉的比例」。两者不是同一个量：估算按 63/63 个单元都可用 PCH 计算，实际只有 47/63 个可用（另外 16 个改了配置宏）；而头文件解析本身也只是编译时间的一部分，模板实例化、代码生成、链接与进程启动都不随头文件变化。",
+    "gate": {
+      "passed": true,
+      "suites_compared": 63,
+      "mismatches": [],
+      "baseline_assertions": 4264414,
+      "pch_assertions": 4264414
+    }
+  }
+}

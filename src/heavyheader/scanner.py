@@ -98,6 +98,25 @@ class ScanOptions:
     pch_top: int = 5
     #: Look for includes that could become forward declarations.
     forward_decl: bool = False
+    #: Run the probe/measure stage inside the scan.
+    #:
+    #: This is the framework change the controlled experiment forced.  ``scan``
+    #: used to stop at a *ranked estimate* and leave the truth to a separate
+    #: ``verify`` command that users had to know to run -- so the tool's
+    #: headline output was a guess, and on nlohmann/json five of those guesses
+    #: failed to compile.  With ``probe=True`` the candidate question is
+    #: answered by compiling: probe every candidate (one compile each, in
+    #: parallel), then fully measure only the survivors.  Estimates stay in
+    #: the report as estimates; anything that matters is measured.
+    probe: bool = False
+    #: How many candidates to probe.  ``0`` = all of them.
+    probe_top: int = 0
+    #: Wall-clock budget for the probe/measure stage, seconds.  ``0`` = unlimited.
+    probe_budget: float = 0.0
+    #: Parallel compiles during the probe stage.
+    probe_jobs: int = 4
+    #: Compiles per side during full measurement (probes always use 1).
+    probe_runs: int = 3
 
     def driver_options(self) -> DriverOptions:
         return DriverOptions(
@@ -373,12 +392,13 @@ def scan_project(
         for future in as_completed(futures):
             task = futures[future]
             try:
-                tus.append(future.result())
+                tu = future.result()
             except CompilationError as exc:
                 failures.append(str(exc))
                 tus.append(
                     TranslationUnit(source=task.source, error=str(exc))
                 )
+                continue
             except Exception as exc:  # noqa: BLE001 - 见下方说明
                 # 以前只接 CompilationError。驱动抛出的其余异常（失效的 cwd
                 # 是 NotADirectoryError、权限问题、畸形 argv…）会穿透线程池，
@@ -388,6 +408,13 @@ def scan_project(
                 message = f"{task.source}: {type(exc).__name__}: {exc}"
                 failures.append(message)
                 tus.append(TranslationUnit(source=task.source, error=message))
+                continue
+            # 把这个单元真实的编译参数挂在结果上。探针/测量阶段要靠它复现
+            # 同一次编译——compile_commands.json 驱动的项目里，每个单元的
+            # -I 都不一样，用共享的 ScanOptions 重建会丢参数，然后给出
+            # 「移除后编译失败」的假结论。
+            tu.compile_options = task.options
+            tus.append(tu)
 
     scan = ProjectScan(
         root=root,
@@ -434,6 +461,24 @@ def scan_project(
         scan.pch = estimate_pch(scan, top_k=options.pch_top)
     if options.forward_decl:
         scan.forward_candidates = find_forward_declaration_candidates(scan)
+
+    # 探针/测量阶段：把「这一行能不能删」从估算变成实测。
+    # 放在候选生成之后、报表之前——报表里「实测」一栏要有东西可写。
+    if options.probe:
+        from .verify import VerifyOptions, verify_candidates
+
+        results = verify_candidates(
+            scan,
+            driver,
+            options.driver_options(),
+            verify=VerifyOptions(
+                top=options.probe_top,
+                runs=options.probe_runs,
+                budget_seconds=options.probe_budget,
+                jobs=options.probe_jobs,
+            ),
+        )
+        scan.probe_results = results
 
     # Surface the redundant-reparse findings as warnings too, so a plain
     # `scan` run never hides a guaranteed win.

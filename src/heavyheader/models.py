@@ -102,6 +102,18 @@ class TranslationUnit:
     spawn_retries: int = field(default=0)
     #: Non-empty when the compiler refused to compile this file.
     error: str | None = None
+    #: The exact :class:`~heavyheader.drivers.base.DriverOptions` this unit was
+    #: compiled with, when the scan ran it.  ``None`` means "unknown".
+    #:
+    #: This exists because of a bug that produced *false* compile errors: on a
+    #: project driven by ``compile_commands.json`` every unit carries its own
+    #: ``-I`` flags, and a stage that rebuilt a unit from the shared
+    #: ``ScanOptions`` instead of the unit's own options silently lost them --
+    #: the compiler then could not find the project's headers and every probe
+    #: "failed".  The verdict looked like "nothing is removable" when the truth
+    #: was "we asked the wrong question".  Carrying the options on the unit
+    #: makes the real build reproducible from the scan result alone.
+    compile_options: object | None = None
 
     @property
     def ok(self) -> bool:
@@ -314,6 +326,9 @@ class ProjectScan:
     pch: object | None = None
     #: Forward-declaration candidates, only when ``--forward-decl`` is passed.
     forward_candidates: list = field(default_factory=list)
+    #: 探针/测量阶段的结果，``--probe`` 时才有内容。None = 这一轮没跑实测，
+    #: 报告必须把这种情况说明白，不能让读者以为「没测」等于「没问题」。
+    probe_results: list | None = None
     warnings: list[str] = field(default_factory=list)
     #: 增量扫描统计。未启用缓存时为 None；有了它 CLI 能说明「复用了多少、
     #: 重编了多少」，让用户确认增量确实生效，而不是只看总耗时变短。

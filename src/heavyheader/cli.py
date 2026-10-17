@@ -119,6 +119,29 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="增量扫描缓存文件：复用未改动的编译单元，只重编受影响的（默认不启用）",
     )
+    scan.add_argument(
+        "--probe",
+        action="store_true",
+        help=(
+            "扫描后直接实测候选：逐个真的编译「去掉这行 include」的版本，"
+            "只对编译通过的候选做耗时测量。不加这个开关时报告里只有估算"
+        ),
+    )
+    scan.add_argument(
+        "--probe-top",
+        type=int,
+        default=0,
+        help="最多实测多少个候选（默认 0 = 全部；按预计收益从高到低）",
+    )
+    scan.add_argument(
+        "--probe-budget",
+        type=float,
+        default=0.0,
+        help="实测阶段的时间预算（秒，默认 0 = 不限）。到点干净停下并报告进度",
+    )
+    scan.add_argument(
+        "--probe-jobs", type=int, default=4, help="实测阶段的并行编译数（默认 4）"
+    )
 
     verify = subparsers.add_parser("verify", help="实测：移除候选 include 后重新编译并计时")
     add_common(verify)
@@ -258,6 +281,11 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         pch=getattr(args, "pch", False),
         pch_top=getattr(args, "pch_top", 5),
         forward_decl=getattr(args, "forward_decl", False),
+        probe=getattr(args, "probe", False),
+        probe_top=getattr(args, "probe_top", 0),
+        probe_budget=getattr(args, "probe_budget", 0.0),
+        probe_jobs=getattr(args, "probe_jobs", 4),
+        probe_runs=getattr(args, "probe_runs", 3),
     )
 
 

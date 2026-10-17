@@ -42,6 +42,92 @@ def _rel(path: Path, root: Path) -> str:
         return str(Path(*parts[-2:])) if len(parts) > 1 else path.name
 
 
+def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
+    """The measured verdict, or an honest statement that nothing was measured.
+
+    The distinction matters more than it looks.  A report that shows only
+    estimates reads like a list of confirmed problems; the same report with
+    ``--probe`` run shows which of them survived a real compile.  When the
+    stage did not run, this section says so in as many words -- "not measured"
+    must never be allowed to look like "no problem".
+    """
+    results = scan.probe_results
+    if not results:
+        return [
+            "## 实测状态",
+            "",
+            "**本轮没有做实测。** 上表全部是估算——按行数折算的预计收益，"
+            "不是秒数，也不代表这些 include 删掉之后还能编译。",
+            "",
+            "要拿到可引用的结论，加 `--probe`：工具会逐个真的编译「去掉这行 include」"
+            "的版本，只对编译通过的候选做耗时测量。",
+            "",
+        ]
+
+    counts: dict[str, int] = {}
+    for result in results:
+        counts[result.status] = counts.get(result.status, 0) + 1
+    summary = "、".join(f"{k} {v} 个" for k, v in sorted(counts.items()))
+
+    lines = [
+        "## 实测结论（`--probe`）",
+        "",
+        f"本轮实测 {len(results)} 个候选：{summary}。",
+        "",
+        "> **口径**：`compiles` = 去掉这行后能编译（未计时）；`improved` = 编译通过"
+        "且耗时下降超过 2% 噪声线；`compile-error` = 编译器拒绝，附第一条错误；"
+        "`ambiguous` / `not-found` = 定位不到该注释哪一行，工具不猜。",
+        "",
+    ]
+
+    improved = [r for r in results if r.status == "improved"]
+    if improved:
+        improved.sort(key=lambda r: -(r.seconds_saved or 0.0))
+        lines += [
+            "### 实测有效的改动",
+            "",
+            "| 编译单元 | include | 基线 | 移除后 | 节省 |",
+            "|---|---|---:|---:|---:|",
+        ]
+        for result in improved:
+            saved = result.percent_saved or 0.0
+            lines.append(
+                f"| `{_rel(result.candidate.tu, root)}` "
+                f"| `{_rel(result.candidate.header, root)}` "
+                f"| {result.baseline_seconds * 1000:.0f} ms "
+                f"| {result.patched_seconds * 1000:.0f} ms "
+                f"| **{saved:.1f}%** |"
+            )
+        lines.append("")
+
+    rejected = [
+        r
+        for r in results
+        if r.status in ("compile-error", "ambiguous", "not-found", "error")
+    ]
+    if rejected:
+        lines += [
+            "### 实测被拒的候选（这些不要再去试）",
+            "",
+            "| 编译单元 | include | 结论 | 编译器说 |",
+            "|---|---|---|---|",
+        ]
+        for result in rejected[:20]:
+            detail = " ".join(str(result.message).split())[:110]
+            lines.append(
+                f"| `{_rel(result.candidate.tu, root)}` "
+                f"| `{_rel(result.candidate.header, root)}` "
+                f"| {result.status} | {detail} |"
+            )
+        lines += [
+            "",
+            "这些行同样有价值：它们把「试过、不行」记录下来，"
+            "下一轮扫描不会再把同一个候选排到前面。",
+            "",
+        ]
+    return lines
+
+
 def render_markdown(scan: ProjectScan) -> str:
     """Render a full scan as Markdown."""
     root = scan.root
@@ -112,6 +198,10 @@ def render_markdown(scan: ProjectScan) -> str:
                 f"| {candidate.confidence} |"
             )
         lines.append("")
+
+    # -- measured: what the probe stage actually established --------------
+    lines += _probe_section(scan, root)
+
 
     # -- guaranteed wins: missing guards ---------------------------------
     redundant = [

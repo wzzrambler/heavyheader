@@ -103,6 +103,24 @@ def captured(monkeypatch):
     return seen
 
 
+def _sides(captured, source):
+    """Split the captured calls into (baseline, patched) by *path*, not order.
+
+    The pipeline probes the patched copy first and only then measures the
+    baseline, so "first call is the baseline" stopped being true the moment
+    probing became a stage.  Indexing by position would make these tests
+    assert the old call order rather than the property they exist to protect:
+    that both sides are compiled against the same include paths.
+    """
+    baseline = patched = None
+    for path, options in captured:
+        if path == str(source):
+            baseline = options
+        else:
+            patched = options
+    return baseline, patched
+
+
 def test_baseline_inherits_the_scan_layout_fallback(tmp_path, captured):
     """Failure mode 1: an include/ layout must resolve without passing -I."""
     scan, options, source = _project(tmp_path)
@@ -110,8 +128,8 @@ def test_baseline_inherits_the_scan_layout_fallback(tmp_path, captured):
     results = verify_candidates(scan, _RecordingDriver(), options)
 
     assert results, "expected the candidate to be exercised"
-    baseline_path, baseline_options = captured[0]
-    assert baseline_path == str(source)
+    baseline_options, _patched = _sides(captured, source)
+    assert baseline_options is not None
     # 兜底目录必须包含项目的 include/，否则基线编译找不到头文件。
     assert tmp_path / "include" in baseline_options.include_dirs
     assert tmp_path in baseline_options.include_dirs
@@ -126,9 +144,8 @@ def test_patched_side_keeps_include_dirs_from_options(tmp_path, captured):
 
     verify_candidates(scan, _RecordingDriver(), options)
 
-    # First call is the baseline; the second is the patched recompile.
-    assert len(captured) == 2
-    _, patched_options = captured[1]
+    _baseline, patched_options = _sides(captured, source)
+    assert patched_options is not None
     assert tmp_path / "include" in patched_options.include_dirs
     assert tmp_path / "third_party" in patched_options.include_dirs
     # 引用的 include 相对于包含它的文件目录解析，因此原目录必须补上。
@@ -142,8 +159,8 @@ def test_both_sides_are_compiled_with_identical_include_dirs(tmp_path, captured)
 
     verify_candidates(scan, _RecordingDriver(), options)
 
-    _, baseline_options = captured[0]
-    _, patched_options = captured[1]
+    baseline_options, patched_options = _sides(captured, source)
+    assert baseline_options is not None and patched_options is not None
     # 打补丁那侧会额外带上原文件目录（ sibling 头解析需要），其余必须一致。
     assert set(patched_options.include_dirs) - {source.parent} == set(
         baseline_options.include_dirs
@@ -253,3 +270,60 @@ def test_verify_reports_ambiguous_without_touching_the_file(tmp_path):
     assert "无法判断该注释掉哪一行" in results[0].message
     # 原始文件一个字节都没动。
     assert source.read_text(encoding="utf-8").count("#include") == 2
+
+
+# --------------------------------------------------------------------------
+# the bug that produced false compile errors
+# --------------------------------------------------------------------------
+
+
+def test_probe_uses_the_unit_own_options_not_the_shared_ones(tmp_path, captured):
+    """The scan must hand each unit's real flags to the probe stage.
+
+    On a ``compile_commands.json`` project every unit has its own ``-I``.
+    Rebuilding a unit from the shared ``ScanOptions`` drops them, the
+    compiler cannot find the project's headers, and *every* candidate comes
+    back "compile error" -- which reads as "nothing here is removable" when
+    the truth is "we asked the wrong question".  This is the exact shape of
+    the failure, and it is invisible in a test that only ever uses one unit
+    with one set of flags.
+    """
+    (tmp_path / "include").mkdir()
+    (tmp_path / "src").mkdir()
+    header = tmp_path / "include" / "heavy.h"
+    header.write_text("#pragma once\nstruct Heavy { int x; };\n", encoding="utf-8")
+    source = tmp_path / "src" / "app.cpp"
+    source.write_text('#include "heavy.h"\nint main() { return 0; }\n', encoding="utf-8")
+
+    tu = TranslationUnit(source=source, dependencies=[header])
+    # 单元自己的参数带着真正的 -I；调用方传的共享参数是空的。
+    tu.compile_options = DriverOptions(
+        standard="c++17", include_dirs=[tmp_path / "include"]
+    )
+    scan = ProjectScan(
+        root=tmp_path,
+        compiler="g++",
+        compiler_family=CompilerFamily.GCC,
+        standard="c++17",
+        tus=[tu],
+        header_stats={header: _header_stats(header, 2, 1)},
+    )
+    scan.candidates = [
+        RemovalCandidate(
+            tu=source,
+            header=header,
+            line=1,
+            kind=HeaderKind.PROJECT,
+            exclusive_headers=[header],
+            estimated_lines_saved=2,
+            estimated_percent=100.0,
+        )
+    ]
+
+    shared = DriverOptions(standard="c++17", include_dirs=[])
+    results = verify_candidates(scan, _RecordingDriver(), shared)
+
+    assert results and results[0].status != "compile-error"
+    # 每一侧都必须带着单元自己的 -I，而不是调用方那份空的。
+    for _path, options in captured:
+        assert tmp_path / "include" in options.include_dirs

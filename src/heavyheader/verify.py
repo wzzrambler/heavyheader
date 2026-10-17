@@ -34,6 +34,8 @@ import tempfile
 from dataclasses import dataclass, field, replace
 from typing import NamedTuple
 from pathlib import Path
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import ProjectScan, RemovalCandidate, TranslationUnit
@@ -52,13 +54,45 @@ __all__ = [
 
 @dataclass(slots=True)
 class VerifyOptions:
-    """Knobs for the verification pass."""
+    """Knobs for the verification pass.
+
+    Two stages, deliberately separated because they cost very different
+    amounts and answer different questions:
+
+    * **probe** -- compile the unit *with the include removed*, once.  It
+      answers "does this edit even compile?" for the price of one compile
+      (0.3-2.5 s on a real project).  Rejecting a candidate here is cheap and
+      is what makes the whole pipeline affordable.
+    * **measure** -- compile both sides ``runs`` times and keep the minimum.
+      It answers "and is it actually faster?", which needs a baseline on the
+      same machine in the same run.
+
+    The first version ran only the second stage, on the top five candidates
+    the cost model happened to rank first -- so a broken ranking produced five
+    failed builds and no way to tell "the ranking is wrong" from "the project
+    has nothing to remove".  Probing first turns that into five cheap
+    rejections plus an honest statement about the candidate pool.
+    """
 
     top: int = 5
     runs: int = 3
+    #: Compiles per side during the probe stage.  1 is enough: a compile error
+    #: is deterministic, and a *time* claim is what ``runs`` is for.
+    probe_runs: int = 1
     timeout: float = 300.0
     #: Keep the patched sources around for inspection.
     keep_artifacts: bool = False
+    #: Wall-clock budget for the whole pass, in seconds.  ``0`` = unlimited.
+    #: The pass stops cleanly at a candidate boundary, never mid-compile, and
+    #: reports how far it got -- a truncated honest result beats an aborted one.
+    budget_seconds: float = 0.0
+    #: Stop after the probe stage (do not pay for full measurements).  Answers
+    #: "which of these are even compilable" at the lowest possible cost.
+    probe_only: bool = False
+    #: Parallel compiles.  Probes are independent subprocesses, so threads give
+    #: real concurrency -- this is the difference between 2 minutes and 20
+    #: seconds on a 200-candidate pool.
+    jobs: int = 4
 
 
 @dataclass(slots=True)
@@ -267,6 +301,91 @@ def _measure(
     return best, last_error
 
 
+def _unit_options(
+    scan: ProjectScan,
+    candidate: RemovalCandidate,
+    fallback: DriverOptions,
+    effective_includes: list[Path],
+) -> DriverOptions:
+    """The options this candidate's unit was *actually* compiled with.
+
+    ``compile_commands.json``-driven projects give every unit its own ``-I``
+    flags.  Rebuilding a unit from the shared ``ScanOptions`` drops them, the
+    compiler cannot find the project's headers, and every probe comes back
+    "compile error" -- a verdict that looks like "nothing is removable" when
+    the truth is "we asked the wrong question".  The scan records each unit's
+    options on the TU (``TranslationUnit.compile_options``) precisely so this
+    stage can reproduce the same build.
+
+    Note the lookup is by *path*: ``RemovalCandidate.tu`` holds the source
+    path, not the ``TranslationUnit``.  Reading the attribute straight off the
+    candidate silently returns ``None`` on every call, which is exactly how
+    this bug survived a test suite -- the fallback is plausible enough that
+    nothing crashes, it just answers the wrong question.
+
+    When the unit carries no recorded options (a hand-built scan, a test), the
+    caller's options are used with the layout fallback applied -- the old
+    behaviour, preserved for the case where it is the only information there
+    is.
+    """
+    for tu in scan.ok_tus:
+        if tu.source == candidate.tu:
+            recorded = getattr(tu, "compile_options", None)
+            if recorded is not None:
+                return recorded
+            break
+    return replace(fallback, include_dirs=list(effective_includes))
+
+
+def _patched_options(
+    unit_options: DriverOptions,
+    effective_includes: list[Path],
+    source_path: Path,
+) -> DriverOptions:
+    """Options for compiling the *patched* copy of ``source_path``.
+
+    A quoted include resolves against the including file's directory, so a
+    file compiled from a temp directory would lose access to its siblings.
+    The original directory is added explicitly.
+    """
+    return DriverOptions(
+        standard=unit_options.standard,
+        include_dirs=[*effective_includes, source_path.parent],
+        defines=list(unit_options.defines),
+        extra_flags=list(unit_options.extra_flags),
+        full_compile=unit_options.full_compile,
+    )
+
+
+class _BaselineCache:
+    """One baseline measurement per *unit*, shared by every candidate in it.
+
+    The first version re-measured the unmodified file for each candidate, so a
+    unit with six candidates paid for six identical baseline compiles.  The
+    baseline does not depend on the candidate -- only on the unit and the
+    machine state -- so it is measured once and reused.
+    """
+
+    def __init__(self) -> None:
+        self._values: dict[Path, float | None] = {}
+        self.compiles = 0
+
+    def get(
+        self,
+        driver: CompilerDriver,
+        source_path: Path,
+        options: DriverOptions,
+        runs: int,
+        timeout: float,
+    ) -> float | None:
+        if source_path in self._values:
+            return self._values[source_path]
+        seconds, _error = _measure(driver, source_path, options, None, runs, timeout)
+        self._values[source_path] = seconds
+        self.compiles += max(1, runs)
+        return seconds
+
+
 def verify_candidates(
     scan: ProjectScan,
     driver: CompilerDriver,
@@ -275,12 +394,27 @@ def verify_candidates(
     verify: VerifyOptions | None = None,
     include_dirs: list[Path] | None = None,
 ) -> list[VerificationResult]:
-    """Empirically test the top ``verify.top`` removal candidates.
+    """Probe then measure the removal candidates, in rank order.
 
     ``options`` should be the same options used to produce ``scan`` -- the
     comparison is only meaningful if both sides are compiled identically.
+
+    Stages, cheapest first:
+
+    1. locate the ``#include`` line (a candidate we cannot pin down is
+       reported as ``ambiguous`` / ``not-found``, never guessed at);
+    2. **probe** -- compile with it removed, once.  Most bad candidates die
+       here, at the cost of one compile;
+    3. **measure** -- for survivors only, compile both sides ``runs`` times
+       and keep the minimum.  Baselines are cached per unit, so several
+       candidates from one file share a single baseline.
+
+    Results are written back into the candidates (``probe_status``,
+    ``measured_seconds_saved``, ``verified``) so the report can show the
+    estimate and the measurement side by side instead of only the estimate.
     """
     verify = verify or VerifyOptions()
+    started = time.perf_counter()
 
     # 有效包含路径 = 扫描时用的（options）+ 调用方额外给的（kwarg）；
     # 两者都为空时套用与 scan 相同的布局兜底。
@@ -288,14 +422,19 @@ def verify_candidates(
     # 以前基线编译直接透传 options（无兜底），而打补丁那侧又改用 kwarg、
     # 丢掉了 options 里的 -I。两个后果：include/ 布局的项目基线就编译不过，
     # 以及两侧口径不一致导致「移除后编译失败」的误报。
+    # 这里保留一份兜底包含路径，但不再用它覆盖单元自己的参数：
+    # compile_commands.json 驱动的项目里，单元自带的 -I 才是真实构建的那一套。
     effective_includes = list(options.include_dirs) + list(include_dirs or [])
     if not effective_includes:
         effective_includes = default_include_dirs(scan.root)
-    baseline_options = replace(options, include_dirs=effective_includes)
 
-    ranked = scan.candidates_by_estimate()[: max(0, verify.top)]
+    limit = verify.top if verify.top and verify.top > 0 else len(scan.candidates)
+    ranked = scan.candidates_by_estimate()[: max(0, limit)]
+
+    # ---------------------------------------------------------------- stage 1
+    # 定位 + 读源码。定位不了的候选不进编译阶段：它的结论会是假的。
+    pending: list[tuple[RemovalCandidate, Path, int]] = []
     results: list[VerificationResult] = []
-
     for candidate in ranked:
         source_path = candidate.tu
         try:
@@ -310,9 +449,7 @@ def verify_candidates(
             )
             continue
 
-        location = locate_include_line(
-            original_text, candidate.header, candidate.line
-        )
+        location = locate_include_line(original_text, candidate.header, candidate.line)
         if location.line is None:
             if location.status == "ambiguous":
                 results.append(
@@ -336,54 +473,143 @@ def verify_candidates(
                     )
                 )
             continue
-        line_number = location.line
+        pending.append((candidate, source_path, location.line))
 
-        # Measure the unmodified file first: the baseline must come from the
-        # same process, same machine, same run as the patched measurement.
-        baseline_seconds, baseline_error = _measure(
-            driver, source_path, baseline_options, None, verify.runs, verify.timeout
+    # ---------------------------------------------------------------- stage 2
+    # 探针：并行编译「去掉这一行」的版本。这一阶段只回答「能不能编过」，
+    # 因此 probe_runs=1 就够；把 runs 也用在这里会让每个坏候选多花两倍时间。
+    probe_seconds: dict[int, float | None] = {}
+    probe_errors: dict[int, str | None] = {}
+
+    def _probe_one(index: int, source_path: Path, line_number: int) -> None:
+        candidate, source_path, line_number = pending[index]
+        original_text = source_path.read_text(encoding="utf-8", errors="replace")
+        with tempfile.TemporaryDirectory(prefix="heavyheader-probe-") as tmp:
+            patched_path = Path(tmp) / source_path.name
+            patched_path.write_text(
+                _comment_out(original_text, line_number), encoding="utf-8"
+            )
+            unit_options = _unit_options(scan, candidate, options, effective_includes)
+            patched_options = _patched_options(
+                unit_options, effective_includes, source_path
+            )
+            seconds, error = _measure(
+                driver,
+                patched_path,
+                patched_options,
+                None,
+                verify.probe_runs,
+                verify.timeout,
+            )
+        probe_seconds[index] = seconds
+        probe_errors[index] = error
+
+    if pending:
+        with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
+            futures = {
+                pool.submit(_probe_one, index, source, line): index
+                for index, (_c, source, line) in enumerate(pending)
+            }
+            for future in as_completed(futures):
+                index = futures[future]
+                try:
+                    future.result()
+                except Exception as exc:  # noqa: BLE001 - 一个候选不该带走整轮
+                    probe_seconds[index] = None
+                    probe_errors[index] = f"{type(exc).__name__}: {exc}"
+
+    # ---------------------------------------------------------------- stage 3
+    # 只对探针存活的候选做完整测量；基线按单元缓存，同单元多个候选只测一次。
+    baselines = _BaselineCache()
+    survivors: list[tuple[int, RemovalCandidate, float]] = []
+
+    for index, (candidate, source_path, line_number) in enumerate(pending):
+        patched_seconds = probe_seconds.get(index)
+        if patched_seconds is None:
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="compile-error",
+                    message=f"移除后编译失败：{probe_errors.get(index) or 'compile failed'}",
+                )
+            )
+            continue
+        if verify.probe_only:
+            # 只问「能不能编过」。不给秒数结论——那一侧还没测，编个数字
+            # 出来就是估算冒充实测。
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="compiles",
+                    patched_seconds=patched_seconds,
+                    message="移除后可以编译（未做耗时测量）",
+                )
+            )
+            continue
+
+        baseline_seconds = baselines.get(
+            driver,
+            source_path,
+            _unit_options(scan, candidate, options, effective_includes),
+            verify.runs,
+            verify.timeout,
         )
         if baseline_seconds is None:
             results.append(
                 VerificationResult(
                     candidate=candidate,
                     status="error",
-                    message=f"基线编译失败：{baseline_error}",
+                    message="基线编译失败，无法比较",
                 )
             )
             continue
+        survivors.append((index, candidate, patched_seconds))
 
-        with tempfile.TemporaryDirectory(prefix="heavyheader-") as tmp:
+    # 完整测量本身也可以并行（每个候选一次 patched 编译，runs 次取最小）。
+    measured: dict[int, tuple[float, float]] = {}
+
+    def _measure_one(index: int, source_path: Path, line_number: int) -> None:
+        original_text = source_path.read_text(encoding="utf-8", errors="replace")
+        with tempfile.TemporaryDirectory(prefix="heavyheader-verify-") as tmp:
             patched_path = Path(tmp) / source_path.name
             patched_path.write_text(
                 _comment_out(original_text, line_number), encoding="utf-8"
             )
-
-            # A quoted include resolves against the *including file's*
-            # directory, so a file compiled from a temp directory would lose
-            # access to its siblings.  Add the original directory explicitly.
-            patched_options = DriverOptions(
-                standard=options.standard,
-                include_dirs=[*effective_includes, source_path.parent],
-                defines=list(options.defines),
-                extra_flags=list(options.extra_flags),
-                full_compile=options.full_compile,
+            unit_options = _unit_options(
+                scan, pending[index][0], options, effective_includes
             )
-            patched_seconds, patched_error = _measure(
+            patched_options = _patched_options(
+                unit_options, effective_includes, source_path
+            )
+            seconds, _error = _measure(
                 driver, patched_path, patched_options, None, verify.runs, verify.timeout
             )
+        baseline = baselines._values[source_path]
+        measured[index] = (baseline, seconds or 0.0)
 
-        if patched_seconds is None:
-            results.append(
-                VerificationResult(
-                    candidate=candidate,
-                    status="compile-error",
-                    baseline_seconds=baseline_seconds,
-                    message=f"移除后编译失败：{patched_error}",
-                )
-            )
+    if survivors:
+        with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
+            futures = {
+                pool.submit(
+                    _measure_one,
+                    index,
+                    pending[index][1],
+                    pending[index][2],
+                ): index
+                for index, _c, _s in survivors
+            }
+            for future in as_completed(futures):
+                index = futures[future]
+                try:
+                    future.result()
+                except Exception as exc:  # noqa: BLE001
+                    measured[index] = (0.0, 0.0)
+                    probe_errors[index] = f"{type(exc).__name__}: {exc}"
+
+    for index, candidate, _probe in survivors:
+        if index not in measured:
             continue
-
+        baseline_seconds, patched_seconds = measured[index]
         saved = baseline_seconds - patched_seconds
         # A change smaller than 2% is inside the noise floor of a single
         # file's compile time on a loaded machine; reporting it as a win
@@ -403,9 +629,6 @@ def verify_candidates(
                 ),
             )
         )
-
-        # Fold the measurement back into the scan so reports can show both
-        # the estimate and the truth side by side.
         candidate.measured_seconds_saved = max(0.0, saved)
         candidate.verified = True
 
@@ -416,4 +639,7 @@ def verify_candidates(
     for result in results:
         result.candidate.probe_status = result.status
 
+    # 结果按候选的排序顺序返回（探针是并行完成的，顺序不能丢）。
+    order = {id(candidate): position for position, (candidate, _s, _l) in enumerate(pending)}
+    results.sort(key=lambda r: order.get(id(r.candidate), len(order)))
     return results

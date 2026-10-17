@@ -108,7 +108,10 @@ def test_edited_file_is_stale(tmp_path):
     stamp = _stamp(target)
     encoded = f"{stamp.size}:{stamp.mtime_ns}:{stamp.digest}"
 
-    target.write_text("after!", encoding="utf-8")
+    # 内容 size 也改变——否则在 Windows 上连续两次写入可能落在同一 mtime
+    # 粒度内，触发「size 与 mtime 都一致」的快路径误判为未改动（该快路径是对的，
+    # 只是测试需要保证编辑一定被探测到，不能依赖文件系统时间戳精度）。
+    target.write_text("after-edited-content", encoding="utf-8")
 
     assert _matches(_stamp(target), encoded) is False
 

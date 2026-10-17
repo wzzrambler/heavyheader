@@ -69,6 +69,10 @@ def scan_to_dict(scan: ProjectScan) -> dict:
             "failed_translation_units": len(scan.failed_tus),
             "dependency_edges": scan.total_dependency_edges(),
             "attributed_lines": scan.total_included_lines(),
+            # Blowup Factor = attributed_lines / total_project_lines，公式与
+            # Header Hero 相同；显式导出分母，读者才能自行验算而不必信我们。
+            "total_project_lines": scan.total_project_lines,
+            "blowup_factor": round(scan.blowup_factor(), 4),
         },
         "translation_units": [
             {
@@ -137,6 +141,8 @@ def _advice_to_dict(advice) -> dict | None:
         "verdict": advice.verdict.value,
         "verdict_label": advice.verdict_label,
         "lean": advice.lean,
+        "review_gain_lines": advice.review_gain_lines,
+        "review_gain_share": advice.review_gain_share,
         "reasons": [
             {
                 "aspect": reason.aspect.value,
@@ -278,6 +284,9 @@ def scan_from_dict(data: dict) -> ProjectScan:
         header_stats=headers,
         candidates=candidates,
         baseline_seconds=data.get("baseline_seconds", 0.0),
+        # 旧版 JSON 没有这个字段；缺失时留 0，让 blowup_factor() 返回 0.0 并
+        # 由报表标注「未统计」，而不是伪造一个看似正常的放大倍数。
+        total_project_lines=int(data.get("totals", {}).get("total_project_lines", 0)),
         warnings=list(data.get("warnings", [])),
         reproduce_command=data.get("reproduce_command", ""),
     )
@@ -309,6 +318,8 @@ def _advice_from_dict(payload) -> object | None:
         verdict=verdict,
         reasons=reasons,
         lean=str(payload.get("lean", "")),
+        review_gain_lines=int(payload.get("review_gain_lines", 0) or 0),
+        review_gain_share=float(payload.get("review_gain_share", 0.0) or 0.0),
     )
 
 

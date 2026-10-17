@@ -14,18 +14,26 @@
 工程师等待时间都花在里面。而构建慢的最大单一来源，往往不是算法，而是**头文件失控**——
 一个被几万个编译单元传递包含的重量级头文件，会让整个项目反复为它付费。
 
-现有的工具能告诉你「这个 include 该不该删」，但**没有一个工具回答「它到底让我多等了几秒」**：
+现有的工具各自解决了这个问题的一段。为避免「看起来像 Header Hero」的误解，先说清来源：
+本工具的**归因行数**（`头文件行数 × 被包含次数`）与 **Blowup Factor** 的公式，都来自
+Niklas Frykholm 2011 年的 [Header Hero](http://bitsquid.blogspot.com/2011/10/caring-by-sharing-header-hero.html)。
+它用正则扫 `#include` 得到这个排序；我们用真实编译器的 `-H` 依赖树。它在「谁贵」处停下，
+我们继续往下做反事实实测。完整对标（含逐条出处与核实日期）见
+[`docs/competitors.md`](docs/competitors.md)。
 
 | 工具 | 能做什么 | 不能做什么 |
 |---|---|---|
-| [include-what-you-use](https://include-what-you-use.org/) | 基于 AST 判断 include 是否必需 | 不给成本量化，无法排序优先级 |
-| [cpp-dependencies](https://github.com/tomtom-international/cpp-dependencies) | 分析模块间依赖关系 | 面向架构评审，不回答构建耗时 |
-| [include-gardener](https://github.com/fedorbondarczyk/include-gardener) | 可视化 include 关系图 | 只展示结构，不给归因 |
-| IDE 的「Include Graph」 | 查看单个文件的包含树 | 手动、单文件、无项目级视图 |
+| [Header Hero](http://bitsquid.blogspot.com/2011/10/caring-by-sharing-header-hero.html)（2011） | 归因行数排序、Blowup Factor；秒级扫全库 | 正则解析（漏宏/条件编译）；只排序，不验证、不量化删后收益 |
+| [ClangBuildAnalyzer](https://github.com/aras-p/ClangBuildAnalyzer) | 真实 `-ftime-trace` 的逐头文件累计 ms、包含次数、均值 | 仅 Clang 9+；只描述现状，没有「删了会怎样」；无基线、无门禁 |
+| [IncludeGuardian](https://includeguardian.io/) | 七类结构建议（缺 guard、最贵 include、PCH、拆分…），token 级估算 | 不编译、不实测；无三态决策；仅 Win/Linux x64 二进制 |
+| [deheader](http://www.catb.org/~esr/deheader/)（2010） | 注释掉一条 include、重新编译看是否通过；`-r` 可自动删 | 二值结论，不量化收益；跳过 `#if` 区域；无收益阈值 |
+| [include-what-you-use](https://include-what-you-use.org/) | AST 级判断 include 是否必需 | 不给成本量化，无法按收益排序 |
 
-HeavyHeader 的差异化在于：**它不自己解析 C++**。它让真实编译器报告自己做了什么，再把
-编译器的真实计时数据与依赖图做交叉归因，输出**按预期收益排序**的精简清单，并且可以**真的
-删掉、重新编译、实测验证**。
+HeavyHeader 的差异不在任何单一能力，而在把上面这些串成一条闭环：
+**真实编译器 `-H` 取依赖树 → 对候选做 A/B 两次真实编译 → 用实测 Δ时间/Δ内存/Δ体积
+给出 `REMOVE / KEEP / HUMAN` 三态结论 → 按实测净收益门禁。**
+只有「编译通过 + 测试通过 + 收益超过噪声」才建议删除；估算与实测在报告里分开标注，
+绝不把估算写成结论。
 
 ## 核心能力
 
@@ -49,6 +57,9 @@ $ heavyheader scan ./src --format html -o report.html
 
 归因行数 = `头文件行数 × 引用它的编译单元数`。它衡量一个头文件让整个项目多解析了多少行
 代码——这是构建耗损最直接的代理指标，且对同一份代码是确定性的。
+
+报告同时给出 **Blowup Factor**（`全项目解析行数 ÷ 唯一文件行数`，与 Header Hero 同定义）：
+一个数字说明「平均每行被解析了多少次」。总量只说明项目多大，这个比值才说明结构是否失控。
 
 同时给出四类发现：
 
@@ -92,6 +103,11 @@ $ heavyheader scan ./src --format html -o report.html
 
 > **编译通过 ≠ 功能正确。** 「建议删除」的全部含义是「这个编译单元不带这行也能编、
 > 而且更快」；合并前请运行对应测试。
+
+可选 **`--semantic`** 开关会再请 LLVM 的 `clang-include-cleaner` 做一次 AST 级交叉检查：
+当它把同一个 include 也判定为可删时，作为佐证写进「建议删除」理由。设计上**只增强、
+不削弱**——工具的沉默（没列为可删）不等于「在用」，绝不据此降级我们的结论；工具缺失时
+自动跳过，结论仍以本工具实测为准。详见 [ROADMAP](ROADMAP.md) v0.3。
 
 ### 3. CI 门禁（`gate`）
 
@@ -269,12 +285,13 @@ python experiments/decision_check.py   # 删除建议的明确结论 + 实测维
   跑测试是开发者的步骤，报告里明写这一条。
 - **候选池的精度不够**。实测数据：nlohmann/json 的 222 个候选里 187 个编译不过、
   1 个实测有效。「能给明确结论」不等于「结论都对」——本工具的进步在结论形态与证据
-  维度，不在命中率。提高精度需要 libclang 级别的语义判定，路径在 [ROADMAP](ROADMAP.md)。
+  维度，不在命中率。可选 AST 交叉检查 `--semantic`（subprocess 调用 clang-include-cleaner）已实现（见 [ROADMAP](ROADMAP.md) v0.3）；完整语义判定仍是未来方向。
 - **前向声明建议必须人工确认**。「只以指针/引用形式使用」是语义属性，我们用正则判断，
   可能被宏、typedef、模板参数欺骗。报告给出具体类型名、使用行号和阻断类型，就是为让人
   在数秒内确认或否决。
-- **不做精确的 AST 级分析**。要精确判定需要 libclang，那会把工具的使用门槛抬到需要装一整套
-  LLVM 工具链——这是我们刻意避开的 trade-off，精确模式在 [ROADMAP](ROADMAP.md) 里。
+- **AST 级分析是可选的，且只作交叉检查**。`--semantic` 会请本机的 `clang-include-cleaner`
+  做一次 AST 校验，但默认关闭——默认路径仍保持零依赖、能在最朴素的 CI 容器里跑起来；
+  工具缺失时静默跳过。完整语义判定（进程内 AST 后端）仍是未来方向，原因见 [ROADMAP](ROADMAP.md) v0.3。
 - **不改写你的代码**。`verify` 只在临时目录里做实验，原始文件一个字节都不会动。
 - **不跨机器比较绝对耗时**。墙钟时间随负载波动，门禁因此只对比确定性的归因行数和相对比例。
 

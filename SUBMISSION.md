@@ -7,8 +7,8 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 108 文件 / 50 commit | `src/heavyheader/` |
-| 测试 | ✅ 328 个全绿 | `tests/` |
+| 代码 | ✅ 113 文件 / 51 commit | `src/heavyheader/` |
+| 测试 | ✅ 378 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
@@ -18,13 +18,13 @@
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50 commit / 108 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 51 commit / 113 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，50 commit，108 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，51 commit，113 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）
@@ -79,8 +79,12 @@
 
 入围后才需要，但提前想清楚不吃亏：
 
-- 路演核心就一句话：「现有工具告诉你该不该删，我们告诉你它能让你多等几秒，
-  并且真的删给你看——每条建议都带明确结论和可复现的实测数据。」
+- 路演核心就一句话：「现有工具给你一个排序，或一份能删的清单；我们给你一条**带反事实
+  测量的决策**，并且真的删给你看——每条建议都带明确结论和可复现的实测数据。」
+- 必须主动交代来源，否则会被认为没做功课：**归因行数与 Blowup Factor 的公式来自
+  Header Hero（Bitsquid，2011）**；「注释掉再编译」来自 deheader（ESR，2010）；
+  逐头文件耗时 ClangBuildAnalyzer 早已给出。我们的差异是依赖树取自真实编译器 `-H`、
+  并对候选做 A/B 实测后给出三态决策与门禁。逐条出处见 `docs/competitors.md`。
 - 最有说服力的 30 秒：真实工程（nlohmann/json，63 个 TU）完整构建 −7.1% 墙上时间、
   −11.4% 编译 CPU，4,264,414 条断言逐个一致——这是可复现的实测，不是估算。
 - 更要准备的一条：对照实验里**工具曾经输过**（候选排序命中 0/5，经验法则 3/12）。
@@ -91,4 +95,6 @@
 - 评委可能问：「这和 IWYU / clang-include-cleaner 什么关系？」答：互补，且我们用
   真实竞品在同工程同任务上对照过——它 0 条删除建议、101 条补充建议；我们
   1 条实测有效（−43.5%，三个维度全部实测）。它管正确性（AST 级），
-  我们管成本（编译输出级），Roadmap v0.3 会做 libclang 后端做精确模式。
+  我们管成本（编译输出级）。**可选的 AST 交叉检查已实现**（`--semantic`，调用
+  `clang-include-cleaner` 做交叉印证，工具沉默时不据此降级）；ctypes 直连 libclang
+  的路线经实验证伪，负面结果与复现步骤记录在 `experiments/libclang_spike.py`。

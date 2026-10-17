@@ -33,6 +33,31 @@ attributed_lines(h) = line_count(h) × tu_reach(h)
 **它的局限**：行数不等于解析难度。一个 100 行的重型模板头可能比 1000 行的纯声明头更慢。
 它是一个**相对排序**用的指标，不是绝对耗时的预测器。
 
+### 1.1 来源：这个公式不是我们发明的
+
+`attributed_lines = line_count × inclusion_count` 与 **Blowup Factor**
+（`Total Parsed / Total Lines`）都来自 Niklas Frykholm 的 **Header Hero**（Bitsquid，2011）：
+
+> "Below the summary are a list of the header files sorted by how many lines they
+> contributed to the Total Parsed number. In other words, the size of that file
+> multiplied by the number of times it was included."
+> —— <http://bitsquid.blogspot.com/2011/10/caring-by-sharing-header-hero.html>
+
+本工具的 `total_included_lines()` 即其 `Total Parsed`；`blowup_factor()` 即其
+`Blowup Factor`。两者在 Markdown 报告与 JSON 中都显式导出分子与分母，读者可自行验算，
+不必相信我们给的比值。
+
+**唯一的实质差异在「包含次数从哪来」**：
+
+| | Header Hero | HeavyHeader |
+|---|---|---|
+| 依赖来源 | 正则匹配 `#include` 行；作者自述不运行真实预处理器 | 真实编译器的 `-H` / `/showIncludes` 依赖树 |
+| 宏、条件编译、`#include_next` | 会漏（作者已在原文注明） | 以编译器实际打开的文件与次数为准 |
+| 算完成本之后 | 排序到「谁贵」为止 | 继续做反事实重编，量化删掉之后的收益 |
+
+正则方案的代价是准确性，收益是速度（秒级扫完大工程）；我们的取舍正好相反。
+完整对标、逐条出处与核实日期见 [`competitors.md`](competitors.md)。
+
 ## 2. 独占闭包（Exclusive Closure）
 
 删掉 TU `t` 中的一条直接 include `d` 后，唯一会停止被解析的头文件集合：
@@ -201,6 +226,32 @@ GGC 内存差、目标文件体积差）。三个维度的数字全部来自实�
 它能在测试套件下存活，是因为单元测试用的是手写 options，从来不带 `-c <源文件>`。
 现在 `tests/test_scanner.py` 与 `tests/test_drivers.py` 各有一条回归测试锁住它。
 
+## 6.8 可选 AST 交叉检查（`--semantic`，ROADMAP v0.3 路线 1）
+
+文本启发式的上限是「猜」：判错一个 token 级用法就会误报。精确判定需要 AST，而把
+libclang 做进程内后端（路线 2）在本机被**证伪**——`experiments/libclang_spike.py`
+用 ctypes 加载 `libclang.dll` 成功，但每个 TU 创建入口（`clang_parseTranslationUnit`
+等）都返回 `CXError_ASTReadError` 且无任何诊断，无法调试。该 spike 已固化为可复现的
+负面记录，避免后人重蹈。
+
+剩余可行路线是把 LLVM 的 **`clang-include-cleaner` 作为外部进程**驱动——这正是
+`experiments/competitor.py` 已在 63/64 个单元上验证可用的方式。现以 `scan --semantic`
+接入正常流水线：
+
+- 对每个**出现候选的单元**跑一次 cleaner（`-p <compile_commands 目录> --print=changes`），
+  缓存 per unit，结果写回候选的 `semantic` 字段；
+- 设计契约是**只增强、不削弱**：当 cleaner 也把同一 include 列为「可删」时，作为佐证
+  写进 REMOVE 理由（`attrib/advice.py::_semantic_reasons`）；cleaner 的**沉默**（没列为
+  可删）不等于「在用」——它可能没分析那个 TU，或其启发式与我们不同——因此**绝不**据此
+  降级我们的 REMOVE。把沉默当否决，等于把 ctypes 的失败换种方式重演；
+- 工具缺失、或它的分析对某个单元失败（`ok=False`），都只写「AST 交叉检查未能提供」，
+  结论仍以本工具实测为准。
+
+> 端到端验证（2026-10-18）：对 nlohmann/json 的 `unit-windows_h` 跑 `--semantic`，
+> `clang-include-cleaner` 分析该单元**失败**（与竞品对比里「1/64 单元分析失败」一致），
+> advice 如实反映「未能提供…结论仍以本工具实证为准」。两个工具在这个单元上互不完美，
+> 反而互相印证了「交叉检查必须只增强、不削弱」的设计是对的。
+
 ## 7. 墙钟时间（Wall-clock Seconds）
 
 每个编译单元由驱动自行测量 `time.perf_counter()` 差值。
@@ -235,6 +286,17 @@ fail if regression > max_regression_percent   (默认 5%)
    喂给它畸形输入时不会死循环。
 5. Windows 路径大小写、符号链接、`subst` 盘符可能导致项目头文件被误判为第三方。
    此时用 `--path` 指定规范化后的根目录。
+6. **指标不是原创**：归因行数与 Blowup Factor 来自 Header Hero（2011），
+   「注释掉再编译」来自 deheader（2010）。我们只声明组合与实测闭环，不声明单点首创；
+   详见 [`competitors.md`](competitors.md)。
+7. **建议覆盖度不如 IncludeGuardian**：它有七类结构性建议，我们缺少
+   `inline sources`（source 过小、建议并入 header）这一整类，`make private`
+   与 `large files` 也没有独立成章。
+8. **计时精度不如 `-ftime-trace`**：ClangBuildAnalyzer 能给出编译器内省级的
+   逐头文件耗时；我们的实测是墙钟差分加多次取中位数，粒度更粗，换来的是
+   跨 GCC/Clang/MSVC 与「删掉之后」的反事实。
+9. **`--semantic` 不是 IWYU**：它只是把 `clang-include-cleaner` 的结论拿来交叉
+   印证，工具沉默**不等于**该 include 没被使用，因此绝不据此降级结论。
 
 ## 10. 增量扫描缓存（`--cache`）
 

@@ -399,3 +399,146 @@ def test_verify_on_a_bom_project_does_not_report_not_found(tmp_path, captured):
     results = verify_candidates(scan, _RecordingDriver(), DriverOptions(standard="c++17"))
 
     assert results[0].status != "not-found"
+
+
+# --------------------------------------------------------------------------
+# the test-runner evidence grade
+# --------------------------------------------------------------------------
+
+
+def test_verify_runs_baseline_tests_before_trusting_a_patched_one(tmp_path, captured):
+    """先证伪自己再取证：基线版测试先跑，基线就不过记 error，
+    不冤枉候选；基线过了才跑补丁版。"""
+    from heavyheader.verify import VerifyOptions
+
+    scan, options, source = _project(tmp_path)
+    calls: list[str] = []
+
+    def runner(path):
+        calls.append(Path(path).name)
+        return True, "ok"
+
+    # 让基线 520ms、补丁 320ms，确保候选 improved 才会进测试阶段。
+    def _fake_measure(driver, source_path, opts, _extra, runs, timeout):
+        # 补丁副本与源文件同名（都叫 app.cpp），只能按完整路径区分两侧。
+        baseline = str(source_path) == str(source)
+        return (0.520 if baseline else 0.320), None, None, ()
+
+    captured_monkey = None
+    import heavyheader.verify as v
+
+    original = v._measure
+    v._measure = _fake_measure
+    try:
+        results = verify_candidates(
+            scan,
+            _RecordingDriver(),
+            options,
+            verify=VerifyOptions(test_runner=runner),
+        )
+    finally:
+        v._measure = original
+
+    assert results[0].status == "improved"
+    assert results[0].test_status == "passed"
+    # 基线（app.cpp 原文件）必须先于补丁（临时目录副本）被测试。
+    assert calls[0] == source.name
+    assert len(calls) == 2
+
+
+def test_failing_patched_tests_demote_the_result(tmp_path):
+    """补丁版测试失败：结果记 failed，advice 会把结论降级。"""
+    from heavyheader.attrib.advice import build_advice
+    from heavyheader.verify import VerifyOptions
+
+    scan, options, source = _project(tmp_path)
+
+    def runner(path):
+        # 基线过、补丁挂——只有补丁失败才能走到「结论降级」这条路。
+        # （基线也失败的话协议记 error：不冤枉候选，但也不取证。）
+        ok = str(path) == str(source)
+        return ok, "assertion mismatch" if not ok else "ok"
+
+    import heavyheader.verify as v
+
+    original = v._measure
+    v._measure = lambda d, s, o, _e, r, t: (
+        (0.520 if str(s) == str(source) else 0.320),
+        None,
+        None,
+        (),
+    )
+    try:
+        results = verify_candidates(
+            scan,
+            _RecordingDriver(),
+            options,
+            verify=VerifyOptions(test_runner=runner),
+        )
+    finally:
+        v._measure = original
+
+    assert results[0].test_status == "failed"
+    advice = build_advice(results[0].candidate, results[0], scan)
+    assert advice.verdict is not None and advice.verdict.value == "human"
+
+
+def test_semantic_verdict_is_enriched_onto_candidate(tmp_path, monkeypatch):
+    """开启 --semantic 时，每个候选应拿到 AST 交叉检查 verdict，并随候选走。"""
+    from heavyheader.attrib.semantic import SemanticVerdict
+
+    scan, options, source = _project(tmp_path)
+
+    def _fake_measure(driver, source_path, opts, _extra, runs, timeout):
+        baseline = str(source_path) == str(source)
+        return (0.520 if baseline else 0.320), None, None, ()
+
+    monkeypatch.setattr("heavyheader.verify._measure", _fake_measure)
+
+    class _StubBackend:
+        available = True
+
+        def analyse(self, unit, build_path):
+            return SemanticVerdict(unit.stem, frozenset(), True)
+
+    results = verify_candidates(
+        scan,
+        _RecordingDriver(),
+        options,
+        semantic=_StubBackend(),
+        build_path=tmp_path,
+    )
+    assert results[0].candidate.semantic is not None
+    assert results[0].candidate.semantic.unit == source.stem
+
+
+def test_semantic_is_skipped_when_build_path_missing(tmp_path, monkeypatch):
+    """语义层可用但没给 build_path：静默跳过，不崩、不 enrich。"""
+    from heavyheader.attrib.semantic import SemanticVerdict
+
+    scan, options, source = _project(tmp_path)
+
+    def _fake_measure(driver, source_path, opts, _extra, runs, timeout):
+        baseline = str(source_path) == str(source)
+        return (0.520 if baseline else 0.320), None, None, ()
+
+    monkeypatch.setattr("heavyheader.verify._measure", _fake_measure)
+
+    calls = []
+
+    class _StubBackend:
+        available = True
+
+        def analyse(self, unit, build_path):
+            calls.append(unit)
+            return SemanticVerdict(unit.stem, frozenset(), True)
+
+    results = verify_candidates(
+        scan,
+        _RecordingDriver(),
+        options,
+        semantic=_StubBackend(),
+        build_path=None,  # 故意不给
+    )
+    assert not calls  # analyse 根本不该被调用
+    assert results[0].candidate.semantic is None

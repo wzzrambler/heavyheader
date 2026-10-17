@@ -40,6 +40,7 @@ from .report.jsonio import scan_from_dict, scan_to_dict, write_json
 from .report.markdown import markdown_summary_line, render_markdown
 from .scanner import ScanError, ScanOptions, scan_project
 from .verify import VerifyOptions, verify_candidates
+from .attrib.semantic import SemanticBackend, default_mingw_args
 
 __all__ = ["main", "build_parser"]
 
@@ -141,6 +142,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     scan.add_argument(
         "--probe-jobs", type=int, default=4, help="实测阶段的并行编译数（默认 4）"
+    )
+    scan.add_argument(
+        "--semantic",
+        action="store_true",
+        help=(
+            "额外用 clang-include-cleaner（LLVM 工具链自带）做 AST 级交叉检查："
+            "当它把同一个 include 也判定为可删时，作为佐证写进建议。需要本机装有"
+            "该工具，未找到时自动跳过（结论仍以本工具实测为准）"
+        ),
     )
 
     verify = subparsers.add_parser("verify", help="实测：移除候选 include 后重新编译并计时")
@@ -293,12 +303,38 @@ def _scan_options_from_args(args) -> ScanOptions:
     return _scan_options_for(args, args.compiler)
 
 
+def _build_semantic_backend(args):
+    """构造可选的 AST 交叉检查后端；未启用或工具缺失时返回 None。"""
+    if not getattr(args, "semantic", False):
+        return None
+    compiler = getattr(args, "compiler", "")
+    extra = default_mingw_args() if ("g++" in compiler or "mingw" in compiler.lower()) else None
+    backend = SemanticBackend(extra_args=extra)
+    if not backend.available:
+        print(
+            "警告：--semantic 已启用但未找到 clang-include-cleaner，跳过 AST 交叉检查。",
+            file=sys.stderr,
+        )
+        return None
+    return backend
+
+
+def _semantic_build_path(args):
+    from pathlib import Path
+
+    cc = getattr(args, "compile_commands", None)
+    return Path(cc).parent if cc else None
+
+
 def _run_scan(args) -> ProjectScan:
     driver = detect_driver(args.compiler)
     cache_path = getattr(args, "cache", None)
-    scan = scan_project(
-        _scan_options_from_args(args), driver=driver, cache_path=cache_path
-    )
+    options = _scan_options_from_args(args)
+    backend = _build_semantic_backend(args)
+    if backend is not None:
+        options.semantic = backend
+        options.semantic_build_path = _semantic_build_path(args) or options.root
+    scan = scan_project(options, driver=driver, cache_path=cache_path)
     # 复现命令：报告里每条实测结论都要能让读者在自己机器上重跑。
     # 没有它，「实测」就只是我们机器上的一串数字。
     scan.reproduce_command = _reproduce_command(args)
@@ -336,6 +372,8 @@ def _reproduce_command(args) -> str:
             parts.append(f"--probe-top {args.probe_top}")
         if getattr(args, "probe_budget", 0.0):
             parts.append(f"--probe-budget {args.probe_budget}")
+    if getattr(args, "semantic", False):
+        parts.append("--semantic")
     return " ".join(parts)
 
 
@@ -450,12 +488,15 @@ def _cmd_verify(args) -> int:
 
     driver = detect_driver(args.compiler)
     options = _scan_options_from_args(args).driver_options()
+    backend = _build_semantic_backend(args)
     results = verify_candidates(
         scan,
         driver,
         options,
         verify=VerifyOptions(top=args.top, runs=args.runs, timeout=args.timeout),
         include_dirs=list(args.includes),
+        semantic=backend,
+        build_path=_semantic_build_path(args) or scan.root,
     )
 
     print(f"# HeavyHeader 实测验证（每侧 {args.runs} 次，取最小值）\n")

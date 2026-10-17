@@ -10,7 +10,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from .. import PROJECT_URL
-from ..attrib.advice import MAINTENANCE_LEAN_LINES, TIME_NOISE_FLOOR
+from ..attrib.advice import (
+    MAINTENANCE_LEAN_LINES,
+    MAINTENANCE_LEAN_SHARE,
+    TIME_NOISE_FLOOR,
+)
 from ..models import AdviceVerdict, HeaderKind, ProjectScan
 
 __all__ = ["render_markdown", "markdown_summary_line"]
@@ -91,8 +95,10 @@ def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
         f"{TIME_NOISE_FLOOR * 100:.0f}% 噪声线；",
         "- **保留**：编译器已经否决（编译不过），或定位不到该注释哪一行；",
         "- **需人工判断**：编译通过但收益在噪声内、或本轮没有实测。"
-        f"其中独占闭包超过 {MAINTENANCE_LEAN_LINES:,} 行且全项目仅一个使用者的，"
-        "倾向删除（维护收益），否则倾向保留。",
+        "其中维护收益算式成立（全项目仅一个使用者，且独占闭包 ≥ "
+        f"{MAINTENANCE_LEAN_LINES:,} 行或占本单元 ≥ "
+        f"{MAINTENANCE_LEAN_SHARE * 100:.0f}%）的倾向删除，否则倾向保留。"
+        "删除的代价固定为一次 review 加一遍该单元测试，算式写在每条理由里。",
         "",
         "> **编译通过 ≠ 功能正确。** 「建议删除」的全部含义是「这个编译单元"
         "不带这行也能编、而且更快」；合并前请运行该单元的测试。",
@@ -201,6 +207,7 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
             r.baseline_object_bytes is not None and r.patched_object_bytes is not None
             for r in improved
         )
+        has_test = any(getattr(r, "test_status", "") for r in improved)
         header = "| 编译单元 | include | 基线 | 移除后 | 节省 |"
         sep = "|---|---|---:|---:|---:|"
         if has_memory:
@@ -209,6 +216,9 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
         if has_size:
             header += " 目标文件 |"
             sep += "---:|"
+        if has_test:
+            header += " 单元测试 |"
+            sep += "---|"
         lines += ["### 实测有效的改动", "", header, sep]
         for result in improved:
             saved = result.percent_saved or 0.0
@@ -242,6 +252,14 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
                     )
                 else:
                     row += " 未测 |"
+            if has_test:
+                status = getattr(result, "test_status", "")
+                label = {
+                    "passed": "✅ 通过",
+                    "failed": "❌ 失败（结论已降级）",
+                    "error": "⚠️ 未能取证",
+                }.get(status, "未跑")
+                row += f" {label} |"
             lines.append(row)
         lines += [
             "",
@@ -302,6 +320,14 @@ def render_markdown(scan: ProjectScan) -> str:
     lines.append(f"- 编译单元：{len(ok)} 成功 / {len(scan.failed_tus)} 失败")
     lines.append(f"- 头文件依赖边：{_fmt_int(scan.total_dependency_edges())}")
     lines.append(f"- 全项目头文件解析量：**{_fmt_int(scan.total_included_lines())} 行**")
+    lines.append(f"- 唯一文件行数：{_fmt_int(scan.total_project_lines)} 行")
+    if scan.total_project_lines > 0:
+        lines.append(
+            f"- **Blowup Factor：{scan.blowup_factor():.1f}×**"
+            "（平均每行被解析的次数；与 Header Hero 同定义，见 `docs/competitors.md`）"
+        )
+    else:
+        lines.append("- Blowup Factor：未统计（分母缺失，**不代表没有放大**）")
     lines.append(f"- 累计编译耗时：{_fmt_seconds(scan.baseline_seconds)}")
     lines.append("")
 

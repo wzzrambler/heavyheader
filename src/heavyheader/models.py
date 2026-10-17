@@ -281,6 +281,11 @@ class RemovalCandidate:
     #: 区别是根本性的：usage_label 说的是「这个头文件还用不用」（可能性），
     #: advice 说的是「删掉它划不划算」（决定）——后者才是开发者真正问的问题。
     advice: "RemovalAdvice | None" = None
+    #: AST 级交叉检查结论（clang-include-cleaner 子进程），默认 None。
+    #: 只有显式开启 ``--semantic`` 才填充。它**只增强、不削弱**我们的结论：
+    #: 工具把同一个头列为「可删」时作为佐证写进理由；工具沉默（没列为可删）
+    #: 不等于「在用」，因此绝不据此降级我们的 REMOVE。详见 attrib/semantic.py。
+    semantic: "SemanticVerdict | None" = None
 
 
 # --------------------------------------------------------------------------
@@ -341,11 +346,21 @@ class RemovalAdvice:
     ``lean`` only exists for ``HUMAN``: which way the evidence points when it
     does not reach a verdict.  ``""`` when the evidence points neither way
     (e.g. never measured -- guessing a direction there would be fabrication).
+
+    ``review_gain_lines`` / ``review_gain_share`` are the *arithmetic* behind
+    the lean, not decoration: deleting a line costs a review round-trip and
+    a test run, so "worth it on maintenance grounds" has to mean a specific
+    number of lines the project stops parsing (and what share of this unit
+    that is).  A threshold without the number is vibes; the number without
+    the threshold is decoration.  Both are carried so a reader can disagree
+    with the policy using the same arithmetic the tool used.
     """
 
     verdict: AdviceVerdict
     reasons: list[AdviceReason] = field(default_factory=list)
     lean: str = ""  # "remove" / "keep" / ""
+    review_gain_lines: int = 0
+    review_gain_share: float = 0.0
 
     @property
     def verdict_label(self) -> str:
@@ -434,6 +449,10 @@ class ProjectScan:
     #: Sum of ``tu.total_wall_seconds()`` -- the baseline the savings
     #: percentages are relative to.
     baseline_seconds: float = 0.0
+    #: 项目内每个文件只计一次的行数总和（被追踪的头文件 + 编译单元源文件）。
+    #: 这是 ``blowup_factor()`` 的分母，口径与 Header Hero 的 "Total Lines"
+    #: 一致：唯一文件，不按包含次数累加。
+    total_project_lines: int = 0
     #: Template instantiation cost profile.  Filled in by the scanner; the
     #: per-TU numbers are exact, the per-header surface is a heuristic.
     template_profile: object | None = None
@@ -476,6 +495,21 @@ class ProjectScan:
     def total_included_lines(self) -> int:
         """Sum of ``attributed_lines`` -- total header text parsed project-wide."""
         return sum(h.attributed_lines for h in self.header_stats.values())
+
+    def blowup_factor(self) -> float:
+        """``Total Parsed / Total Lines`` -- 平均每行被解析多少次。
+
+        公式与 Header Hero（Bitsquid，2011）的 Blowup Factor 相同，来源与
+        差异见 ``docs/competitors.md``：分子是「头文件行数 × 被包含次数」的
+        全项目求和（本工具的包含次数取自真实编译器的 ``-H`` 依赖树，而不是
+        对 ``#include`` 的正则扫描），分母是项目内唯一文件的行数总和。
+
+        返回 0.0 表示分母缺失（旧数据或未统计），而不是「没有放大」——调用方
+        必须区分这两种情况，不能把 0.0 当成好消息渲染。
+        """
+        if self.total_project_lines <= 0:
+            return 0.0
+        return self.total_included_lines() / self.total_project_lines
 
     def candidates_by_estimate(self) -> list[RemovalCandidate]:
         """Candidates in the order they should be acted on.

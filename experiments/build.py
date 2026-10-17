@@ -44,6 +44,7 @@ __all__ = [
     "CXX",
     "BuildResult",
     "TestResult",
+    "build_and_run_one",
     "clean_build",
     "discover_tus",
     "pch_incompatible_tus",
@@ -447,6 +448,76 @@ def write_compile_commands(root: Path, out: Path, *, with_pch: bool = False) -> 
 
 def _quote(text: str) -> str:
     return f'"{text}"' if " " in text else text
+
+
+def build_and_run_one(
+    source: Path, work_dir: Path, root: Path
+) -> tuple[int, int, str | None]:
+    """Compile ``source`` + the shared main, link, run, count assertions.
+
+    This is the unit-test half of the evidence grade: ``verify`` can prove a
+    unit still *compiles* without an include, and this proves its *tests*
+    still pass.  The two are different claims, and only the second one is
+    what a reviewer means by "safe to merge".
+
+    ``source`` may live anywhere (``verify`` hands us a patched copy in a
+    temp directory) -- the include flags are absolute, so the copy compiles
+    exactly like the original.  Returns ``(passed, failed, error)``; ``error``
+    is a string when compilation, linking or the run itself failed, which is
+    **not** the same as "tests failed" and must not be recorded as such.
+    """
+    gen = write_generated_headers(root, work_dir / "gen", test_data_dir())
+    obj_dir = work_dir / "obj"
+    obj_dir.mkdir(parents=True, exist_ok=True)
+    unit_obj = obj_dir / "unit.o"
+    main_obj = obj_dir / "main.o"
+    exe = work_dir / "bin" / f"{source.stem}.exe"
+    exe.parent.mkdir(parents=True, exist_ok=True)
+
+    for target_source, target_obj in (
+        (root / MAIN_TU, main_obj),
+        (source, unit_obj),
+    ):
+        proc = subprocess.run(
+            _compile_cmd(target_source, target_obj, root, gen, None),
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            return 0, 0, f"compile failed: {proc.stderr.strip().splitlines()[-1][:160]}"
+
+    link = subprocess.run(
+        [CXX, str(main_obj), str(unit_obj), "-o", str(exe)],
+        capture_output=True,
+        text=True,
+    )
+    if link.returncode != 0:
+        return 0, 0, f"link failed: {link.stderr.strip().splitlines()[-1][:160]}"
+
+    try:
+        run = subprocess.run(
+            [str(exe)],
+            capture_output=True,
+            text=True,
+            timeout=900.0,
+            # 在二进制自己的目录里跑：上游有些单元会往 cwd 写临时文件，
+            # 从仓库根跑会把仓库弄脏。
+            cwd=str(exe.parent),
+        )
+    except subprocess.TimeoutExpired:
+        return 0, 0, "test binary timed out"
+
+    import re as _re
+
+    match = _re.compile(_ASSERT_RE).search(run.stdout) or _re.compile(_ASSERT_RE).search(
+        run.stderr
+    )
+    if match is None:
+        return 0, 0, f"no assertion summary in output (exit {run.returncode})"
+    passed, failed = int(match.group(2)), int(match.group(3))
+    if run.returncode != 0:
+        return passed, failed, f"test binary exited {run.returncode}"
+    return passed, failed, None
 
 
 def main(argv: list[str] | None = None) -> int:

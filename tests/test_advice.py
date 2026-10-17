@@ -30,6 +30,7 @@ import pytest
 
 from heavyheader.attrib.advice import (
     MAINTENANCE_LEAN_LINES,
+    MAINTENANCE_LEAN_SHARE,
     TIME_NOISE_FLOOR,
     build_advice,
 )
@@ -46,7 +47,9 @@ from heavyheader.models import (
 from heavyheader.verify import VerificationResult
 
 
-def _candidate(tmp_path: Path, *, lines: int = 2, reach: int = 1) -> RemovalCandidate:
+def _candidate(
+    tmp_path: Path, *, lines: int = 2, reach: int = 1, percent: float = 100.0
+) -> RemovalCandidate:
     header = tmp_path / "include" / "heavy.h"
     source = tmp_path / "src" / "app.cpp"
     return RemovalCandidate(
@@ -56,7 +59,7 @@ def _candidate(tmp_path: Path, *, lines: int = 2, reach: int = 1) -> RemovalCand
         kind=HeaderKind.PROJECT,
         exclusive_headers=[header],
         estimated_lines_saved=lines,
-        estimated_percent=100.0,
+        estimated_percent=percent,
     )
 
 
@@ -160,7 +163,7 @@ def test_measured_improvement_is_remove(tmp_path):
 
 def test_improvement_inside_noise_floor_is_not_remove(tmp_path):
     """1% 的「提升」在噪声里。判成建议删除就是把噪声当收益。"""
-    candidate = _candidate(tmp_path)
+    candidate = _candidate(tmp_path, lines=2, percent=2.0)
     result = _result(
         candidate,
         "no-change",
@@ -176,18 +179,21 @@ def test_improvement_inside_noise_floor_is_not_remove(tmp_path):
 
 def test_small_closure_with_no_win_leans_keep(tmp_path):
     """收益在噪声内、闭包又小：倾向保留，别浪费 review。"""
-    candidate = _candidate(tmp_path, lines=10)
+    candidate = _candidate(tmp_path, lines=10, percent=2.0)
     result = _result(candidate, "no-change", baseline_seconds=1.0, patched_seconds=0.995)
 
     advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 5))
 
     assert advice.verdict is AdviceVerdict.HUMAN
     assert advice.lean == "keep"
+    # 算式必须随结论一起给出，读者才能用同一套算术 disagree。
+    assert advice.review_gain_lines == 10
+    assert advice.review_gain_share == pytest.approx(0.02)
 
 
 def test_big_exclusive_closure_with_single_consumer_leans_remove(tmp_path):
     """没有构建收益，但整个项目就此不再解析这 1000+ 行——维护收益真实存在。"""
-    candidate = _candidate(tmp_path, lines=MAINTENANCE_LEAN_LINES)
+    candidate = _candidate(tmp_path, lines=MAINTENANCE_LEAN_LINES, percent=60.0)
     result = _result(candidate, "no-change", baseline_seconds=1.0, patched_seconds=0.995)
 
     advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
@@ -198,9 +204,33 @@ def test_big_exclusive_closure_with_single_consumer_leans_remove(tmp_path):
     assert any("倾向删除" in r.text for r in maintenance)
 
 
+def test_share_of_the_unit_alone_can_justify_the_lean(tmp_path):
+    """行数只有 200（低于 1000 行阈值），但占本单元解析量 30%、
+    且全项目仅一个使用者——分享值判据成立，倾向删除。"""
+    candidate = _candidate(tmp_path, lines=200, percent=30.0)
+    result = _result(candidate, "no-change", baseline_seconds=1.0, patched_seconds=0.995)
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.lean == "remove"
+    assert advice.review_gain_lines == 200
+    assert advice.review_gain_share == pytest.approx(0.30)
+
+
+def test_share_judge_needs_the_sole_consumer_too(tmp_path):
+    """占比够、行数不够，但另有 3 个单元在解析它——项目整体仍在付费，
+    只便宜本单元读者，不满足判据。"""
+    candidate = _candidate(tmp_path, lines=200, percent=30.0)
+    result = _result(candidate, "no-change", baseline_seconds=1.0, patched_seconds=0.995)
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 4))
+
+    assert advice.lean == "keep"
+
+
 def test_big_closure_shared_by_many_units_still_leans_keep(tmp_path):
     """闭包大但别的单元也在用：删除只便宜一个 TU，不够 justify 一次改动。"""
-    candidate = _candidate(tmp_path, lines=MAINTENANCE_LEAN_LINES * 2)
+    candidate = _candidate(tmp_path, lines=MAINTENANCE_LEAN_LINES * 2, percent=80.0)
     result = _result(candidate, "no-change", baseline_seconds=1.0, patched_seconds=0.995)
 
     advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 4))
@@ -414,3 +444,117 @@ def test_report_states_that_compiling_is_not_correctness(tmp_path):
     from heavyheader.report.markdown import render_markdown
 
     assert "编译通过 ≠ 功能正确" in render_markdown(scan)
+
+
+# --------------------------------------------------------------------------
+# the test-runner evidence grade
+# --------------------------------------------------------------------------
+
+
+def _improved_result(candidate, **kwargs) -> VerificationResult:
+    return _result(
+        candidate,
+        "improved",
+        baseline_seconds=1.0,
+        patched_seconds=0.6,
+        **kwargs,
+    )
+
+
+def test_faster_but_tests_fail_is_not_a_remove(tmp_path):
+    """编译通过且实测更快，但单元测试失败——「更快但坏了」不是收益，
+    是带着秒表的回归。测试是比编译器更高的权威。"""
+    candidate = _candidate(tmp_path)
+    result = _improved_result(candidate, test_status="failed", test_detail="2 assertions failed")
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.HUMAN
+    assert advice.lean == "keep"
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert function_reasons and "测试" in function_reasons[0].text
+    assert "2 assertions failed" in function_reasons[0].evidence
+
+
+def test_passing_tests_are_quoted_as_the_highest_evidence_grade(tmp_path):
+    """测试通过要把「真实执行过」写进理由——这是不变成测试框架的前提下，
+    本工具能到的最高证据等级；同时写明它仍未覆盖项目其余部分。"""
+    candidate = _candidate(tmp_path)
+    result = _improved_result(candidate, test_status="passed", test_detail="42 assertions passed")
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.REMOVE
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert any("测试" in r.text and "42 assertions" in r.evidence for r in function_reasons)
+    assert any("仍未覆盖项目其余部分" in r.text for r in function_reasons)
+
+
+def test_baseline_test_failure_is_not_charged_to_the_candidate(tmp_path):
+    """基线版测试就没过：那是测试环境或基线的问题。结论维持，
+    但理由必须说明「本条证据止于编译」——不能把没取证包装成已取证。"""
+    candidate = _candidate(tmp_path)
+    result = _improved_result(candidate, test_status="error", test_detail="baseline suite red")
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.REMOVE
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert any("测试未能提供证据" in r.text for r in function_reasons)
+
+
+def test_without_a_runner_the_advice_says_so_by_silence(tmp_path):
+    """没配 test_runner 时不出测试理由——但「编译通过 ≠ 功能正确」
+    的脚注必须在，读者才不会以为跑过测试。"""
+    candidate = _candidate(tmp_path)
+    result = _improved_result(candidate)
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.REMOVE
+    # 不能出现任何「测试已执行」类理由（注意：脚注里也有「测试」二字，
+    # 所以按证据句子的专属措辞匹配，而不是裸词匹配）。
+    assert not any(
+        "该单元测试在补丁版上" in r.text or "测试未能提供证据" in r.text
+        for r in advice.reasons
+    )
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert any("编译通过不等于功能正确" in r.text for r in function_reasons)
+
+
+def test_ast_tool_agreement_is_quoted_as_corroboration(tmp_path):
+    """clang-include-cleaner 也把同一个 include 列为可删时，作为佐证写进 REMOVE
+    理由——这是「只增强、不削弱」：语义层的一致让我们更敢推这条建议。"""
+    from heavyheader.attrib.semantic import SemanticVerdict
+
+    candidate = _candidate(tmp_path)
+    candidate.semantic = SemanticVerdict(
+        candidate.tu.stem, frozenset({candidate.header.name}), True
+    )
+    result = _improved_result(candidate)
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.REMOVE
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert any("交叉印证" in r.text for r in function_reasons)
+    assert any(candidate.header.name in r.evidence for r in function_reasons)
+
+
+def test_ast_tool_failure_is_stated_not_silent(tmp_path):
+    """语义工具分析此单元失败：既不佐证也不 demote，但必须明说「未能提供」，
+    让 REMOVE 的背书更诚实——绝不假装做过 AST 校验。"""
+    from heavyheader.attrib.semantic import SemanticVerdict
+
+    candidate = _candidate(tmp_path)
+    candidate.semantic = SemanticVerdict(
+        candidate.tu.stem, frozenset(), False, note="unit-not-analysed"
+    )
+    result = _improved_result(candidate)
+
+    advice = build_advice(candidate, result, _scan(tmp_path, candidate.header, 1))
+
+    assert advice.verdict is AdviceVerdict.REMOVE
+    function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
+    assert any("未能提供" in r.text for r in function_reasons)
+    assert any("unit-not-analysed" in r.evidence for r in function_reasons)

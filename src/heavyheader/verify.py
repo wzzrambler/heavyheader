@@ -38,6 +38,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .attrib.advice import TIME_NOISE_FLOOR, build_advice
+from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import ProjectScan, RemovalCandidate, TranslationUnit
 from .scanner import default_include_dirs
@@ -94,6 +95,20 @@ class VerifyOptions:
     #: real concurrency -- this is the difference between 2 minutes and 20
     #: seconds on a 200-candidate pool.
     jobs: int = 4
+    #: Optional test hook, called as ``test_runner(source_path) -> (ok, detail)``.
+    #:
+    #: Why a callback and not a command-line flag: the patched source lives in
+    #: a temp directory, so a user-supplied "run my tests" command could never
+    #: see the experiment -- and editing the user's real files to make it
+    #: visible would break the one promise ``verify`` has never broken (the
+    #: project's sources are not touched).  The caller -- an experiment
+    #: harness, an IDE, a build-system integration -- knows how to compile and
+    #: run the patched copy, so it supplies the runner.
+    #:
+    #: When set, every ``improved`` candidate gets one more evidence grade:
+    #: the test suite is run against the patched unit.  A failing test
+    #: demotes the verdict; a passing one is quoted in the advice.
+    test_runner: object | None = None
 
 
 @dataclass(slots=True)
@@ -115,6 +130,12 @@ class VerificationResult:
     #: 候选上才值得多花两次完整编译）。0 字节与 None 是两回事。
     baseline_object_bytes: int | None = None
     patched_object_bytes: int | None = None
+    #: 测试证据等级。``""`` = 没跑测试（未配置 runner，或候选没有构建收益，
+    #: 跑一次测试的代价换不来证据）；``passed`` / ``failed`` = 补丁版测试
+    #: 的结局；``error`` = 基线版测试就没过——那是测试环境或基线的问题，
+    #: **不能记到候选头上**，但也不能拿它当证据。
+    test_status: str = ""
+    test_detail: str = ""
     #: 任一侧的计时来自墙钟回退而非编译器自报时，这里写明原因。
     #: 空串 = 两侧都是编译器自己的 TOTAL 行。带着它是因为两种计时口径
     #: 不同，读者有权知道刚看到的那个秒数是谁量的。
@@ -494,6 +515,8 @@ def verify_candidates(
     *,
     verify: VerifyOptions | None = None,
     include_dirs: list[Path] | None = None,
+    semantic: "SemanticBackend | None" = None,
+    build_path: Path | None = None,
 ) -> list[VerificationResult]:
     """Probe then measure the removal candidates, in rank order.
 
@@ -531,6 +554,26 @@ def verify_candidates(
 
     limit = verify.top if verify.top and verify.top > 0 else len(scan.candidates)
     ranked = scan.candidates_by_estimate()[: max(0, limit)]
+
+    # ---------------------------------------------------------------- semantic
+    # 可选 AST 交叉检查（ROADMAP v0.3 路线 1）：对每个出现候选的单元跑一次
+    # clang-include-cleaner，结果缓存 per unit。跑不到（工具缺失 / 该单元分析
+    # 失败）就留 None——build_advice 据此只写「未能提供」，绝不凭沉默降级结论。
+    semantic_by_unit: dict[Path, SemanticVerdict | None] = {}
+    if semantic is not None and semantic.available and build_path is not None:
+        seen: set[Path] = set()
+        for candidate in ranked:
+            unit = candidate.tu
+            if unit in seen:
+                continue
+            seen.add(unit)
+            try:
+                semantic_by_unit[unit] = semantic.analyse(unit, build_path)
+            except Exception as exc:  # noqa: BLE001 - 单单元交叉检查失败不该拖垮整轮扫描
+                semantic_by_unit[unit] = None
+                scan.warnings.append(
+                    f"语义交叉检查 {unit.name} 失败：{type(exc).__name__}: {exc}"
+                )
 
     # ---------------------------------------------------------------- stage 1
     # 定位 + 读源码。定位不了的候选不进编译阶段：它的结论会是假的。
@@ -799,6 +842,51 @@ def verify_candidates(
             result.baseline_object_bytes = baseline_bytes
             result.patched_object_bytes = patched_bytes
 
+    # ---------------------------------------------------------------- stage 4
+    # 测试证据：只对「实测有收益」的候选跑。为噪声内的候选跑一遍完整测试是
+    # 把预算花在换不来证据的测量上——它的结论已经是 HUMAN，测试通过与否
+    # 都不会把它变成建议删除。
+    #
+    # 协议（先证伪自己，再取证）：
+    #   1. 基线版先跑。基线就不过 = 测试环境或基线自身有问题，
+    #      记 error——不冤枉候选，但这份「通过」也不能当证据用；
+    #   2. 基线过了才跑补丁版。补丁挂 = failed，结论降级；
+    #   3. 两侧都过 = passed，作为证据写进建议。
+    if improved and verify.test_runner is not None:
+        for index, result in improved:
+            candidate, source_path, line_number = pending[index]
+            try:
+                baseline_ok, baseline_detail = verify.test_runner(source_path)
+            except Exception as exc:  # noqa: BLE001 - 测试基础设施故障不是候选的错
+                result.test_status = "error"
+                result.test_detail = f"基线测试执行失败：{type(exc).__name__}: {exc}"
+                continue
+            if not baseline_ok:
+                result.test_status = "error"
+                result.test_detail = (
+                    f"基线版测试即未通过（{baseline_detail}）——"
+                    "这是测试环境或基线的问题，不计到候选头上，但也不能作为证据"
+                )
+                continue
+            try:
+                original_text = source_path.read_text(encoding="utf-8", errors="replace")
+                with tempfile.TemporaryDirectory(prefix="heavyheader-test-") as tmp:
+                    patched_path = Path(tmp) / source_path.name
+                    patched_path.write_text(
+                        _comment_out(original_text, line_number), encoding="utf-8"
+                    )
+                    patched_ok, patched_detail = verify.test_runner(patched_path)
+            except Exception as exc:  # noqa: BLE001
+                result.test_status = "error"
+                result.test_detail = f"补丁版测试执行失败：{type(exc).__name__}: {exc}"
+                continue
+            result.test_status = "passed" if patched_ok else "failed"
+            result.test_detail = (
+                f"补丁版测试{'通过' if patched_ok else '失败'}：{patched_detail}"
+                if patched_detail
+                else ("补丁版测试通过" if patched_ok else "补丁版测试失败")
+            )
+
     for index, candidate, _probe in survivors:
         if index in measured:
             candidate.measured_seconds_saved = max(
@@ -812,6 +900,9 @@ def verify_candidates(
     # 「这条已经证伪了」。
     for result in results:
         result.candidate.probe_status = result.status
+        # AST 交叉检查结论随候选走（与 probe_status / advice 同样理由：报告与
+        # 排序读的都是候选）。None 表示没开启语义层或该单元未能取到信号。
+        result.candidate.semantic = semantic_by_unit.get(result.candidate.tu)
         # 明确结论「值不值得删」。规则在 attrib.advice，纯函数、可单测；
         # 这里只负责把证据喂给它。写回候选而不是只放在 result 里，是因为
         # 报告与排序读的都是候选——结论必须跟着候选走。

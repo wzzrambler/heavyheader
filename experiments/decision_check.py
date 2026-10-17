@@ -31,7 +31,7 @@ REPO = HERE.parent
 sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(HERE))
 
-from build import CXX, test_data_dir, write_generated_headers  # noqa: E402
+from build import CXX, build_and_run_one, test_data_dir, write_generated_headers  # noqa: E402
 from competitor import run_cleaner  # noqa: E402
 from fetch import fetch  # noqa: E402
 from run_experiment import compiler_banner  # noqa: E402
@@ -45,6 +45,32 @@ from heavyheader.verify import VerifyOptions, verify_candidates  # noqa: E402
 
 def _unit_name(path: Path) -> str:
     return path.stem
+
+
+def _make_test_runner(root: Path):
+    """A ``test_runner`` for verify: compile+link+run the unit's real tests.
+
+    这是「测试证据等级」的落地：``verify`` 证明补丁版还能编译，这里证明
+    它的**测试还能过**。两侧（基线/补丁）各跑一次，断言数记在
+    ``assertion_log`` 里供报告引用——「编译通过」与「测试通过」是两条
+    不同的证据，报告必须分开写。
+
+    任一步失败（编译/链接/运行/无断言摘要）都返回 ``(False, 原因)``，
+    由 verify 的协议决定记 failed 还是 error——这里不替它圆场。
+    """
+    assertion_log: dict[str, tuple[int, int]] = {}
+
+    def runner(source_path: Path) -> tuple[bool, str]:
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="hh-decision-test-") as tmp:
+            passed, failed, error = build_and_run_one(Path(source_path), Path(tmp), root)
+        if error:
+            return False, error
+        assertion_log[str(source_path)] = (passed, failed)
+        return failed == 0 and passed > 0, f"{passed} passed / {failed} failed"
+
+    return runner, assertion_log
 
 
 def main() -> int:
@@ -77,11 +103,14 @@ def main() -> int:
     )
 
     probe_started = time.perf_counter()
+    test_runner, assertion_log = _make_test_runner(root)
     results = verify_candidates(
         scan,
         detect_driver(CXX),
         options.driver_options(),
-        verify=VerifyOptions(top=0, runs=3, probe_runs=1, jobs=4),
+        verify=VerifyOptions(
+            top=0, runs=3, probe_runs=1, jobs=4, test_runner=test_runner
+        ),
     )
     probe_seconds = time.perf_counter() - probe_started
     print(
@@ -115,6 +144,8 @@ def main() -> int:
                 "baseline_object_bytes": result.baseline_object_bytes,
                 "patched_object_bytes": result.patched_object_bytes,
                 "timing_note": result.timing_note,
+                "test_status": result.test_status,
+                "test_detail": result.test_detail,
                 "message": " ".join(str(result.message).split())[:160],
                 "reasons": (
                     [
@@ -219,6 +250,12 @@ def main() -> int:
             "verdicts": counts,
             "measured_with_memory": with_memory,
             "measured_with_object_size": with_size,
+            "tested": sum(1 for r in rows if r["test_status"]),
+            "test_passed": sum(1 for r in rows if r["test_status"] == "passed"),
+            "test_failed": sum(1 for r in rows if r["test_status"] == "failed"),
+            "assertion_log": {
+                _unit_name(Path(k)): list(v) for k, v in assertion_log.items()
+            },
             "scan_seconds": round(scan_seconds, 1),
             "probe_seconds": round(probe_seconds, 1),
             "reproduce_command": scan.reproduce_command,
@@ -303,8 +340,8 @@ def render(report: dict) -> str:
         lines += [
             "### 实测有效的改动（含全部三个维度）",
             "",
-            "| 单元 | include | 基线 | 移除后 | 节省 | GGC 内存 | 目标文件 |",
-            "|---|---|---:|---:|---:|---|---|",
+            "| 单元 | include | 基线 | 移除后 | 节省 | GGC 内存 | 目标文件 | 单元测试 |",
+            "|---|---|---:|---:|---:|---|---|---|",
         ]
         for row in remove_rows:
             memory = "—"
@@ -320,10 +357,15 @@ def render(report: dict) -> str:
             ):
                 delta = row["patched_object_bytes"] - row["baseline_object_bytes"]
                 size = f"{row['baseline_object_bytes']:,} B → {row['patched_object_bytes']:,} B（{delta:+,} B）"
+            test = {
+                "passed": "✅ 通过",
+                "failed": "❌ 失败（已降级）",
+                "error": "⚠️ 未能取证",
+            }.get(row["test_status"], "未跑")
             lines.append(
                 f"| `{row['unit']}` | `{row['header']}` | {row['baseline_ms']} ms "
                 f"| {row['patched_ms']} ms | **{row['saved_percent']:.1f}%** "
-                f"| {memory} | {size} |"
+                f"| {memory} | {size} | {test} |"
             )
         lines += [
             "",
@@ -331,6 +373,21 @@ def render(report: dict) -> str:
             "> 「—」表示该维度本轮未测或工具链不提供——不是 0。",
             "",
         ]
+
+    if ours["tested"]:
+        lines += [
+            "### 测试证据：从「编译通过」到「测试通过」",
+            "",
+            f"- 跑了测试的候选：**{ours['tested']}** 个"
+            f"（通过 {ours['test_passed']} / 失败 {ours['test_failed']}）",
+            "- 协议：基线版先跑（基线就不过记 error——不冤枉候选，但也不取证），",
+            "  基线过了才跑补丁版；补丁挂 → 结论从「建议删除」降级为「需人工判断」。",
+        ]
+        if ours["assertion_log"]:
+            lines.append("- 断言数（真实执行，逐套件口径）：")
+            for unit, (passed, failed) in sorted(ours["assertion_log"].items()):
+                lines.append(f"  - `{unit}`：{passed:,} passed / {failed:,} failed")
+        lines.append("")
 
     lines += [
         "### 维度覆盖",

@@ -117,6 +117,14 @@ class ScanOptions:
     probe_jobs: int = 4
     #: Compiles per side during full measurement (probes always use 1).
     probe_runs: int = 3
+    #: 可选 AST 交叉检查后端（attrib.semantic.SemanticBackend 实例）。
+    #: ``None`` = 不跑——这是默认且诚实的行为：没有该工具时，结论仍以本工具
+    #: 实证为准，绝不假装做过 AST 校验。类型用 object 以避免 scanner 反向依赖
+    #: attrib.semantic；运行期传真实实例，verify_candidates 才认它。
+    semantic: object | None = None
+    #: clang-include-cleaner 的 ``-p`` 目录（compile_commands.json 所在）。
+    #: 必须在启用 semantic 时提供，否则交叉检查静默跳过（理由见 attrib/semantic.py）。
+    semantic_build_path: Path | None = None
 
     def driver_options(self) -> DriverOptions:
         return DriverOptions(
@@ -465,6 +473,13 @@ def scan_project(
 
     sizes = HeaderSizes()
     build_header_stats(scan, sizes)
+    # Blowup Factor 的分母：每个参与解析的文件只计一次。头文件用
+    # header_stats 的 key（已归一化为绝对 realpath），源文件用 TU 的 source，
+    # 取并集去重——同一个头文件被 200 个 TU 包含，在分母里也只能算一次，
+    # 否则这个比值会退化成「包含次数的平均值」，失去「每行被解析几次」的含义。
+    scan.total_project_lines = sizes.total(
+        set(scan.header_stats) | {tu.source for tu in scan.ok_tus}
+    )
     # 注意：kinds 必须用**原始** TU 路径当 key（与 find_removal_candidates /
     # redundant_reparse_warnings 的查找口径一致），不能用 scan.header_stats 的
     # 归一化 key。build_header_stats 为了跨编译器逐头对齐，把头文件归一到绝对
@@ -499,6 +514,8 @@ def scan_project(
                 budget_seconds=options.probe_budget,
                 jobs=options.probe_jobs,
             ),
+            semantic=options.semantic,
+            build_path=options.semantic_build_path,
         )
         scan.probe_results = results
 

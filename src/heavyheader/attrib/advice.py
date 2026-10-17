@@ -69,6 +69,7 @@ __all__ = [
     "TIME_NOISE_FLOOR",
     "MEMORY_NOISE_FLOOR",
     "MAINTENANCE_LEAN_LINES",
+    "MAINTENANCE_LEAN_SHARE",
     "build_advice",
 ]
 
@@ -88,9 +89,16 @@ MEMORY_NOISE_FLOOR = 0.02
 
 #: How many lines of avoided parsing justify a deletion whose only benefit
 #: is maintenance (no measurable build-time win).  Policy, not physics:
-#: every deletion costs a review round-trip, and 200 lines of headers nobody
-#: will ever miss is not worth one.  Change it if your team disagrees.
+#: every deletion costs a review round-trip and a test run, and 200 lines
+#: of headers nobody will ever miss is not worth one.  Change it if your
+#: team disagrees.
 MAINTENANCE_LEAN_LINES = 1000
+
+#: The share of *this unit's* header parsing that disappears.  A 25% cut is
+#: a maintenance win even when other units still parse the same header --
+#: the reader of this file stops paying for it.  Policy, like the line
+#: threshold above.
+MAINTENANCE_LEAN_SHARE = 0.25
 
 
 def _fmt_ms(seconds: float | None) -> str:
@@ -218,7 +226,7 @@ def _remove(
     result: VerificationResult,
     scan: ProjectScan | None,
 ) -> RemovalAdvice:
-    """Compiles without it, and measurably faster.  The one clear "do this"."""
+    """Compiles without it, measurably faster, and (if run) tests pass."""
     saved = result.seconds_saved or 0.0
     percent = result.percent_saved or 0.0
     build_text = "实测编译耗时下降，超过 2% 噪声线"
@@ -270,7 +278,138 @@ def _remove(
                 ),
             )
         )
+    _append_test_reason(reasons, result)
+    # AST 交叉检查（仅增强、不削弱）：工具把同一头列为可删时作为佐证；
+    # 工具分析此单元失败时说明「未能提供」，让 REMOVE 的背书更诚实。
+    reasons += _semantic_reasons(candidate)
     return RemovalAdvice(verdict=AdviceVerdict.REMOVE, reasons=reasons)
+
+
+def _semantic_reasons(candidate: RemovalCandidate) -> list[AdviceReason]:
+    """AST-level cross-check reasons, if the semantic layer produced a verdict.
+
+    The contract is **corroborate only**: when clang-include-cleaner also lists
+    this header as removable, that is evidence worth quoting; when the tool's
+    analysis of this unit failed, we say so plainly rather than imply a verdict.
+    When the tool is silent about a header (not listed as removable) we add
+    nothing -- its silence is not a verdict of "in use", and demoting on silence
+    would be the ctypes failure all over again, just slower.
+    """
+    from .semantic import _semantic_agrees
+
+    verdict = candidate.semantic
+    if verdict is None:
+        return []
+    agrees = _semantic_agrees(verdict, candidate.header)
+    if agrees is True:
+        return [
+            AdviceReason(
+                aspect=AdviceAspect.FUNCTION,
+                text=(
+                    "AST 级工具 clang-include-cleaner 同样判定此 include 可删，"
+                    "与实测结论交叉印证"
+                ),
+                evidence=f"工具输出移除建议：{candidate.header.name}",
+            )
+        ]
+    if not verdict.ok:
+        return [
+            AdviceReason(
+                aspect=AdviceAspect.FUNCTION,
+                text=(
+                    "AST 交叉检查未能提供：clang-include-cleaner 分析此单元失败，"
+                    "本结论仍以本工具实证为准"
+                ),
+                evidence=verdict.note,
+            )
+        ]
+    return []
+
+
+def _append_test_reason(reasons: list[AdviceReason], result) -> None:
+    """Quote the test-runner outcome as a FUNCTION-grade reason.
+
+    Three states, deliberately unequal:
+
+    * ``passed`` -- the highest evidence grade this tool can reach without
+      becoming a test framework itself: the unit compiles faster **and**
+      its tests pass.  It still is not "the project is correct" -- only
+      this unit's tests ran -- and the wording says exactly that.
+    * ``failed`` -- handled by the caller (the verdict is demoted); this
+      function is not reached with a failure.
+    * ``error`` / not run -- silence is wrong here: the reader must know
+      the stronger evidence was *not* collected, so they do not mistake
+      "compiles faster" for "verified".
+    """
+    status = getattr(result, "test_status", "")
+    detail = getattr(result, "test_detail", "")
+    if status == "passed":
+        reasons.append(
+            AdviceReason(
+                aspect=AdviceAspect.FUNCTION,
+                text=(
+                    "该单元测试在补丁版上真实执行并通过（证据等级高于单纯编译；"
+                    "仍未覆盖项目其余部分）"
+                ),
+                evidence=detail,
+            )
+        )
+    elif status == "error":
+        reasons.append(
+            AdviceReason(
+                aspect=AdviceAspect.FUNCTION,
+                text="测试未能提供证据（基线版测试即未通过或执行失败）——本条结论的证据止于编译",
+                evidence=detail,
+            )
+        )
+
+
+def _test_failed(
+    candidate: RemovalCandidate,
+    result: VerificationResult,
+    scan: ProjectScan | None,
+) -> RemovalAdvice:
+    """Compiles faster, measurably -- and the unit's tests fail.
+
+    "更快但坏了" is not an optimization, it is a regression with a stopwatch.
+    The verdict drops to HUMAN with a keep lean: the compiler cannot veto
+    this edit, but the tests can, and the tests are the higher authority.
+    """
+    saved = result.seconds_saved or 0.0
+    percent = result.percent_saved or 0.0
+    reasons = [
+        AdviceReason(
+            aspect=AdviceAspect.FUNCTION,
+            text=(
+                "**该单元测试在补丁版上失败**——编译通过且更快，但功能被破坏。"
+                "「更快但坏了」不是收益，是带着秒表的回归"
+            ),
+            evidence=getattr(result, "test_detail", ""),
+        ),
+        AdviceReason(
+            aspect=AdviceAspect.BUILD,
+            text="耗时确实下降（但这不改变结论：测试是比编译器更高的权威）",
+            evidence=(
+                f"{_fmt_ms(result.baseline_seconds)} → {_fmt_ms(result.patched_seconds)}"
+                f"（−{percent:.1f}%，−{_fmt_ms(saved)}）"
+            ),
+        ),
+        AdviceReason(
+            aspect=AdviceAspect.MAINTENANCE,
+            text="删除后不再被解析的代码（收益真实存在，但被功能证据否决）",
+            evidence=_closure_summary(candidate),
+        ),
+    ]
+    reach = _reach_note(scan, candidate.header)
+    if reach:
+        reasons.append(AdviceReason(aspect=AdviceAspect.MAINTENANCE, text=reach))
+    return RemovalAdvice(
+        verdict=AdviceVerdict.HUMAN,
+        reasons=reasons,
+        lean="keep",
+        review_gain_lines=candidate.estimated_lines_saved,
+        review_gain_share=round(candidate.estimated_percent / 100.0, 4),
+    )
 
 
 def _memory_reason(result: VerificationResult) -> AdviceReason | None:
@@ -319,8 +458,24 @@ def _human_with_lean(
     result: VerificationResult,
     scan: ProjectScan | None,
 ) -> RemovalAdvice:
-    """Compiles, but no measurable build win.  Both sides, then a lean."""
+    """Compiles, but no measurable build win.  Both sides, then a lean.
+
+    The lean is arithmetic, not a mood.  A deletion costs a review round-trip
+    and a test run; what it buys back is the parsing this unit (and possibly
+    the whole project) stops doing.  So the rule states both numbers and
+    both thresholds, and the reader can redo the division:
+
+        lean = remove  ⇔  sole consumer in the project
+                        ∧ (≥ MAINTENANCE_LEAN_LINES lines
+                           ∨ ≥ MAINTENANCE_LEAN_SHARE of this unit)
+
+    "Sole consumer" matters because if other units still parse the header,
+    the project as a whole keeps paying -- only this unit's reader stops,
+    which is a real but smaller benefit.
+    """
     saved = result.seconds_saved or 0.0
+    gain_lines = candidate.estimated_lines_saved
+    gain_share = candidate.estimated_percent / 100.0
     reasons = [
         AdviceReason(
             aspect=AdviceAspect.FUNCTION,
@@ -336,7 +491,7 @@ def _human_with_lean(
         ),
         AdviceReason(
             aspect=AdviceAspect.MAINTENANCE,
-            text="删除后不再被解析的代码",
+            text="删除后本单元不再解析的代码",
             evidence=_closure_summary(candidate),
         ),
     ]
@@ -344,34 +499,52 @@ def _human_with_lean(
     if reach:
         reasons.append(AdviceReason(aspect=AdviceAspect.MAINTENANCE, text=reach))
 
-    # The lean is a policy call, made explicit: a big exclusive closure that
-    # nothing else in the project uses is worth a review round-trip on
-    # maintenance grounds alone; a small one is not.
     stats = scan.header_stats.get(candidate.header) if scan else None
     only_consumer = stats is not None and stats.tu_reach <= 1
-    if candidate.estimated_lines_saved >= MAINTENANCE_LEAN_LINES and only_consumer:
+    other_consumers = (stats.tu_reach - 1) if stats is not None else 0
+    worth_it = only_consumer and (
+        gain_lines >= MAINTENANCE_LEAN_LINES or gain_share >= MAINTENANCE_LEAN_SHARE
+    )
+    if worth_it:
         lean = "remove"
         reasons.append(
             AdviceReason(
                 aspect=AdviceAspect.MAINTENANCE,
-                text=(
-                    "倾向删除：独占闭包大且全项目仅此一个使用者，"
-                    "构建时间虽无变化，但整个项目今后不再解析这些代码"
+                text="倾向删除：维护收益算式成立",
+                evidence=(
+                    f"净收益 {gain_lines:,} 行（占本单元 {gain_share * 100:.1f}%），"
+                    f"全项目仅此一个使用者；代价是一次 review 加一遍该单元测试。"
+                    f"判据：仅一个使用者且（≥{MAINTENANCE_LEAN_LINES:,} 行 "
+                    f"或 ≥{MAINTENANCE_LEAN_SHARE * 100:.0f}% 占比）"
                 ),
             )
         )
     else:
         lean = "keep"
+        if not only_consumer:
+            why = f"另有 {other_consumers} 个编译单元仍在解析它，删除只便宜本单元"
+        elif gain_lines < MAINTENANCE_LEAN_LINES and gain_share < MAINTENANCE_LEAN_SHARE:
+            why = (
+                f"净收益 {gain_lines:,} 行（占本单元 {gain_share * 100:.1f}%），"
+                f"低于判据（≥{MAINTENANCE_LEAN_LINES:,} 行或 "
+                f"≥{MAINTENANCE_LEAN_SHARE * 100:.0f}%）"
+            )
+        else:
+            why = "构建收益在噪声内，维护收益不满足倾向删除判据"
         reasons.append(
             AdviceReason(
                 aspect=AdviceAspect.MAINTENANCE,
-                text=(
-                    "倾向保留：构建收益在噪声内，独占闭包规模也不足以单独 justify "
-                    "一次改动——留着它，把审查精力花在有实测收益的行上"
-                ),
+                text="倾向保留：把审查精力花在实测有构建收益的行上",
+                evidence=f"{why}；改动代价是一次 review 加一遍该单元测试",
             )
         )
-    return RemovalAdvice(verdict=AdviceVerdict.HUMAN, reasons=reasons, lean=lean)
+    return RemovalAdvice(
+        verdict=AdviceVerdict.HUMAN,
+        reasons=reasons,
+        lean=lean,
+        review_gain_lines=gain_lines,
+        review_gain_share=round(gain_share, 4),
+    )
 
 
 def build_advice(
@@ -388,8 +561,16 @@ def build_advice(
     2. probe says compile failed  → ``KEEP`` (the compiler already vetoed)
     3. line cannot be located     → ``HUMAN``, no lean (guessing would lie)
     4. compiles, not timed        → ``HUMAN``, no lean
-    5. compiles, timed, improved  → ``REMOVE``
+    5. compiles, timed, improved  → ``REMOVE`` -- *unless* a test runner was
+       supplied and the unit's tests fail, in which case the compiler's
+       blessing is overruled by the tests': ``HUMAN`` with a keep lean.
+       "Faster but broken" is a regression with a stopwatch, not a win.
     6. compiles, timed, no change → ``HUMAN`` with a maintenance lean
+
+    Rule 5's test clause is what turns "compiles faster" into "verified
+    faster" -- and it is deliberately opt-in (``VerifyOptions.test_runner``),
+    because the honest default is to say the stronger evidence was *not*
+    collected rather than to imply it was.
 
     Rule 6 is where the old tool was silent.  "疑似未使用" covered both
     "worth trying" and "not worth the review" with the same words; the lean
@@ -423,5 +604,9 @@ def build_advice(
             reasons.append(AdviceReason(aspect=AdviceAspect.MAINTENANCE, text=reach))
         return RemovalAdvice(verdict=AdviceVerdict.HUMAN, reasons=reasons, lean="")
     if result.status == "improved":
+        if getattr(result, "test_status", "") == "failed":
+            # 测试是比编译器更高的权威：编译通过且更快，但测试挂了，
+            # 结论必须降级。没有这条规则，「建议删除」就只是「编译通过」。
+            return _test_failed(candidate, result, scan)
         return _remove(candidate, result, scan)
     return _human_with_lean(candidate, result, scan)

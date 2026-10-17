@@ -389,7 +389,14 @@ def run_tests(build_dir: Path, *, jobs: int = 8, timeout: float = 900.0) -> Test
     def run_one(path: Path) -> tuple[str, int, int, int, bool]:
         try:
             proc = subprocess.run(
-                [str(path)], capture_output=True, text=True, timeout=timeout
+                [str(path)],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+                # 在 bin/ 里跑，不继承调用者的工作目录：上游有些单元会把临时
+                # 文件写到 cwd，从仓库根运行就会在仓库里留下 test.json 之类的
+                # 垃圾，把后续 git status 弄脏。
+                cwd=str(path.parent),
             )
         except subprocess.TimeoutExpired:
             return path.stem, 0, 0, -1, True

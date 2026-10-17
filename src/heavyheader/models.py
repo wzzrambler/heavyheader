@@ -124,11 +124,14 @@ class TranslationUnit:
 
         Deliberately does **not** fall back to summing the phase rows: GCC's
         ``-ftime-report`` phases overlap (``preprocessing`` is a subset of
-        ``phase parsing``), so summing them double-counts.  A scan whose
-        compiler emitted no ``TOTAL`` row reports 0.0 rather than an inflated
-        guess -- an honest zero beats a plausible wrong number, and the
-        callers that care about timing already have their own wall-clock
-        measurement to fall back on.
+        ``phase parsing``), so summing them double-counts.
+
+        When the compiler's ``TOTAL`` row is missing or was discarded by the
+        sanity check (GCC on MinGW prints impossible values for some
+        headers), the driver substitutes the wall clock it measured around
+        the process -- see ``GccLikeDriver.interpret``.  So a 0.0 here means
+        "never compiled", not "compiled in zero time"; callers that need to
+        tell the two apart should check :attr:`timings` directly.
         """
         for timing in self.timings:
             if timing.is_total:

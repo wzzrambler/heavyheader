@@ -221,6 +221,9 @@ def _remove(
     """Compiles without it, and measurably faster.  The one clear "do this"."""
     saved = result.seconds_saved or 0.0
     percent = result.percent_saved or 0.0
+    build_text = "实测编译耗时下降，超过 2% 噪声线"
+    if getattr(result, "timing_note", ""):
+        build_text += f"（注意：{result.timing_note}）"
     reasons = [
         AdviceReason(
             aspect=AdviceAspect.FUNCTION,
@@ -231,7 +234,7 @@ def _remove(
         ),
         AdviceReason(
             aspect=AdviceAspect.BUILD,
-            text="实测编译耗时下降，超过 2% 噪声线",
+            text=build_text,
             evidence=(
                 f"{_fmt_ms(result.baseline_seconds)} → {_fmt_ms(result.patched_seconds)}"
                 f"（−{percent:.1f}%，−{_fmt_ms(saved)}）"

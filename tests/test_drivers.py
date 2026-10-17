@@ -324,3 +324,17 @@ def test_output_path_replaces_zs_for_msvc():
     assert "/showIncludes" not in argv
     assert f"/Fo{out}" in argv
     assert "/c" in argv and "/O2" in argv
+
+
+def test_source_is_never_passed_twice_even_if_extra_flags_carry_it():
+    """driver 拥有源文件参数：extra_flags 里再带一份，GCC 会静默编译两遍
+    并打出两条 TOTAL——读取方只取第一条，于是每个计时都可能是错的那半。
+    这里是第二道防线（第一道在 scanner 构造任务时）。"""
+    driver = _gcc_driver()
+    argv = driver.build_command(
+        Path("a.cpp"), DriverOptions(extra_flags=["-O2", "-c", "a.cpp"])
+    )
+
+    assert argv.count("a.cpp") == 1
+    assert argv[-1] == "a.cpp"
+    assert "-c" in argv  # 编译开关本身无罪，重复的源文件才有罪

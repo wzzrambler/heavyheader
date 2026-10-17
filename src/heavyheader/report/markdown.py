@@ -250,6 +250,14 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
             "> **不是 0**。每个候选的完整取舍依据见上一节「删除建议」。",
             "",
         ]
+        timed_notes = [r.timing_note for r in improved if r.timing_note]
+        if timed_notes:
+            lines += [
+                f"> **计时口径提醒**：{timed_notes[0]}。涉及 "
+                f"{len(timed_notes)} 个候选，其秒数可与墙钟计时互证，"
+                "但不可与编译器内部阶段计时混谈。",
+                "",
+            ]
 
     rejected = [
         r

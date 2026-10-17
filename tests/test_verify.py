@@ -97,8 +97,9 @@ def captured(monkeypatch):
 
     def _fake_measure(driver, source_path, options, _extra, runs, timeout):
         seen.append((str(source_path), options))
-        # (min_seconds, memory_bytes, error) —— 与真实 _measure 的三元组一致。
-        return 0.010, None, None
+        # (min_seconds, memory_bytes, error, discarded_timings)
+        # ——与真实 _measure 的四元组一致。
+        return 0.010, None, None, ()
 
     monkeypatch.setattr("heavyheader.verify._measure", _fake_measure)
     return seen

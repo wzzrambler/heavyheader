@@ -203,4 +203,68 @@ def test_windows_backslash_paths_in_compile_commands_survive_tokenising(tmp_path
     # 引号内的空格不切分：整条 `-I...` 保持是一个参数。
     assert "-IC:\\Program Files\\sdk\\inc" in flags
     assert "-DFOO=1" in flags
-    assert "src\\f1.cpp" in flags
+    # 源文件 token 必须被剥掉——driver 自己会追加它。
+    # （这一条曾经断言的是「在 flags 里」，即把重复传参的 bug 当成了预期；
+    # 见下方「the duplicated-source bug」一节的回归测试。）
+    assert "src\\f1.cpp" not in flags
+
+
+# --------------------------------------------------------------------------
+# the duplicated-source bug (2026-10-18): one token, every measurement wrong
+# --------------------------------------------------------------------------
+
+
+def test_compile_commands_source_token_is_not_passed_twice(tmp_path):
+    """``-c foo.cpp`` 留在 extra_flags 里，driver 又会追加一次源文件——
+    GCC 静默接受、把文件编译两遍、打出两条 TOTAL，而读取方只拿第一条。
+    扫描、探针、基线三层的计时与 include 树全部建立在这条错误命令上。
+
+    修法：构造任务时就把数据库自带的源文件 token 剥掉（driver 拥有
+    源文件参数）。这条测试锁住「extra_flags 里不出现源文件」。
+    """
+    source = tmp_path / "app.cpp"
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+    cc_path = tmp_path / "compile_commands.json"
+    cc_path.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(tmp_path),
+                    "file": str(source),
+                    "command": f'g++ -std=c++17 -O0 -c "{source}" -o "{tmp_path / "app.o"}"',
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    tasks = _tasks_from_compile_commands(cc_path, max_tus=10, root=tmp_path)
+
+    assert len(tasks) == 1
+    extra = tasks[0].options.extra_flags
+    assert str(source) not in extra
+    assert "-c" in extra  # 编译开关保留，只有源文件 token 被剥掉
+    assert "-o" not in extra  # 输出路径仍然要被剥掉（不污染源码树）
+
+
+def test_windows_style_compile_commands_also_lose_the_duplicate(tmp_path):
+    """反斜杠路径的数据库同样受影响——Windows 上这才是默认形态。"""
+    source = tmp_path / "app.cpp"
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+    cc_path = tmp_path / "compile_commands.json"
+    cc_path.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(tmp_path),
+                    "file": str(source),
+                    "command": f'g++ -std=c++17 -O0 -c {source} -o {tmp_path / "app.o"}',
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    tasks = _tasks_from_compile_commands(cc_path, max_tus=10, root=tmp_path)
+
+    assert str(source) not in tasks[0].options.extra_flags

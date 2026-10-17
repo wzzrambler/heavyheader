@@ -115,6 +115,10 @@ class VerificationResult:
     #: 候选上才值得多花两次完整编译）。0 字节与 None 是两回事。
     baseline_object_bytes: int | None = None
     patched_object_bytes: int | None = None
+    #: 任一侧的计时来自墙钟回退而非编译器自报时，这里写明原因。
+    #: 空串 = 两侧都是编译器自己的 TOTAL 行。带着它是因为两种计时口径
+    #: 不同，读者有权知道刚看到的那个秒数是谁量的。
+    timing_note: str = ""
 
     @property
     def seconds_saved(self) -> float | None:
@@ -294,29 +298,39 @@ def _measure(
     cwd: Path | None,
     runs: int,
     timeout: float,
-) -> tuple[float | None, int | None, str | None]:
-    """Compile ``source`` ``runs`` times, return ``(min_seconds, memory, error)``.
+) -> tuple[float | None, int | None, str | None, tuple[str, ...]]:
+    """Compile ``source`` ``runs`` times.
+
+    Returns ``(min_seconds, memory, error, discarded_timings)``.
 
     ``memory`` is the compiler-reported GGC allocation peak of the best run
     (bytes), or ``None`` when the toolchain does not report one.  It is kept
     beside the timing rather than folded into it: a candidate can save wall
     time without saving a byte of allocation, and the advice must be able to
     say so honestly.
+
+    ``discarded_timings`` is what the sanity check threw away for the best
+    run -- non-empty means the compiler's own timer misbehaved (GCC on MinGW
+    prints impossible values for some headers) and the surviving TOTAL came
+    from the wall-clock fallback.  It travels with the number so no reader
+    mistakes a wall-clock reading for a compiler-internal one.
     """
     best: float | None = None
     best_memory: int | None = None
+    best_discarded: tuple[str, ...] = ()
     for _ in range(max(1, runs)):
         try:
             tu = driver.run(source, options, cwd=cwd, timeout=timeout)
         except CompilationError as exc:
-            return None, None, str(exc)
+            return None, None, str(exc), ()
         if not tu.ok:
-            return None, None, tu.error or "compile failed"
+            return None, None, tu.error or "compile failed", ()
         seconds = tu.total_wall_seconds()
         if best is None or seconds < best:
             best = seconds
             best_memory = tu.total_memory_bytes()
-    return best, best_memory, None
+            best_discarded = tuple(tu.timing_discarded)
+    return best, best_memory, None, best_discarded
 
 
 def _object_size(
@@ -420,6 +434,7 @@ class _BaselineCache:
     def __init__(self) -> None:
         self._values: dict[Path, float | None] = {}
         self._memory: dict[Path, int | None] = {}
+        self._discarded: dict[Path, tuple[str, ...]] = {}
         self.compiles = 0
 
     def get(
@@ -432,14 +447,20 @@ class _BaselineCache:
     ) -> float | None:
         if source_path in self._values:
             return self._values[source_path]
-        seconds, memory, _error = _measure(driver, source_path, options, None, runs, timeout)
+        seconds, memory, _error, discarded = _measure(
+            driver, source_path, options, None, runs, timeout
+        )
         self._values[source_path] = seconds
         self._memory[source_path] = memory
+        self._discarded[source_path] = discarded
         self.compiles += max(1, runs)
         return seconds
 
     def memory(self, source_path: Path) -> int | None:
         return self._memory.get(source_path)
+
+    def discarded(self, source_path: Path) -> tuple[str, ...]:
+        return self._discarded.get(source_path, ())
 
 
 def verify_candidates(
@@ -549,7 +570,7 @@ def verify_candidates(
             patched_options = _patched_options(
                 unit_options, effective_includes, source_path
             )
-            seconds, _memory, error = _measure(
+            seconds, _memory, error, _discarded = _measure(
                 driver,
                 patched_path,
                 patched_options,
@@ -622,8 +643,9 @@ def verify_candidates(
         survivors.append((index, candidate, patched_seconds))
 
     # 完整测量本身也可以并行（每个候选一次 patched 编译，runs 次取最小）。
-    # measured: pending 下标 -> (基线秒, 移除后秒, 移除后 GGC 内存字节)
-    measured: dict[int, tuple[float, float, int | None]] = {}
+    # measured: pending 下标 -> (基线秒, 移除后秒, 移除后 GGC 内存字节,
+    #                               移除后侧被丢弃的计时行)
+    measured: dict[int, tuple[float, float, int | None, tuple[str, ...]]] = {}
 
     def _measure_one(index: int, source_path: Path, line_number: int) -> None:
         original_text = source_path.read_text(encoding="utf-8", errors="replace")
@@ -638,11 +660,11 @@ def verify_candidates(
             patched_options = _patched_options(
                 unit_options, effective_includes, source_path
             )
-            seconds, memory, _error = _measure(
+            seconds, memory, _error, discarded = _measure(
                 driver, patched_path, patched_options, None, verify.runs, verify.timeout
             )
         baseline = baselines._values[source_path]
-        measured[index] = (baseline, seconds or 0.0, memory)
+        measured[index] = (baseline, seconds or 0.0, memory, discarded)
 
     if survivors:
         with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
@@ -660,7 +682,7 @@ def verify_candidates(
                 try:
                     future.result()
                 except Exception as exc:  # noqa: BLE001
-                    measured[index] = (0.0, 0.0, None)
+                    measured[index] = (0.0, 0.0, None, ())
                     probe_errors[index] = f"{type(exc).__name__}: {exc}"
 
     # 目标文件大小：只对「实测有收益」的候选再花两次完整编译。
@@ -696,7 +718,7 @@ def verify_candidates(
     for index, candidate, _probe in survivors:
         if index not in measured:
             continue
-        baseline_seconds, patched_seconds, memory = measured[index]
+        baseline_seconds, patched_seconds, memory, discarded = measured[index]
         saved = baseline_seconds - patched_seconds
         # A change smaller than the noise floor is inside the noise of a
         # single file's compile time on a loaded machine; reporting it as a
@@ -706,6 +728,13 @@ def verify_candidates(
         meaningful = (
             baseline_seconds > 0 and abs(saved) / baseline_seconds >= TIME_NOISE_FLOOR
         )
+        timing_note = ""
+        baseline_discarded = baselines.discarded(pending[index][1])
+        if baseline_discarded or discarded:
+            timing_note = (
+                "编译器自报计时损坏（GCC/MinGW 已知问题），"
+                "以上秒数为驱动实测墙钟，非编译器内部 TOTAL"
+            )
         result = VerificationResult(
             candidate=candidate,
             status="improved" if saved > 0 and meaningful else "no-change",
@@ -719,6 +748,7 @@ def verify_candidates(
             ),
             baseline_memory_kb=baselines.memory(pending[index][1]),
             patched_memory_kb=memory,
+            timing_note=timing_note,
         )
         results.append(result)
         if result.status == "improved":

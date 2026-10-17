@@ -207,11 +207,33 @@ def _tasks_from_compile_commands(
         # Strip the output flag: we compile to /dev/null via -fsyntax-only and
         # do not want the project's -o path polluting the source tree.
         argv = _strip_output_flag(argv)
+        # Strip the entry's own source token: the driver appends the source
+        # file itself, so leaving it here would pass the file TWICE.  GCC
+        # accepts that silently -- and then compiles it twice, emitting TWO
+        # ``-ftime-report`` TOTAL rows while every timing we read came from
+        # the first one.  That single duplicated token silently corrupted
+        # every measurement taken in compile_commands mode (see the
+        # regression test in tests/test_scanner.py).
+        argv = _strip_source_token(argv, str(source))
         options = DriverOptions(extra_flags=argv[1:])
         tasks.append(_CompileTask(source=source, options=options, cwd=directory))
         if len(tasks) >= max_tus:
             break
     return tasks
+
+
+def _strip_source_token(argv: list[str], source: str) -> list[str]:
+    """Remove the compilation database's own source file from ``argv``.
+
+    Only the **final** token is considered, and only on an exact match:
+    ``… -c foo.cpp`` is the canonical shape, and never touching anything
+    else keeps a flag's own value (``-I <dir>``) safe even in the absurd
+    case where it shares the source's name.  Anything that is not the
+    trailing source token is left exactly as the build system wrote it.
+    """
+    if argv and argv[-1] in (str(source), source):
+        return argv[:-1]
+    return argv
 
 
 def _split_command(command: str) -> list[str]:

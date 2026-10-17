@@ -150,6 +150,50 @@ PCH 真的生效了吗？`results/experiment-*.md` 的 4.1 节逐单元对照：
 结论因此是互补而非胜出：把竞品输出当成本输入、把我们的成本排序当竞品的优先级，
 是更现实的组合用法。单方面宣布「我们赢了」会同时歪曲两边。
 
+## 三之点五、删除建议决策层实测（`decision_check.py`）
+
+评审要求「每次迭代都附带实际证据」。这一节对应第 3 轮迭代：把删除建议从
+「疑似未使用」的可能性措辞，升级为**明确结论 + 三维度取舍依据 + 可复现实测**。
+`decision_check.py` 在同一工程、同一编译器上回答三个问题。
+
+实测（`results/decision-20261018.md`，222 个候选全部真实编译）：
+
+| 结论 | 数量 | 含义 |
+|---|---:|---|
+| 建议删除 | **1** | 编译通过 **且** 耗时下降超过 2% 噪声线 |
+| 保留 | 187 | 编译器已否决（编译不过）或定位不到该注释哪一行 |
+| 需人工判断 | 34 | 编译可行但收益在噪声内；全部给出倾向（偏留 34） |
+
+**222/222 个候选都有明确结论，没有一条停留在「疑似」。**
+
+唯一一条「建议删除」的三个维度全部实测：
+
+| 维度 | 数据 |
+|---|---|
+| 编译时间 | 1580 ms → 930 ms（**−41.1%**，每侧 3 次取最小） |
+| 编译器内存（GGC 自报） | 301,056 kB → 168,960 kB（−43.9%） |
+| 目标文件体积（完整编译实测） | 63,004 B → 62,972 B（−32 B，−0.05%） |
+| 复现 | `heavyheader scan <root> --compiler g++ --compile-commands <db> --probe` |
+
+体积那一行是个有信息量的阴性结果：**收益全部在编译时间侧，产物体积几乎不变**——
+这类「哪个维度没有收益」的数据和正向收益一样必须实测，不能省略。
+
+与竞品交叉核对（同工程同单元）：我们这 1 条倾向删除的 include，竞品恰好
+**没能分析那个单元**（它自己失败）；竞品 0 条删除建议、101 条补充建议。
+结论不变：精度上落后（AST vs 文本），收益验证上竞品无对应能力，两者互补。
+
+### 这一轮抓到的两个真 bug（都写进 `docs/methodology.md`）
+
+1. **源文件被传了两次**（影响此前全部计量）：compile_commands 的 `-c foo.cpp`
+   留在 flags 里，驱动又追加一次源文件，GCC 安静地编译两遍、打出两条 TOTAL，
+   读取方只取第一条。扫描/探针/基线的计时与 include 树全部建立在错误命令上。
+   症状是「移除后 0 ms / 节省 100%」——TOTAL 丢失后的 0.0 被读成完美优化。
+   修复 + 回归测试见 `tests/test_scanner.py`、`tests/test_drivers.py`。
+   副作用：扫描 54.1 s → 32.2 s、探针 426 s → 213 s（本来就不用编两遍）。
+2. **GCC/MinGW 计时损坏没有回退**：`-ftime-report` 对某些头文件打印不可能的
+   秒数，sanity check 丢弃 TOTAL 后 `total_wall_seconds()` 返回 0.0。
+   现在回退到驱动实测墙钟，并在报告里标明计时口径。
+
 ## 四、复现
 
 ```bash
@@ -159,6 +203,7 @@ python experiments/run_experiment.py   # 主实验：约 9 分钟
 python experiments/control.py          # 对照实验：约 10 分钟（含 A/A 空对照）
 python experiments/rank_check.py       # 回顾性检验：一次扫描 + 零次构建试验
 python experiments/competitor.py       # 竞品对比：约 8 分钟（clang-include-cleaner）
+python experiments/decision_check.py   # 决策层实测：约 6 分钟（结论覆盖 + 维度 + 竞品交叉）
 python experiments/run_experiment.py --render-only experiments/results/experiment-YYYYMMDD.json
                                        # 只重渲染 Markdown，不重跑构建
 ```
@@ -172,6 +217,7 @@ python experiments/run_experiment.py --render-only experiments/results/experimen
 | `results/control-*.json` / `.md` | 对照实验的 A/A 噪声底、两臂逐次试验记录与判读 |
 | `results/rank-check-*.json` / `.md` | 回顾性检验：新排序 vs 已实测的 17 个结局 |
 | `results/competitor-*.json` / `.md` | 竞品对比：clang-include-cleaner vs 本工具，同工程同任务 |
+| `results/decision-*.json` / `.md` | 决策层实测：222 个候选的明确结论、三维度数据、竞品交叉核对 |
 | `_work/` | 拉取的源码、语料、对象文件（已 gitignore，可随时重建） |
 
 ## 五、失败案例与局限（如实写）
@@ -195,3 +241,7 @@ python experiments/run_experiment.py --render-only experiments/results/experimen
 5. **不测维护成本**：PCH 的代价是「改到 PCH 里的头会触发全量重建」，本实验没测它。
 6. **对照实验是脚本代理，不是真人研究**：它衡量试验轮次与试验墙钟，不衡量人的
    思考时间。任何「省了多久人工」的说法都属估算，不与实测并列。
+7. **源文件曾被传了两次**（2026-10-18 修复，见「三之点五」）：`compile_commands`
+   模式下每个编译命令都多带一份源文件，GCC 静默编译两遍。修复前的一切
+   compile_commands 模式计量（含早期探针数字）都建立在这条错误命令上；
+   本 README 中 2026-10-18 的数字均为修复后重跑所得。

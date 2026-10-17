@@ -249,6 +249,25 @@ def _strip_for_object(
     return out
 
 
+def _append_source(argv: list[str], source: Path, extra: list[str]) -> list[str]:
+    """Append the source file unless ``extra`` already carries it.
+
+    The driver owns the source argument.  When it does not, a
+    ``compile_commands.json`` entry (``… -c foo.cpp``) plus the driver's own
+    append passes ``foo.cpp`` **twice**: GCC accepts that silently, compiles
+    the file twice, and prints two ``-ftime-report`` TOTAL rows -- while
+    every reader here kept the first one.  One duplicated token corrupted
+    every timing and include tree taken in compile_commands mode.
+
+    The scanner now strips the token at the source; this is the second line
+    of defence for hand-built options that carry it anyway.
+    """
+    token = str(source)
+    if token in extra:
+        return argv
+    return [*argv, token]
+
+
 class GccLikeDriver(CompilerDriver):
     """GCC and Clang share a flag dialect, so they share a driver.
 
@@ -286,13 +305,11 @@ class GccLikeDriver(CompilerDriver):
             extra = _strip_for_object(extra, _NO_OBJECT_FLAGS_GCC, _DEP_FILE_FLAGS_GCC)
             argv += extra
             argv += ["-o", str(options.output_path)]
-            argv.append(str(source))
-            return argv
+            return _append_source(argv, source, extra)
         if not options.full_compile:
             argv.append("-fsyntax-only")
         argv += extra
-        argv.append(str(source))
-        return argv
+        return _append_source(argv, source, extra)
 
     def interpret(
         self,
@@ -318,6 +335,17 @@ class GccLikeDriver(CompilerDriver):
         # when the compiler's timer is broken (GCC on MinGW does this) we
         # drop the impossible rows rather than report them.
         timings, sanity = sanitise_timings(raw_timings, wall_seconds)
+        if not any(timing.is_total for timing in timings):
+            # 编译器的 TOTAL 行缺失或被 sanity check 丢弃（GCC on MinGW 的
+            # 已知 bug：某些头文件会让 -ftime-report 打印 2**64/1e9 秒）。
+            # 此时退回我们自己量的墙钟——它不区分编译器内部阶段，但它是
+            # 一个真实的进程耗时。关键是不允许「没有 TOTAL」静默变成 0.0：
+            # 一个 0.0 的「移除后耗时」会被下游读成 100% 收益，
+            # 那是把坏掉的计时器当成完美优化。
+            timings = [*timings, _wall_timing(wall_seconds)]
+            sanity.discarded.append(
+                "TOTAL 行不可用，改用驱动实测墙钟（编译器自报计时损坏）"
+            )
         guards = parse_include_guards(stderr)
 
         # -M is not usable in the same invocation as a real compile (it
@@ -396,8 +424,7 @@ class MsvcDriver(CompilerDriver):
             extra = _strip_for_object(extra, _NO_OBJECT_FLAGS_MSVC, _DEP_FILE_FLAGS_MSVC)
             argv += extra
             argv.append(f"/Fo{options.output_path}")
-            argv.append(str(source))
-            return argv
+            return _append_source(argv, source, extra)
         argv.append("/showIncludes")
         argv.append("/Zs")
         if options.standard:
@@ -407,8 +434,7 @@ class MsvcDriver(CompilerDriver):
         for define in options.defines:
             argv.append(f"/D{define}")
         argv += extra
-        argv.append(str(source))
-        return argv
+        return _append_source(argv, source, extra)
 
     def interpret(
         self,

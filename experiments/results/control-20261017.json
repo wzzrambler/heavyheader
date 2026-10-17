@@ -1,32 +1,67 @@
 {
-  "generated": "2026-10-17 22:17:34",
+  "generated": "2026-10-17 23:52:25",
   "project": "nlohmann/json v3.11.3",
   "compiler": "g++ (x86_64-win32-seh-rev1, Built by MinGW-Builds project) 16.2.0",
   "budget_trials": 12,
   "meaningful_percent": 2.0,
+  "protocol": {
+    "baseline_timing": "serial, min of 2 runs (jobs=1)",
+    "trial_timing": "min of 3 compiles, machine otherwise idle",
+    "threshold_percent": 8.3,
+    "threshold_rule": "max(2%, A/A 空对照中观察到的最大 |Δ|)",
+    "version": 2,
+    "supersedes": "v1 用 8 路并行的基线对比串行的单次试验，基线被抬高约 25%，三个「有效改动」是测量偏差；串行复测为 +0.4% / -1.1% / -0.1%。"
+  },
+  "null_control": {
+    "samples": {
+      "unit-algorithms": 8.3,
+      "unit-binary_formats": 7.73,
+      "unit-bjdata": 5.85,
+      "unit-bson": 5.23,
+      "unit-cbor": 8.17,
+      "unit-constructor1": 2.16,
+      "unit-conversions": 2.36,
+      "unit-custom-base-class": 2.9,
+      "unit-deserialization": -1.39,
+      "unit-regression1": 1.19,
+      "unit-regression2": 0.19,
+      "unit-udt_macro": -0.4,
+      "unit-windows_h": 1.33
+    },
+    "median_abs_percent": 2.36,
+    "max_abs_percent": 8.3,
+    "threshold_percent": 8.3,
+    "threshold_rule": "max(2%, A/A 空对照中观察到的最大 |Δ|)",
+    "note": "A/A 空对照：编译未修改的文件，真实收益恒为 0%。这里的散布就是噪声底；任何小于它的「收益」都不能与 0 区分开。"
+  },
   "baseline_compile_seconds": {
-    "unit-algorithms": 3.196,
-    "unit-allocator": 3.027,
-    "unit-binary_formats": 3.242,
-    "unit-bjdata": 7.584,
-    "unit-bson": 5.741,
-    "unit-cbor": 7.29,
-    "unit-constructor1": 6.094,
-    "unit-ordered_json": 3.701,
-    "unit-regression1": 7.973
+    "unit-algorithms": 2.414,
+    "unit-binary_formats": 2.435,
+    "unit-bjdata": 6.662,
+    "unit-bson": 4.533,
+    "unit-cbor": 6.05,
+    "unit-constructor1": 4.604,
+    "unit-conversions": 7.7,
+    "unit-custom-base-class": 3.112,
+    "unit-deserialization": 9.486,
+    "unit-regression1": 7.873,
+    "unit-regression2": 7.509,
+    "unit-udt_macro": 3.313,
+    "unit-windows_h": 1.934
   },
   "arms": {
     "frequency": {
       "trials": 12,
-      "effective": 3,
-      "precision": 0.25,
-      "trial_wall_seconds": 48.0,
-      "first_hit_trial": 6,
+      "pool_size": 35,
+      "effective": 1,
+      "precision": 0.083,
+      "trial_wall_seconds": 99.3,
+      "first_hit_trial": 7,
       "outcomes": [
         {
           "status": "compile-error",
-          "seconds": 0.9384900000004563,
-          "wall": 0.9385004000032495,
+          "seconds": 0.937056599999778,
+          "wall": 0.9370672999939416,
           "detail": "expected constructor, destructor, or type conversion before '(' token",
           "unit": "unit-algorithms",
           "target": "doctest_compatibility.h",
@@ -34,8 +69,8 @@
         },
         {
           "status": "compile-error",
-          "seconds": 0.3645208999987517,
-          "wall": 0.36469439999928,
+          "seconds": 0.3706990999999107,
+          "wall": 0.3708055000024615,
           "detail": "'nlohmann' has not been declared",
           "unit": "unit-algorithms",
           "target": "nlohmann/json.hpp",
@@ -43,8 +78,8 @@
         },
         {
           "status": "compile-error",
-          "seconds": 1.1320623000028718,
-          "wall": 1.1320795000028738,
+          "seconds": 1.135980799997924,
+          "wall": 1.1359948999961489,
           "detail": "invalid use of incomplete type 'std::ifstream' {aka 'class std::basic_ifstream<char>'}",
           "unit": "unit-binary_formats",
           "target": "fstream",
@@ -52,8 +87,8 @@
         },
         {
           "status": "compile-error",
-          "seconds": 1.61878390000129,
-          "wall": 1.6187973000014608,
+          "seconds": 1.5769846999974106,
+          "wall": 1.5770026000027428,
           "detail": "aggregate 'std::__cxx11::basic_ostringstream<unsigned char> ss' has incomplete type and cannot be defined",
           "unit": "unit-bson",
           "target": "sstream",
@@ -61,35 +96,37 @@
         },
         {
           "status": "compile-error",
-          "seconds": 1.1346816000004765,
-          "wall": 1.1346919999996317,
+          "seconds": 1.1204626000035205,
+          "wall": 1.1204731000034371,
           "detail": "'TEST_DATA_DIRECTORY' was not declared in this scope",
           "unit": "unit-binary_formats",
           "target": "make_test_data_available.hpp",
           "line": 15
         },
         {
-          "status": "improved",
-          "seconds": 6.443244099998992,
-          "wall": 8.108009200001106,
-          "saved_percent": 15.05,
+          "status": "no-change",
+          "seconds": 6.186104300002626,
+          "wall": 20.46576960000675,
+          "saved_percent": 7.15,
+          "threshold": 8.3,
           "unit": "unit-bjdata",
           "target": "iostream",
           "line": 18
         },
         {
           "status": "improved",
-          "seconds": 5.721684000000096,
-          "wall": 7.53822250000303,
-          "saved_percent": 21.51,
+          "seconds": 5.537872399996559,
+          "wall": 18.804051200000686,
+          "saved_percent": 8.47,
+          "threshold": 8.3,
           "unit": "unit-cbor",
           "target": "iomanip",
           "line": 16
         },
         {
           "status": "compile-error",
-          "seconds": 2.0460301999992225,
-          "wall": 2.0460402999997314,
+          "seconds": 2.0290433000045596,
+          "wall": 2.0290539000052377,
           "detail": "'set' is not a member of 'std'",
           "unit": "unit-bjdata",
           "target": "set",
@@ -97,35 +134,37 @@
         },
         {
           "status": "no-change",
-          "seconds": 7.98533359999783,
-          "wall": 12.770899399998598,
-          "saved_percent": -0.15,
+          "seconds": 7.7373949000029825,
+          "wall": 28.30733909999981,
+          "saved_percent": 1.72,
+          "threshold": 8.3,
           "unit": "unit-regression1",
           "target": "locale",
           "line": 12
         },
         {
           "status": "compile-error",
-          "seconds": 1.9862718000003952,
-          "wall": 1.9862816000022576,
+          "seconds": 1.9740890999964904,
+          "wall": 1.9741021000008914,
           "detail": "'list' is not a member of 'std'",
           "unit": "unit-constructor1",
           "target": "list",
           "line": 18
         },
         {
-          "status": "improved",
-          "seconds": 6.536175200002617,
-          "wall": 8.178987600000255,
-          "saved_percent": 13.82,
+          "status": "no-change",
+          "seconds": 6.228992099997413,
+          "wall": 20.576776100002462,
+          "saved_percent": 6.5,
+          "threshold": 8.3,
           "unit": "unit-bjdata",
           "target": "limits",
           "line": 17
         },
         {
           "status": "compile-error",
-          "seconds": 2.1422103000004427,
-          "wall": 2.1422190999983286,
+          "seconds": 2.0101395000019693,
+          "wall": 2.0101614000013797,
           "detail": "'read_binary_file' is not a member of 'utils'",
           "unit": "unit-bjdata",
           "target": "test_utils.hpp",
@@ -134,75 +173,161 @@
       ],
       "status_counts": {
         "compile-error": 8,
-        "improved": 3,
-        "no-change": 1
+        "no-change": 3,
+        "improved": 1
       }
     },
     "tool": {
-      "trials": 5,
-      "effective": 0,
-      "precision": 0.0,
-      "trial_wall_seconds": 7.0,
-      "first_hit_trial": null,
+      "trials": 12,
+      "pool_size": 18,
+      "effective": 2,
+      "precision": 0.167,
+      "trial_wall_seconds": 115.7,
+      "first_hit_trial": 3,
       "outcomes": [
         {
-          "status": "compile-error",
-          "seconds": 0.9322195000022475,
-          "wall": 0.9322276999992027,
-          "detail": "expected constructor, destructor, or type conversion before '(' token",
-          "unit": "unit-ordered_json",
-          "target": "tests/thirdparty/doctest/doctest_compatibility.h",
-          "line": null
+          "status": "no-change",
+          "seconds": 9.403541299994686,
+          "wall": 29.00420829999348,
+          "saved_percent": 0.87,
+          "threshold": 8.3,
+          "unit": "unit-deserialization",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/iostream",
+          "line": null,
+          "verdict": "plausibly_unused"
         },
         {
           "status": "compile-error",
-          "seconds": 0.2887090000003809,
-          "wall": 0.28888040000310866,
+          "seconds": 0.7266185999978916,
+          "wall": 0.7274242999992566,
           "detail": "'nlohmann' has not been declared",
-          "unit": "unit-allocator",
+          "unit": "unit-conversions",
           "target": "include/nlohmann/json.hpp",
-          "line": null
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "improved",
+          "seconds": 1.1685687000062899,
+          "wall": 4.124029500002507,
+          "saved_percent": 39.58,
+          "threshold": 8.3,
+          "unit": "unit-windows_h",
+          "target": "C:/mingw64/x86_64-w64-mingw32/include/windows.h",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "no-change",
+          "seconds": 7.53276840000035,
+          "wall": 23.295804399996996,
+          "saved_percent": -0.31,
+          "threshold": 8.3,
+          "unit": "unit-regression2",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/locale",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "no-change",
+          "seconds": 3.204526400004397,
+          "wall": 10.338907199999085,
+          "saved_percent": 3.28,
+          "threshold": 8.3,
+          "unit": "unit-udt_macro",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/string",
+          "line": null,
+          "verdict": "in_use"
         },
         {
           "status": "compile-error",
-          "seconds": 2.5681932999978017,
-          "wall": 2.568209199998819,
-          "detail": "'fifo_map' in namespace 'nlohmann' does not name a template type",
-          "unit": "unit-regression1",
-          "target": "tests/thirdparty/fifo_map/fifo_map.hpp",
-          "line": null
+          "seconds": 1.578621300002851,
+          "wall": 1.578629000003275,
+          "detail": "aggregate 'std::stringstream str' has incomplete type and cannot be defined",
+          "unit": "unit-custom-base-class",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/sstream",
+          "line": null,
+          "verdict": "in_use"
         },
         {
           "status": "compile-error",
-          "seconds": 2.052089100001467,
-          "wall": 2.052097700001468,
-          "detail": "'read_binary_file' is not a member of 'utils'",
-          "unit": "unit-bjdata",
-          "target": "tests/src/test_utils.hpp",
-          "line": null
+          "seconds": 1.602715699998953,
+          "wall": 1.6027249000035226,
+          "detail": "'set' is not a member of 'std'",
+          "unit": "unit-custom-base-class",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/set",
+          "line": null,
+          "verdict": "in_use"
         },
         {
           "status": "compile-error",
-          "seconds": 1.167932699998346,
-          "wall": 1.1679433999997855,
-          "detail": "'TEST_DATA_DIRECTORY' was not declared in this scope",
-          "unit": "unit-binary_formats",
-          "target": "tests/src/make_test_data_available.hpp",
-          "line": null
+          "seconds": 1.0433364999989863,
+          "wall": 1.0433462000000873,
+          "detail": "'DOCTEST_CLANG_SUPPRESS_WARNING_PUSH' does not name a type",
+          "unit": "unit-regression2",
+          "target": "tests/thirdparty/doctest/doctest_compatibility.h",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "improved",
+          "seconds": 2.1956040000004577,
+          "wall": 7.342586500002653,
+          "saved_percent": 9.05,
+          "threshold": 8.3,
+          "unit": "unit-algorithms",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/algorithm",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "compile-error",
+          "seconds": 2.676155100001779,
+          "wall": 2.6762361000000965,
+          "detail": "'deque' in namespace 'std' does not name a template type",
+          "unit": "unit-conversions",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/deque",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "no-change",
+          "seconds": 3.2375758000052883,
+          "wall": 10.58384500000102,
+          "saved_percent": 2.28,
+          "threshold": 8.3,
+          "unit": "unit-udt_macro",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/vector",
+          "line": null,
+          "verdict": "in_use"
+        },
+        {
+          "status": "no-change",
+          "seconds": 7.498816100000113,
+          "wall": 23.360205299999507,
+          "saved_percent": 0.14,
+          "threshold": 8.3,
+          "unit": "unit-regression2",
+          "target": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/list",
+          "line": null,
+          "verdict": "in_use"
         }
       ],
       "status_counts": {
-        "compile-error": 5
+        "no-change": 5,
+        "compile-error": 5,
+        "improved": 2
       }
     }
   },
   "tool_verdict": {
-    "scan_seconds": 54.16,
-    "candidates": 5,
-    "estimated_lines_total": 164220,
-    "estimated_share_percent": 1.51,
+    "scan_seconds": 51.97,
+    "candidates": 18,
+    "plausible_candidates": 1,
+    "estimated_lines_total": 90,
+    "estimated_share_percent": 0.001,
     "build_trials_needed": 0,
-    "conclusion": "整个「逐个删 include」方向的估算收益合计 164220 行（占全项目头文件解析量 1.51%），不值得投入；成本是结构性的，应该做 PCH（见 run_experiment 的实测）。"
+    "conclusion": "候选 18 个，其中工具敢推荐的（疑似未使用）只有 1 个；这 1 个合计估算 90 行，占全项目头文件解析量 0.00%。"
   },
-  "note": "两个臂共享同一候选空间与同一测量方法（改一行 → 编译该单元 → 链接 → 跑该单元测试 → 与基线断言数比对），唯一变量是**排序**。报告的是「构建试验轮次」与「试验墙钟时间」，不是对真人耗时的估计。"
+  "note": "两个臂用同一测量方法（改一行 → 编译该单元 → 链接 → 跑该单元测试 → 与基线断言数比对），且基线一律串行测量。两臂的差别是策略本身：候选空间与排序都不相同。报告的是「构建试验轮次」与「试验墙钟时间」，不是对真人耗时的估计。"
 }

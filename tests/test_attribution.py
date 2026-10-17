@@ -234,10 +234,19 @@ def test_leaf_header_is_still_a_candidate(tmp_path):
     assert root / "leaf.h" in leaf[0].exclusive_headers
 
 
-def test_system_headers_are_never_proposed_for_removal(tmp_path):
-    """Stated twice in the source (HeaderKind, classify_headers): we cannot
-    edit <vector>, so proposing it would be noise that buries the actionable
-    candidates.  The detector used to emit them anyway.
+def test_system_headers_are_proposed_but_labelled(tmp_path):
+    """Standard-library includes are candidates; they are just labelled.
+
+    The first version refused to propose anything outside the project root,
+    reasoning "we cannot edit ``<vector>``".  That is the wrong owner: the
+    line that gets deleted lives in our own ``.cpp``, and removing
+    ``#include <vector>`` from it is a normal change.  The controlled
+    experiment made the cost concrete -- all three effective edits it found
+    were standard library headers, i.e. exactly the region the tool had
+    filtered out.
+
+    ``kind`` survives as a label so the report can say where a header comes
+    from; it no longer decides whether the include is worth mentioning.
     """
     # 分类规则是「在 root 之下即为项目头」，所以「系统头」必须放在 root 之外。
     root = tmp_path / "proj"
@@ -257,12 +266,79 @@ def test_system_headers_are_never_proposed_for_removal(tmp_path):
     )
     scan = _scan([main], root)
 
-    assert scan.candidates, "the project header should still be proposed"
-    for candidate in scan.candidates:
-        assert candidate.kind is HeaderKind.PROJECT
-        assert candidate.header != system_root / "vector"
-    # ...but the system header is still reported for context.
-    assert scan.header_stats, "system headers must still appear in the stats"
+    by_header = {c.header: c for c in scan.candidates}
+    assert system_root / "vector" in by_header
+    assert by_header[system_root / "vector"].kind is HeaderKind.SYSTEM
+    assert by_header[root / "mine.h"].kind is HeaderKind.PROJECT
+
+
+def test_ranking_refuses_to_put_an_in_use_header_first(tmp_path):
+    """A 4000-line header the source actually uses must not outrank a small one.
+
+    This is the exact shape of the experiment's failure: the biggest saving
+    belonged to the header every unit needed, so "sort by savings" put an
+    unremovable include at rank 1 and the first five suggestions all failed
+    to compile.
+    """
+    root = tmp_path
+    huge = root / "huge_in_use.h"
+    huge.write_text(
+        "\n".join(f"int huge_symbol_{i}();" for i in range(4000)) + "\n",
+        encoding="utf-8",
+    )
+    (root / "tiny_unused.h").write_text(
+        "\n".join(f"int tiny_symbol_{i}();" for i in range(20)) + "\n",
+        encoding="utf-8",
+    )
+    source = root / "main.cpp"
+    # 源文件点名了 huge_in_use.h 里的符号，但没点名 tiny_unused.h 的。
+    source.write_text(
+        "int main() { return huge_symbol_0(); }\n", encoding="utf-8"
+    )
+
+    main = _tu(
+        str(source),
+        [
+            (str(source), str(root / "huge_in_use.h"), 0),
+            (str(source), str(root / "tiny_unused.h"), 0),
+        ],
+    )
+    scan = _scan([main], root)
+    ordered = scan.candidates_by_estimate()
+
+    assert ordered[0].header == root / "tiny_unused.h"
+    huge = [c for c in ordered if c.header == root / "huge_in_use.h"][0]
+    assert huge.usage_verdict == "in_use"
+    assert huge.confidence == "blocked"
+    # 收益估计仍然如实保留：它确实是最贵的，只是不能被采纳。
+    assert huge.estimated_lines_saved > ordered[0].estimated_lines_saved
+
+
+def test_usage_follows_the_header_into_its_closure(tmp_path):
+    """The candidate's own text is not the unit of analysis; its closure is.
+
+    ``doctest_compatibility.h`` declares no ``TEST_CASE`` of its own -- the
+    macro comes from ``doctest.h`` one level down.  Looking only at the
+    candidate file said "unused" and the tool told users to delete it.
+    """
+    root = tmp_path
+    _write(root, "deep.h", 1)
+    (root / "deep.h").write_text("#define TEST_CASE(name) void name()\n", encoding="utf-8")
+    compat = root / "compat.h"
+    compat.write_text('#include "deep.h"\n', encoding="utf-8")
+    source = root / "main.cpp"
+    source.write_text(
+        '#include "compat.h"\nTEST_CASE(one) {}\n', encoding="utf-8"
+    )
+
+    single = analyse_usage(source, compat)
+    # 只看 compat.h 自己：它只有一个 #include，判不出来。
+    assert single.verdict is UsageVerdict.UNKNOWN
+
+    with_closure = analyse_usage(source, compat, closure=[compat, root / "deep.h"])
+    assert with_closure.verdict is UsageVerdict.IN_USE
+    assert "TEST_CASE" in with_closure.shared_identifiers
+    assert with_closure.provided_by == root / "deep.h"
 
 
 # --------------------------------------------------------------------------

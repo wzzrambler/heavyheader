@@ -23,9 +23,14 @@ class CompilerFamily(enum.Enum):
 class HeaderKind(enum.Enum):
     """Where a header came from.
 
-    ``PROJECT`` headers are the ones a team can actually edit, and they are
-    the only ones HeavyHeader ever proposes to remove.  Everything else is
-    reported for context so the numbers add up.
+    It is a **label for the reader**, not a filter for the detector.  An
+    earlier revision treated ``PROJECT`` as "the only kind we may propose",
+    on the grounds that we cannot edit ``<vector>``.  That conflated the
+    owner of the header with the owner of the edit: the line a removal
+    touches is always in the project's own source file, and dropping
+    ``#include <iostream>`` from it is a normal, safe change.  Filtering on
+    this enum cost the tool every effective suggestion in the controlled
+    experiment -- all of them were standard library headers.
     """
 
     PROJECT = "project"
@@ -218,15 +223,74 @@ class RemovalCandidate:
     exclusive_headers: list[Path] = field(default_factory=list)
     estimated_lines_saved: int = 0
     estimated_percent: float = 0.0
+    #: 预计省下的编译时间（秒），按「本编译单元」算，不是全项目。
+    #: 公式见 ``graph._estimate_seconds``；``None`` 表示该单元没有可用的
+    #: 编译耗时，此时不参与按时间排序（而不是当成 0 混在中间）。
+    estimated_seconds_saved: float | None = None
     measured_seconds_saved: float | None = None
     verified: bool = False
+    #: 探针结论，``""`` 表示还没探过。取值与 ``verify.VerificationResult.status``
+    #: 一致：``improved`` / ``no-change`` / ``compile-error`` / ``not-found`` /
+    #: ``ambiguous`` / ``error``。留着它是因为「试过但编译不过」必须能从列表里
+    #: 区分出来——否则下一轮还会把同一个候选排到前面，等于没学到任何东西。
+    probe_status: str = ""
     #: Result of the textual usage heuristic: "疑似未使用" / "正在使用" /
     #: "无法判定".  A *heuristic*, never a safety guarantee -- see
     #: :mod:`heavyheader.attrib.usage`.
     usage_label: str = "无法判定"
+    #: 同一判定的机器可读形式（``plausibly_unused`` / ``in_use`` /
+    #: ``unknown``）。排序用它，显示用 ``usage_label``——把中文标签当逻辑
+    #: 键会让排序依赖翻译字符串，改一次文案就悄悄改掉一遍排序结果。
+    usage_verdict: str = "unknown"
     #: Why we think it is (or is not) safe to remove.
     confidence: str = "unknown"
     notes: list[str] = field(default_factory=list)
+
+
+#: 探针结论里表示「这个候选不能按原样采纳」的那些。
+_PROBE_FAILURES = frozenset({"compile-error", "not-found", "ambiguous", "error"})
+
+
+def candidate_rank_key(candidate: RemovalCandidate) -> tuple[int, float]:
+    """Ordering for the removal list.  Lower sorts first.
+
+    Tiers exist because *whether the edit survives the compiler* dominates
+    *how much it would save*.  The first version sorted purely by estimated
+    savings; on nlohmann/json that put a header every unit needs at rank 1,
+    and all five of its suggestions failed to compile.  A ranked list whose
+    top entries cannot be applied is not a low-precision list, it is a broken
+    one -- so the ranking encodes the precedence explicitly:
+
+    ===== ============================================ ===============
+    tier  what                                          within-tier order
+    ===== ============================================ ===============
+    0     probed and measured faster                     seconds saved
+    1     heuristic says plausibly unused                 expected seconds
+    2     heuristic cannot tell                           expected seconds
+    3     heuristic says still in use                     expected seconds
+    4     probed and it failed                           (kept for the record)
+    ===== ============================================ ===============
+
+    Tier 4 stays in the list on purpose: "we tried this and the compiler said
+    no" is a finding worth showing.  It just never outranks a live suggestion.
+    """
+    if candidate.probe_status in _PROBE_FAILURES:
+        return (4, 0.0)
+    if candidate.verified:
+        saved = candidate.measured_seconds_saved or 0.0
+        return (0, -saved) if saved > 0 else (4, 0.0)
+
+    tier = {"plausibly_unused": 1, "unknown": 2, "in_use": 3}.get(
+        candidate.usage_verdict, 2
+    )
+    estimate = candidate.estimated_seconds_saved
+    if estimate is None:
+        # No timing for this unit: fall back to the line share so it still
+        # lands in a sensible place, but subtracting a tiny epsilon keeps
+        # measured candidates ahead of unmeasured ones with the same share.
+        estimate = candidate.estimated_percent * 1e-6
+    return (tier, -estimate)
+
 
 
 @dataclass(slots=True)
@@ -280,24 +344,12 @@ class ProjectScan:
         return sum(h.attributed_lines for h in self.header_stats.values())
 
     def candidates_by_estimate(self) -> list[RemovalCandidate]:
-        """Candidates ordered by how likely they are to be worth acting on.
+        """Candidates in the order they should be acted on.
 
-        Two signals, in priority order:
-
-        1. Whether the usage heuristic thinks the include is unused.  A
-           header that is still in use is a *refactoring* signal (forward
-           declarations, precompiled headers), not a deletion signal, and
-           burying it under genuinely removable ones helps nobody.
-        2. Estimated lines saved.
-
-        Nothing is hidden by this ordering -- the report shows the usage
-        verdict for every row -- it just puts the actionable ones first.
+        The ordering rules live in :func:`candidate_rank_key` so that the list
+        produced by ``graph.find_removal_candidates`` and the one shown by the
+        reports can never disagree.  They used to be two separate sorts, and
+        the report's copy put "plausibly unused" above a *measured* win --
+        i.e. a guess outranked a measurement.
         """
-        return sorted(
-            self.candidates,
-            key=lambda c: (
-                c.usage_label == "疑似未使用",
-                c.measured_seconds_saved if c.verified and c.measured_seconds_saved else c.estimated_lines_saved,
-            ),
-            reverse=True,
-        )
+        return sorted(self.candidates, key=candidate_rank_key)

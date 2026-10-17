@@ -409,4 +409,11 @@ def verify_candidates(
         candidate.measured_seconds_saved = max(0.0, saved)
         candidate.verified = True
 
+    # 失败也要留下痕迹。以前只有成功的候选被写回 scan，失败的候选在列表里
+    # 看起来跟没探过一模一样——于是报告会把一个「已经实测编译不过」的候选
+    # 继续排在前排，下一轮扫描还会重复推荐它。probe_status 就是让排序知道
+    # 「这条已经证伪了」。
+    for result in results:
+        result.candidate.probe_status = result.status
+
     return results

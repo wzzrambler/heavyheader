@@ -41,6 +41,7 @@ from ..models import (
     ProjectScan,
     RemovalCandidate,
     TranslationUnit,
+    candidate_rank_key,
 )
 
 __all__ = [
@@ -274,17 +275,40 @@ def find_removal_candidates(
     kinds: dict[Path, HeaderKind] | None = None,
     *,
     min_savings: int = 1,
+    usage_index=None,
 ) -> list[RemovalCandidate]:
-    """Rank direct ``#include`` lines by how much they cost the project.
+    """Rank direct ``#include`` lines by how much they cost, and how likely
+    they are to be removable.
 
-    Only *direct* includes of project-owned headers are proposed.  Removing a
-    transitive include is never our call -- the owner of the including header
-    has to make that change, and suggesting it would be noise.
+    Two corrections over the first implementation, both forced by the
+    controlled experiment in ``experiments/control.py``:
+
+    1. **Every direct include is a candidate, not just project-owned ones.**
+       The first version skipped headers outside the project root, reasoning
+       "we cannot edit ``<vector>``".  That confused the owner of the *header*
+       with the owner of the *edit*: the line being deleted is always in our
+       own source file, and deleting ``#include <iostream>`` from it is a
+       perfectly ordinary change.  Worse, it dropped the exact region where
+       every effective edit in the experiment was found -- 3 hits out of 3
+       landed on standard library headers, all of them invisible to the tool.
+
+    2. **The estimate is per translation unit and in seconds, not project-wide
+       lines.**  Project-wide attributed lines reward headers that *every* unit
+       shares, which are the ones nobody can remove; and a removal only ever
+       saves time in the one unit it is applied to.  See
+       :func:`_estimate_seconds` for the arithmetic and its known bias.
+
+    Candidates come back ordered by :func:`heavyheader.models.candidate_rank_key`
+    -- verified wins first, then plausibly-unused by expected seconds, then the
+    ones the usage heuristic says are still in use.
     """
+    from .usage import IdentifierIndex, UsageVerdict
+
     if kinds is None:
         kinds = classify_headers(
             scan.root, {h for tu in scan.ok_tus for h in tu.dependencies}
         )
+    index = usage_index if usage_index is not None else IdentifierIndex()
 
     candidates: list[RemovalCandidate] = []
     for analysis in _analyse_tus(scan, sizes):
@@ -294,13 +318,6 @@ def find_removal_candidates(
             continue
 
         for header in directs:
-            # The contract, stated twice elsewhere (HeaderKind and
-            # classify_headers): only project-owned headers are ever proposed
-            # for removal.  We cannot edit <vector>, and a ranked list topped
-            # by "delete <vector>" buries everything actionable.
-            if kinds.get(header, HeaderKind.SYSTEM) is not HeaderKind.PROJECT:
-                continue
-
             # Union of everything reachable from *other* direct includes.  A
             # header in this union is already being paid for, so removing this
             # include cannot save it.
@@ -341,6 +358,11 @@ def find_removal_candidates(
                 continue
             percent = (saved / analysis.processed_lines * 100.0) if analysis.processed_lines else 0.0
             line = _include_line(tu, header)
+            # 用法判定必须覆盖「删掉这个 include 后不再被解析的那批头」，
+            # 而不是候选头自己的那段文本——实验里 5 个失败候选全部栽在这里：
+            # doctest_compatibility.h 自身没有 TEST_CASE，TEST_CASE 在它
+            # 往下拉的 doctest.h 里。
+            signal = analyse_usage(tu.source, header, closure=exclusive, index=index)
             candidates.append(
                 RemovalCandidate(
                     tu=tu.source,
@@ -350,19 +372,45 @@ def find_removal_candidates(
                     exclusive_headers=sorted(exclusive),
                     estimated_lines_saved=saved,
                     estimated_percent=round(percent, 2),
+                    estimated_seconds_saved=_estimate_seconds(
+                        tu, analysis.processed_lines, saved
+                    ),
                     measured_seconds_saved=None,
                     verified=False,
-                    usage_label=analyse_usage(tu.source, header).label,
-                    confidence=_confidence(exclusive, analysis),
-                    notes=_notes(tu, header, exclusive, sizes),
+                    usage_label=signal.label,
+                    usage_verdict=signal.verdict.value,
+                    confidence=_confidence(exclusive, analysis, signal.verdict),
+                    notes=_notes(tu, header, exclusive, sizes, signal),
                 )
             )
 
-    # Biggest absolute saving first; ties broken by the wider-reaching header.
-    candidates.sort(
-        key=lambda c: (c.estimated_lines_saved, c.estimated_percent), reverse=True
-    )
+    candidates.sort(key=candidate_rank_key)
     return candidates
+
+
+def _estimate_seconds(tu: TranslationUnit, processed_lines: int, saved: int) -> float | None:
+    """Expected compile-time saving for this unit, in seconds.
+
+    ``tu.total_wall_seconds()`` is the compiler's own TOTAL row from
+    ``-ftime-report`` for *this* unit, so the share below is anchored in a
+    measurement instead of a guess::
+
+        seconds_saved  ~=  tu_total  *  exclusive_lines / tu_processed_lines
+
+    The known, documented bias: lines are not equally expensive.  Standard
+    library headers are template-dense and cost more per line than project
+    headers -- in the experiment, dropping ``<iostream>`` cut a unit's compile
+    time by 15% while its line share was far smaller.  So this number is a
+    *prior* for ordering, not a promise; ``verify`` replaces it with a
+    measurement, and the report never shows the two as if they were the same
+    quantity.  Returns ``None`` when the compiler reported no total, so an
+    unmeasured unit is not silently ranked at zero.
+    """
+    total = tu.total_wall_seconds()
+    if total <= 0 or processed_lines <= 0:
+        return None
+    return round(total * (saved / processed_lines), 4)
+
 
 
 def _include_line(tu: TranslationUnit, header: Path) -> int | None:
@@ -372,15 +420,29 @@ def _include_line(tu: TranslationUnit, header: Path) -> int | None:
     return None
 
 
-def _confidence(exclusive: set[Path], analysis: _TuAnalysis) -> str:
+def _confidence(exclusive: set[Path], analysis: _TuAnalysis, verdict) -> str:
     """How confident are we that removal is a *win*?
 
-    This is deliberately not a claim that the include is unused -- that needs
-    semantic analysis we do not do.  It is a claim about cost: if the include
-    owns a large exclusive closure, removing it removes real work.
+    Two independent axes, and the weaker one wins:
+
+    * **Cost** -- does the include own a large exclusive closure?  If not,
+      removing it removes no work even if it is unused.
+    * **Usage** -- does the source still name something the closure declares?
+      If yes, the edit will not compile, and no amount of saved text helps.
+
+    The first version scored cost only, which is how a 20,000-line header
+    that every unit needs ended up ranked first and failed to compile.  A
+    cost-based "high" on an in-use include is not high confidence, it is a
+    confident mistake.
     """
+    from .usage import UsageVerdict
+
     if not exclusive:
         return "none"
+    if verdict is UsageVerdict.IN_USE:
+        return "blocked"
+    if verdict is UsageVerdict.UNKNOWN:
+        return "guarded"
     if len(exclusive) <= 2:
         return "low"
     if len(exclusive) <= 10:
@@ -393,8 +455,17 @@ def _notes(
     header: Path,
     exclusive: set[Path],
     sizes: HeaderSizes,
+    signal=None,
 ) -> list[str]:
     notes: list[str] = []
+    if signal is not None and signal.provided_by is not None and signal.provided_by != header:
+        # 说清符号到底由谁提供。只写「这个 include 在被用」，用户还是不知道
+        # 依赖藏在哪一层；写出文件名才可操作（比如「该直接 include doctest.h」）。
+        names = "、".join(signal.shared_identifiers[:3])
+        notes.append(
+            f"{names} 由 {signal.provided_by.name} 提供（在本 include 的下游），"
+            "删除会编译失败"
+        )
     if not exclusive:
         notes.append("该 include 的头文件均可由其他 include 到达，删除几乎无收益")
     heavy = sorted(exclusive, key=lambda h: sizes.lines(h), reverse=True)[:3]

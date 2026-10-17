@@ -25,6 +25,26 @@ So the result is reported as ``plausibly_unused`` / ``in_use`` /
 ``unknown`` -- never as "safe to delete".  The authoritative answer comes
 from :mod:`heavyheader.verify`, which actually removes the include and
 recompiles.  That is the whole point of having both.
+
+Scope: what "this include" means
+--------------------------------
+The first version of this module compared the source against the *candidate
+header's own text* only.  That is the wrong unit of analysis, and the
+controlled experiment (``experiments/control.py``) caught it: the tool
+proposed removing ``doctest_compatibility.h`` from a test unit that uses
+``TEST_CASE`` dozens of times, because ``TEST_CASE`` is declared in
+``doctest.h`` -- one level down, inside the closure that disappears with the
+include.  Five out of five suggestions failed to compile, all for this
+reason.
+
+What a deletion actually removes is the candidate's *exclusive closure*: the
+headers that become unreachable once this ``#include`` is gone (see
+:func:`heavyheader.attrib.graph.find_removal_candidates`).  So the question is
+not "does the source name something this file declares" but "does the source
+name something **anything in the disappearing set** declares".  Callers pass
+that set in as ``closure``; the verdict is the answer for the whole set, and
+``provided_by`` says which file actually owns the matched symbol so the
+report can point at it.
 """
 
 from __future__ import annotations
@@ -34,7 +54,13 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-__all__ = ["UsageVerdict", "UsageSignal", "analyse_usage", "identifiers_in"]
+__all__ = [
+    "UsageVerdict",
+    "UsageSignal",
+    "IdentifierIndex",
+    "analyse_usage",
+    "identifiers_in",
+]
 
 
 class UsageVerdict(Enum):
@@ -50,6 +76,11 @@ class UsageSignal:
     verdict: UsageVerdict
     shared_identifiers: tuple[str, ...] = ()
     header_identifier_count: int = 0
+    #: The file inside the disappearing set that declares the matched symbol.
+    #: ``None`` when nothing matched (or when the caller passed no closure).
+    #: Reported verbatim: "``TEST_CASE`` 由 ``doctest.h`` 提供" is actionable,
+    #: "这个头在用" is not.
+    provided_by: Path | None = None
 
     @property
     def label(self) -> str:
@@ -169,31 +200,116 @@ def _declares_nothing(text: str) -> bool:
     return True
 
 
-def analyse_usage(source: Path, header: Path) -> UsageSignal:
-    """Compare the identifiers a TU uses with those a header declares."""
-    source_text = _read(source)
-    header_text = _read(header)
-    if source_text is None or header_text is None:
+class IdentifierIndex:
+    """Per-scan cache of ``path -> identifiers``.
+
+    Why a cache and not a module-level dict: one scan evaluates hundreds of
+    candidates whose closures overlap heavily (every unit that includes
+    ``json.hpp`` sees the same thirty detail headers), so caching turns the
+    work into "read each header once".  A module-level cache would keep the
+    whole stdlib's identifier sets alive for the lifetime of the process,
+    which is exactly wrong for the long-running dashboard.
+
+    An unreadable file is cached as an empty set rather than retried, so one
+    broken header cannot make a scan quadratic.
+    """
+
+    __slots__ = ("_headers", "_sources")
+
+    def __init__(self) -> None:
+        self._headers: dict[Path, frozenset[str]] = {}
+        self._sources: dict[Path, frozenset[str]] = {}
+
+    def header_ids(self, path: Path) -> frozenset[str]:
+        cached = self._headers.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        ids = frozenset(identifiers_in(_strip_noise(text))) if text else frozenset()
+        self._headers[path] = ids
+        return ids
+
+    def source_ids(self, path: Path) -> frozenset[str] | None:
+        """``None`` (not an empty set) when the source cannot be read.
+
+        The distinction matters: "read it, found no identifiers" and "could not
+        read it" lead to different verdicts, and collapsing them would turn a
+        permissions problem into a confident "unused".
+        """
+        cached = self._sources.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        if text is None:
+            return None
+        ids = frozenset(identifiers_in(_strip_noise(text)))
+        self._sources[path] = ids
+        return ids
+
+
+def analyse_usage(
+    source: Path,
+    header: Path,
+    closure: "tuple[Path, ...] | list[Path] | set[Path] | None" = None,
+    index: IdentifierIndex | None = None,
+) -> UsageSignal:
+    """Compare the identifiers a TU uses with those that disappear with an include.
+
+    ``closure`` is the *exclusive* closure of the candidate include -- the
+    headers that stop being parsed if it is removed -- and normally includes
+    ``header`` itself.  Passing it is what makes the verdict correct for
+    headers that forward other headers; omitting it keeps the old
+    single-file behaviour, which is only right when the candidate is a leaf.
+
+    Note that a header which merely aggregates others (``#pragma once`` plus
+    a wall of ``#include``) is *not* judged on its own text: with a closure it
+    is judged on everything it brings in, which is precisely what a reader of
+    the code means by "is this include used".
+    """
+    index = index or IdentifierIndex()
+
+    source_ids = index.source_ids(source)
+    if source_ids is None:
         return UsageSignal(verdict=UsageVerdict.UNKNOWN)
 
-    if _declares_nothing(header_text):
-        # An aggregation or macro-only header: nothing here to match against.
+    extra = [Path(p) for p in (closure or ()) if Path(p) != header]
+    # Header first: when several files in the set declare the same name, the
+    # candidate itself is the most useful thing to name in the report.
+    ordered = [header, *sorted(extra)]
+
+    total = 0
+    first_nonempty: Path | None = None
+    for path in ordered:
+        ids = index.header_ids(path)
+        if not ids:
+            continue
+        total += len(ids)
+        if first_nonempty is None:
+            first_nonempty = path
+        shared = ids & source_ids
+        if shared:
+            return UsageSignal(
+                verdict=UsageVerdict.IN_USE,
+                shared_identifiers=tuple(sorted(shared)[:8]),
+                header_identifier_count=total,
+                provided_by=path,
+            )
+
+    if total == 0:
+        # Includes nothing, declares nothing, or could not be read.  Saying
+        # "unused" here would be a guess dressed up as a finding.
         return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
 
-    header_ids = identifiers_in(_strip_noise(header_text))
-    if not header_ids:
-        return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
+    if not extra and first_nonempty is not None:
+        text = _read(first_nonempty)
+        if text is not None and _declares_nothing(text):
+            # Aggregation/macro-only header evaluated on its own text alone:
+            # its "identifiers" are the names of the headers it forwards, so a
+            # naive comparison reports a false unused.  With a closure this
+            # branch is never reached -- the closure is the real comparison.
+            return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
 
-    source_ids = identifiers_in(_strip_noise(source_text))
-    shared = header_ids & source_ids
-
-    if shared:
-        return UsageSignal(
-            verdict=UsageVerdict.IN_USE,
-            shared_identifiers=tuple(sorted(shared)[:8]),
-            header_identifier_count=len(header_ids),
-        )
     return UsageSignal(
         verdict=UsageVerdict.PLAUSIBLY_UNUSED,
-        header_identifier_count=len(header_ids),
+        header_identifier_count=total,
     )

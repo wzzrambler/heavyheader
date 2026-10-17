@@ -40,6 +40,7 @@ $ heavyheader scan ./src --format html -o report.html
 | `verify` | 对候选 include 真的删掉、重新编译、实测耗时差异 |
 | `gate` | CI 门禁：头文件成本相对基线回归超阈值则流水线失败 |
 | `compare` | 对比两份扫描结果，定位成本上升的具体头文件 |
+| `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 
 `scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
 前向声明的 include。两者都是估算，报告内附限制说明。
@@ -141,6 +142,9 @@ heavyheader scan ./my-project --save pr.json
 heavyheader pr-comment base.json pr.json                       # 只看渲染正文
 heavyheader pr-comment base.json pr.json --post                # 经 gh 发布（需 Actions 环境）
 heavyheader pr-comment base.json pr.json --post --fail-on-regression
+
+# 8. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
+heavyheader toolchains ./my-project --compilers g++,clang++
 ```
 
 ### 增量扫描
@@ -174,6 +178,24 @@ $ heavyheader pr-comment base.json pr.json --post
 `--fail-on-regression` 让成本回归超阈值时退出码为 1，使 CI 步骤失败；`gh` 缺失或
 拿不到 PR 号时退出码为 2，且正文照常打印，绝不静默丢失。发布依赖 GitHub Actions
 自带的 `gh` CLI，不引入任何第三方库。
+
+### 多编译器对比
+
+`scan` 回答「一个工具链下，成本花在哪些头文件上」；`toolchains` 回答「换一个
+编译器，是更快还是更慢、差在哪」。它对同一份代码**依次**跑每个编译器（串行，
+避免并行争抢 CPU 把耗时抬高），输出一张矩阵：每个编译器的 TU 数、归因行数
+（全部 / 项目头 / 非项目头）、依赖边、耗时与相对最快，以及项目头文件在各编译器
+间的差异表。
+
+```bash
+$ heavyheader toolchains ./my-project --compilers g++,clang++
+$ heavyheader toolchains ./my-project --compilers g++,clang++ --format json
+```
+
+三个刻意的取舍：**编译器缺失不会让整张矩阵失败**——如实标成「失败：找不到编译器」，
+其余编译器照常对比；**耗时只作参考**（本机、`-fsyntax-only`、随负载变化），结构指标
+（TU / 归因行数 / 依赖边）才是确定性的；**逐头文件差异只比项目自己的头**——系统头在
+不同工具链下路径各不相同，按路径比较只会制造假差异。
 
 ## 支持的工具链
 

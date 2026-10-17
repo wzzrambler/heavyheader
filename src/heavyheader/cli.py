@@ -1,6 +1,6 @@
 """HeavyHeader command line interface.
 
-Six verbs, each doing one thing:
+Seven verbs, each doing one thing:
 
 ======================  ====================================================
 ``scan``                analyse a tree, write a report
@@ -9,6 +9,7 @@ Six verbs, each doing one thing:
 ``compare``             diff two saved scans
 ``history``             show the cost trend built from ``--history`` logs
 ``pr-comment``          render (and post) a PR comment from a scan comparison
+``toolchains``          compare build cost across several compilers
 ======================  ====================================================
 
 ``argparse`` is used deliberately rather than ``click``/``typer``: the CLI is
@@ -67,13 +68,19 @@ def build_parser() -> argparse.ArgumentParser:
         "  %(prog)s scan ./src --history cost.jsonl\n"
         "  %(prog)s history cost.jsonl --serve\n"
         "  %(prog)s pr-comment --before baseline.json --after pr.json --post\n"
+        "  %(prog)s toolchains ./src --compilers g++,clang++\n"
         ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    def add_common(sub: argparse.ArgumentParser, *, with_path: bool = True) -> None:
+    def add_common(
+        sub: argparse.ArgumentParser,
+        *,
+        with_path: bool = True,
+        with_compiler: bool = True,
+    ) -> None:
         if with_path:
             sub.add_argument(
                 "path",
@@ -82,7 +89,10 @@ def build_parser() -> argparse.ArgumentParser:
                 default=Path("."),
                 help="要分析的源码树（默认当前目录）",
             )
-        sub.add_argument("--compiler", default="g++", help="编译器可执行文件（默认 g++）")
+        if with_compiler:
+            sub.add_argument(
+                "--compiler", default="g++", help="编译器可执行文件（默认 g++）"
+            )
         sub.add_argument("--std", default=None, help="语言标准，如 c++17")
         sub.add_argument("-I", "--include", dest="includes", action="append", default=[], type=Path, help="额外头文件搜索路径，可重复")
         sub.add_argument("-D", "--define", dest="defines", action="append", default=[], help="预定义宏，可重复")
@@ -196,6 +206,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="评论标题",
     )
 
+    tool = subparsers.add_parser(
+        "toolchains", help="同一份代码在多个编译器下的构建成本对比"
+    )
+    add_common(tool, with_compiler=False)
+    tool.add_argument(
+        "--compilers",
+        default="g++,clang++",
+        help="逗号分隔的编译器列表（默认 g++,clang++）",
+    )
+    tool.add_argument(
+        "--format", choices=["md", "json"], default="md", help="输出格式（默认 md）"
+    )
+    tool.add_argument(
+        "-o", "--output", type=Path, default=None, help="输出文件（默认打印到标准输出）"
+    )
+    tool.add_argument(
+        "--top", type=int, default=15, help="头文件差异表最多显示多少行（默认 15）"
+    )
+
     return parser
 
 
@@ -204,10 +233,18 @@ def build_parser() -> argparse.ArgumentParser:
 # --------------------------------------------------------------------------
 
 
-def _scan_options_from_args(args) -> ScanOptions:
+def _scan_options_for(args, compiler: str) -> ScanOptions:
+    """Build scan options for one compiler.
+
+    ``toolchains`` runs the same argument set against several compilers, so the
+    compiler is a parameter rather than read off ``args`` (that parser has no
+    single ``--compiler``).  Every other flag is shared, which keeps the matrix
+    comparable: all compilers are driven with identical include paths, defines
+    and standards.
+    """
     return ScanOptions(
         root=Path(getattr(args, "path", ".")),
-        compiler=args.compiler,
+        compiler=compiler,
         standard=args.std,
         include_dirs=list(args.includes),
         defines=list(args.defines),
@@ -222,6 +259,10 @@ def _scan_options_from_args(args) -> ScanOptions:
         pch_top=getattr(args, "pch_top", 5),
         forward_decl=getattr(args, "forward_decl", False),
     )
+
+
+def _scan_options_from_args(args) -> ScanOptions:
+    return _scan_options_for(args, args.compiler)
 
 
 def _run_scan(args) -> ProjectScan:
@@ -571,6 +612,36 @@ def _cmd_pr_comment(args) -> int:
     )
 
 
+def _cmd_toolchains(args) -> int:
+    from .toolchains import render_toolchains, scan_toolchains, to_dict
+
+    # 去重但保序：`--compilers g++,g++` 是笔误，没必要把同一个编译器扫两遍，
+    # 那只会白花一倍时间，还让「最快」在两次同源结果之间比出毫无意义的差值。
+    compilers = list(
+        dict.fromkeys(c.strip() for c in args.compilers.split(",") if c.strip())
+    )
+    if not compilers:
+        print("错误：--compilers 为空，至少给一个编译器。", file=sys.stderr)
+        return 2
+
+    comparison = scan_toolchains(
+        Path(getattr(args, "path", ".")),
+        compilers,
+        options_factory=lambda compiler: _scan_options_for(args, compiler),
+    )
+
+    if args.format == "json":
+        _emit(_json_pretty(to_dict(comparison)), args.output)
+    else:
+        _emit(render_toolchains(comparison, top=args.top), args.output)
+
+    # 一个都没成功 = 一次有效对比都没有，明确失败，不假装成功。
+    if not comparison.ok_costs:
+        print("错误：没有任何编译器成功编译，无法生成对比。", file=sys.stderr)
+        return 2
+    return 0
+
+
 _COMMANDS = {
     "scan": _cmd_scan,
     "verify": _cmd_verify,
@@ -578,6 +649,7 @@ _COMMANDS = {
     "compare": _cmd_compare,
     "history": _cmd_history,
     "pr-comment": _cmd_pr_comment,
+    "toolchains": _cmd_toolchains,
 }
 
 

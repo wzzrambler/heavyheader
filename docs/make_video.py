@@ -433,7 +433,7 @@ def build_script() -> Script:
     s.blank(0.4)
 
     s.print("─────────────────────────────────────────────", DIM, hold=0.4)
-    s.print("HeavyHeader · Apache-2.0 · 274 个单元测试", WHITE, True, hold=0.5)
+    s.print("HeavyHeader · Apache-2.0 · 291 个单元测试", WHITE, True, hold=0.5)
     s.print("GCC 9+ / Clang 17+ / MSVC · 零第三方运行时依赖", DIM, hold=0.5)
     s.print("该报的报，不该报的不报。", CYAN, True, hold=1.5)
 

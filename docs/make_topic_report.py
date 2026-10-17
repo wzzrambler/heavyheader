@@ -1004,7 +1004,7 @@ def build(path: str) -> None:
     story.append(
         P(
             "项目不是一个构想：v0.1 路线图全部条目已完成，代码以 Apache-2.0 许可证公开在 "
-            "github.com/wzzrambler/heavyheader，54 个提交、123 个文件、工作区无未提交改动。下表按"
+            "github.com/wzzrambler/heavyheader，50+ 个提交、123 个文件、工作区无未提交改动。下表按"
             "「已有基础 / 已核对的内容 / 接下来的开发工作」汇总。" + D(4)
         )
     )

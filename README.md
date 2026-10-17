@@ -128,6 +128,12 @@ heavyheader gate ./my-project --baseline baseline.json --max-regression 5
 
 # 5. 增量扫描：第二次起只重编受改动影响的编译单元
 heavyheader scan ./my-project --cache .heavyheader-cache.json
+
+# 6. 历史趋势：每次扫描追加一行，随时回看成本怎么变
+heavyheader scan ./my-project --history cost.jsonl
+heavyheader history cost.jsonl                      # 终端摘要（可直接进 CI 日志）
+heavyheader history cost.jsonl --html board.html    # 导出一份自包含网页
+heavyheader history cost.jsonl --serve              # 本地看板（http://127.0.0.1:8080）
 ```
 
 ### 增量扫描

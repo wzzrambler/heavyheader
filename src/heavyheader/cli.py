@@ -1,12 +1,13 @@
 """HeavyHeader command line interface.
 
-Four verbs, each doing one thing:
+Five verbs, each doing one thing:
 
 ======================  ====================================================
 ``scan``                analyse a tree, write a report
 ``verify``              recompile without candidate includes and measure
 ``gate``                fail a build when header cost regresses
 ``compare``             diff two saved scans
+``history``             show the cost trend built from ``--history`` logs
 ======================  ====================================================
 
 ``argparse`` is used deliberately rather than ``click``/``typer``: the CLI is
@@ -57,11 +58,13 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
-            "示例:\n"
-            "  %(prog)s scan ./src --format html -o report.html\n"
-            "  %(prog)s scan ./src --save baseline.json\n"
-            "  %(prog)s verify ./src --top 5\n"
-            "  %(prog)s gate ./src --baseline baseline.json --max-regression 5\n"
+        "示例:\n"
+        "  %(prog)s scan ./src --format html -o report.html\n"
+        "  %(prog)s scan ./src --save baseline.json\n"
+        "  %(prog)s verify ./src --top 5\n"
+        "  %(prog)s gate ./src --baseline baseline.json --max-regression 5\n"
+        "  %(prog)s scan ./src --history cost.jsonl\n"
+        "  %(prog)s history cost.jsonl --serve\n"
         ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -121,6 +124,25 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("before", type=Path, help="基线 JSON")
     compare.add_argument("after", type=Path, help="新扫描 JSON")
     compare.add_argument("--format", choices=["md", "json"], default="md")
+
+    history = subparsers.add_parser(
+        "history", help="查看构建成本历史趋势（来自 scan --history 记录）"
+    )
+    history.add_argument("history_file", type=Path, help="scan --history 生成的 JSONL 文件")
+    history.add_argument(
+        "--serve",
+        action="store_true",
+        help="启动本地看板服务（仅绑回环地址 127.0.0.1，关掉终端即结束）",
+    )
+    history.add_argument(
+        "--port", type=int, default=8080, help="--serve 时监听的端口（默认 8080）"
+    )
+    history.add_argument(
+        "--no-browser", action="store_true", help="--serve 时不自动打开浏览器"
+    )
+    history.add_argument(
+        "--html", type=Path, default=None, help="把看板 HTML 写到文件（不自启服务）"
+    )
 
     return parser
 
@@ -216,29 +238,9 @@ def _json_line(payload: dict) -> str:
 
 
 def _load_trend(path: Path) -> list[TrendPoint]:
-    import json
+    from .dashboard import load_trend
 
-    points: list[TrendPoint] = []
-    if not path.is_file():
-        return points
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            entry = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        stamp = entry.get("timestamp", "")
-        label = stamp[5:16].replace("T", " ") if stamp else str(len(points))
-        points.append(
-            TrendPoint(
-                label=label,
-                attributed_lines=int(entry.get("attributed_lines", 0)),
-                seconds=float(entry.get("seconds", 0.0)),
-            )
-        )
-    return points
+    return load_trend(path)
 
 
 # --------------------------------------------------------------------------
@@ -459,11 +461,53 @@ def _cmd_compare(args) -> int:
     return 0
 
 
+def _cmd_history(args) -> int:
+    from .dashboard import load_trend, render_dashboard, serve, summarize
+
+    history_path = Path(args.history_file)
+    points = load_trend(history_path)
+
+    if args.serve:
+        serve(history_path, port=args.port, open_browser=not args.no_browser)
+        return 0
+
+    if args.html is not None:
+        output = Path(args.html)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(render_dashboard(points), encoding="utf-8")
+        print(f"看板已写出：{output}", file=sys.stderr)
+        return 0
+
+    # 默认：终端摘要，能直接落进 CI 日志
+    if not points:
+        print(f"历史文件 {history_path} 没有可用记录。", file=sys.stderr)
+        return 0
+
+    s = summarize(points)
+    lines = [
+        f"# 构建成本趋势 · {history_path.name}",
+        "",
+        f"- 扫描次数：{s.count}",
+        f"- 当前趋势：**{s.trend_label}**",
+        f"- 当前归因行数：{s.last_lines:,}（起点 {s.first_lines:,}）",
+        f"- 净变化：{s.delta_lines:+,} 行（{s.delta_percent:+.1f}%）",
+        f"- 历史峰值：{s.peak_lines:,}（第 {s.peak_index + 1} 次扫描）",
+        f"- 最大单步回归：{s.worst_step_percent:+.1f}%（{s.worst_step_label}）",
+        f"- 最大单步改善：{s.best_step_percent:+.1f}%（{s.best_step_label}）",
+        "",
+        "运行 `heavyheader history <文件> --serve` 在浏览器查看走势图；"
+        "或 `--html out.html` 导出一份自包含网页。",
+    ]
+    print("\n".join(lines))
+    return 0
+
+
 _COMMANDS = {
     "scan": _cmd_scan,
     "verify": _cmd_verify,
     "gate": _cmd_gate,
     "compare": _cmd_compare,
+    "history": _cmd_history,
 }
 
 

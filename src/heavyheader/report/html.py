@@ -18,7 +18,7 @@ from pathlib import Path
 
 from ..models import HeaderKind, ProjectScan
 
-__all__ = ["render_html", "TrendPoint"]
+__all__ = ["render_html", "TrendPoint", "trend_chart"]
 
 
 @dataclass(slots=True)
@@ -127,7 +127,7 @@ def _shorten(label: str, keep: int = 46) -> str:
     return label if len(label) <= keep else "…" + label[-keep:]
 
 
-def _trend_chart(points: list[TrendPoint]) -> str:
+def trend_chart(points: list[TrendPoint]) -> str:
     """Inline SVG line chart of attributed lines over time."""
     if len(points) < 2:
         return '<p class="note">历史点不足两点，无法绘制趋势。连续运行 `scan --history` 多次即可生成。</p>'
@@ -286,7 +286,7 @@ def render_html(
     if trend:
         trend_block = (
             "<h2>构建成本趋势</h2>"
-            + _trend_chart(trend)
+            + trend_chart(trend)
         )
 
     return f"""<!DOCTYPE html>

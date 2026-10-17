@@ -22,6 +22,7 @@ from __future__ import annotations
 import re
 import shlex
 import subprocess
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -94,42 +95,86 @@ class CompilerDriver(ABC):
         cwd: Path | None = None,
         timeout: float = 300.0,
     ) -> TranslationUnit:
-        """Compile ``source`` and return what we learned."""
-        argv = self.build_command(source, options)
-        started = _perf_counter()
-        try:
-            completed = subprocess.run(
-                argv,
-                cwd=str(cwd) if cwd else None,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise CompilationError(
-                f"{source}: compiler timed out after {timeout:.0f}s"
-            ) from exc
-        except FileNotFoundError as exc:
-            raise CompilationError(
-                f"compiler {argv[0]!r} not found on PATH"
-            ) from exc
-        wall = _perf_counter() - started
+        """Compile ``source`` and return what we learned.
 
-        return self.interpret(
+        并行编译时，操作系统偶尔会**启动不了**编译器进程（Windows 上常见
+        ``[WinError 1455] 页文件不足`` / ``[WinError 6] 句柄无效``，POSIX 上是
+        EMFILE/ENOMEM）。这与 TU 本身有没有错无关——过会儿重编就好了，但当时
+        会被记成一个假失败，连跑多次时 TU 数忽高忽低就是它引起的（见
+        scanner 的稳健性测试）。这种「启动失败」和「编译失败」是两回事：编译失败
+        是 returncode != 0，走正常路径；这里只对**启动**的瞬时失败做有限次重试。
+        """
+        argv = self.build_command(source, options)
+        attempts = 0
+        while attempts < _MAX_SPAWN_ATTEMPTS:
+            attempts += 1
+            try:
+                started = _perf_counter()
+                completed = subprocess.run(
+                    argv,
+                    cwd=str(cwd) if cwd else None,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=timeout,
+                )
+            except subprocess.TimeoutExpired as exc:
+                # 编译确实太慢，超出了预算。重试只会再等一个超时，没有意义，
+                # 直接记作编译失败（与「启动失败」区分）。
+                raise CompilationError(
+                    f"{source}: compiler timed out after {timeout:.0f}s"
+                ) from exc
+            except FileNotFoundError as exc:
+                # 编译器根本不在 PATH 上——必然失败，不重试。
+                raise CompilationError(
+                    f"compiler {argv[0]!r} not found on PATH"
+                ) from exc
+            except (OSError, subprocess.SubprocessError) as exc:
+                # 启动失败：多半是系统资源临时紧张（进程/句柄/内存池耗尽）。
+                # 留给下一次尝试；次数用尽才当作真正的失败，免得一个 TU 的
+                # 瞬时故障误记成「这个文件编译不过」。
+                if attempts < _MAX_SPAWN_ATTEMPTS:
+                    _sleep(_SPAWN_BACKOFF * attempts)
+                    continue
+                raise CompilationError(
+                    f"{source}: compiler failed to start "
+                    f"({type(exc).__name__}: {exc}); "
+                    "this is usually transient OS contention under many parallel "
+                    "compiles -- retrying did not help"
+                ) from exc
+            else:
+                # 启动成功，跳出重试循环。
+                break
+
+        wall = _perf_counter() - started
+        tu = self.interpret(
             source=source,
             returncode=completed.returncode,
             stdout=completed.stdout,
             stderr=completed.stderr,
             wall_seconds=wall,
         )
+        # 记下来以便扫描层能提示用户：这个 TU 差一点就被误记成失败了。
+        tu.spawn_retries = attempts - 1
+        return tu
 
 
 def _perf_counter() -> float:
-    import time
-
     return time.perf_counter()
+
+
+def _sleep(seconds: float) -> None:
+    time.sleep(seconds)
+
+
+#: 并行编译时，操作系统偶尔会**启动不了**编译器进程（资源临时紧张）。
+#: 这种「启动失败」与「编译失败」是两码事——启动失败多半是进程/句柄/内存池
+#: 一时耗尽，过会儿重编就好了；编译失败是 returncode != 0，走正常路径。这里
+#: 只对**启动**失败做有限次重试，避免把一个本来没问题的 TU 误记成失败（连跑
+#: 多次时 TU 数忽高忽低就是它引起的）。
+_MAX_SPAWN_ATTEMPTS = 3
+_SPAWN_BACKOFF = 0.05
 
 
 class GccLikeDriver(CompilerDriver):

@@ -257,3 +257,39 @@ CI 里的门禁失败是同一句话。评论正文统一用 POSIX 风格路径�
 `src\foo.h`），因为评审在 GitHub 上看，反斜杠只会像一处笔误。
 
 当前只走 GitHub 的 `gh`；GitLab 需要另一套 API 后端，属于同一功能的不同实现。
+
+## 13. 并行编译的瞬时启动失败（偶发 TU 失败的排查）
+
+`scan` 用线程池并行编译所有编译单元，每个单元都是一次独立的编译器子进程。
+在负载高、并行度大时，操作系统偶尔会**启动不了**某个子进程——Windows 上常见
+`[WinError 1455] 页文件不足` / `[WinError 6] 句柄无效`，POSIX 上是 `EMFILE`
+（描述符耗尽）/ `ENOMEM`。这与「这个 TU 本身有错」无关：过一会儿重编就好了。
+
+**为什么这是个隐蔽的 bug。** 这类启动失败以 `OSError` 的形式从 `subprocess.run`
+抛出。原本 `driver.run` 只捕获 `TimeoutExpired`（编译太慢）和 `FileNotFoundError`
+（编译器不在 PATH），其余 `OSError` 会穿透出去，被 `scan_project` 的兜底
+`except Exception` 接住、记成「这个编译单元失败」。于是同一个源码、零改动，
+连跑多次时 TU 数会忽高忽低（曾观察到 8→4→8），而看板只在同代码下才可比——
+一个本该稳定的数字抖一下，趋势就不可信了。
+
+**修复：只对「启动」做有限次重试。** 关键是把「启动失败」和「编译失败」分开：
+编译失败是 `returncode != 0`，走正常的「记成失败」路径，不需要重试；启动失败
+是进程根本没起来，重试一两次通常就能成功。具体做法在 `CompilerDriver.run`：
+
+- `FileNotFoundError` → 编译器不在 PATH，必然失败，**不重试**，直接报明确错误；
+- `TimeoutExpired` → 编译确实超时，重试只会再等一个超时，**不重试**；
+- 其余 `OSError` / `subprocess.SubprocessError` → 视为瞬时启动失败，最多重试
+  `_MAX_SPAWN_ATTEMPTS = 3` 次，每次间隔 `_SPAWN_BACKOFF = 0.05s × 尝试序数`；
+  次数用尽才当作真正的失败。
+
+重试成功后，把重试次数记到 `TranslationUnit.spawn_retries`，由 `scan_project`
+汇总：只要有 TU 是「重试后才成功」的，就在 `scan.warnings` 里提示用户「刚才
+差点把这个 TU 误记成失败，若频繁出现可用 `--jobs` 降低并行度（如 `-j 4`）」。
+这延续了项目「不静默修正数字、把异常显出来」的一贯原则——重试保住了正确的 TU
+计数，但绝不藏着「系统曾经顶不住」这件事。
+
+回归测试：`tests/test_drivers.py` 用替身 `subprocess.run` 模拟「前 N 次抛
+`OSError`、第 N+1 次成功」，断言 TU 最终算作成功且 `spawn_retries` 正确；并断言
+`FileNotFoundError` 与 `TimeoutExpired` **不会被重试**；`tests/test_scanner.py`
+断言「有 TU 重试成功」会触发那条警告。
+

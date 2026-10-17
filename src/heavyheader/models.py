@@ -88,6 +88,13 @@ class TranslationUnit:
     #: Non-empty means the compiler's own timer misbehaved (GCC on MinGW
     #: does); the surviving rows are still usable.
     timing_discarded: list[str] = field(default_factory=list)
+    #: How many times the driver had to retry *launching* the compiler because
+    #: the OS temporarily refused to spawn the process (resource contention
+    #: under many parallel compiles). 0 means it started on the first try. A
+    #: non-zero value is informational only: the TU still compiled fine, but it
+    #: is a signal that this scan was a hair's breadth from miscounting it as a
+    #: failure -- see :meth:`heavyheader.drivers.base.CompilerDriver.run`.
+    spawn_retries: int = field(default=0)
     #: Non-empty when the compiler refused to compile this file.
     error: str | None = None
 

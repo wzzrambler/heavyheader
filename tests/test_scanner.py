@@ -33,8 +33,9 @@ class _StubDriver(CompilerDriver):
 
     family = CompilerFamily.GCC
 
-    def __init__(self, error: Exception | None = None):
+    def __init__(self, error: Exception | None = None, spawn_retries: int = 0):
         self.error = error
+        self.spawn_retries = spawn_retries
         self.executable = "g++"
         self.calls: list[tuple[Path, Path | None]] = []
 
@@ -42,7 +43,9 @@ class _StubDriver(CompilerDriver):
         self.calls.append((Path(source), Path(cwd) if cwd else None))
         if self.error is not None:
             raise self.error
-        return TranslationUnit(source=Path(source), dependencies=[])
+        tu = TranslationUnit(source=Path(source), dependencies=[])
+        tu.spawn_retries = self.spawn_retries
+        return tu
 
     def build_command(self, source, options) -> list[str]:  # pragma: no cover
         return ["g++", str(source)]
@@ -140,3 +143,32 @@ def test_missing_compilation_database_falls_back_to_discovery(tmp_path):
     )
 
     assert len(scan.ok_tus) == 1
+
+
+def test_warns_when_a_tu_needed_a_spawn_retry(tmp_path):
+    """A TU that only compiled after a launch retry should be flagged, not hidden.
+
+    这正是之前「偶发 TU 失败」的根因：系统资源紧张启动不起来，重试一次就成了。
+    修复后它算作成功，但扫描应当提示用户——而不是悄悄把它当正常结果。
+    """
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.cpp").write_text("int a() { return 1; }\n", encoding="utf-8")
+
+    scan = scan_project(
+        ScanOptions(root=tmp_path, jobs=1), driver=_StubDriver(spawn_retries=1)
+    )
+
+    assert len(scan.ok_tus) == 1
+    assert any("自动重试成功" in w for w in scan.warnings)
+
+
+def test_no_retry_warning_when_all_tus_launched_cleanly(tmp_path):
+    """没有 TU 遇到启动重试时，不应出现那条提示。"""
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.cpp").write_text("int a() { return 1; }\n", encoding="utf-8")
+
+    scan = scan_project(
+        ScanOptions(root=tmp_path, jobs=1), driver=_StubDriver(spawn_retries=0)
+    )
+
+    assert not any("自动重试成功" in w for w in scan.warnings)

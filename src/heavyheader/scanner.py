@@ -408,4 +408,17 @@ def scan_project(
                 "remaining timings are still usable"
             )
 
+    # A TU that only compiled after the driver retried launching the compiler
+    # was a hair's breadth from being miscounted as a failure (the OS refused
+    # to spawn the process, not the source's fault).  It succeeded in the end,
+    # so we do not hide it -- but we say so, because a flaky launch is a sign
+    # the machine was at its parallelism limit and the next run might not be
+    # so lucky.  Lowering --jobs is the fix.
+    retried_ok = [tu for tu in scan.ok_tus if tu.spawn_retries > 0]
+    if retried_ok:
+        scan.warnings.append(
+            f"{len(retried_ok)} 个编译单元起初因系统资源紧张而启动失败，"
+            "已自动重试成功；若频繁出现，可用 --jobs 降低并行度（如 -j 4）"
+        )
+
     return scan

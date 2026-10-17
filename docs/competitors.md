@@ -145,6 +145,30 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 我们做的是在同一个动作上**加测量与决策**：跑两次（基线/补丁）、取多次运行的
 中位数与离散度、同时记录时间/内存/体积、失败则降级为 HUMAN 而不是直接判死。
 
+### 2.5 微软 C++ Build Insights —— Windows 上最被低估的对手
+
+- **出处**：<https://learn.microsoft.com/en-us/cpp/build-insights/get-started-with-cpp-build-insights>
+  （VS2019+）。组成：`vcperf.exe` 采集、WPA 扩展查看、**开放 SDK** 供第三方消费数据。
+- **官方明说它能回答**：构建并行度是否足够、**PCH 该放什么**、瓶颈在哪。
+  配套文章覆盖 Included Files、Include Tree、模板元编程剖析、代码生成耗时。
+- **对本项目的威胁**：Windows + MSVC 用户很可能已经拥有它，且原生集成在 VS 里。
+  我们在 MSVC 上不能靠「也能分析头文件」取胜，只能靠**统一治理工作流**（跨工具链、
+  可审计基线、候选验证），而这条尚未在真实 MSVC 工程上验证（见矩阵 R6）。
+- **明确不提供**（据上述文档）：删除候选的重编译验证、删后 Δ时间/Δ内存/Δ体积、
+  三态决策、按实测净收益的回归门禁。
+
+### 2.6 IWYU / Include Cleaner —— 正确性一侧的标准答案
+
+- **出处**：<https://github.com/include-what-you-use/include-what-you-use>（README 原文）。
+- **它做什么**：基于 Clang AST 判断每个符号的声明应由哪个头提供，给出「多余/缺失/
+  可改前向声明」三类建议；配套 `fix_includes.py` 可自动改写（作者标注 alpha）。
+- **它不做什么**：**不量化构建时间与成本**；**不做「删除后重新编译」验证**；
+  文档未提供基线回归或 CI 门禁（仅 `--error_always` 能让建议触发非零退出码）；
+  强绑定 Clang 版本（MSVC 需 `--driver-mode=cl`），自我定位为实验性软件。
+- **正确的关系**：它判**正确性**，我们判**成本与收益**。但必须承认：在「该不该包含」
+  这件事上，AST 级判断比我们的文本启发式更可靠——这也是 `--semantic` 交叉检查
+  只增强、不削弱的原因。
+
 ---
 
 ## 3. 那我们到底剩下了什么

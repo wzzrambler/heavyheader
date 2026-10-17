@@ -353,7 +353,45 @@ def render_markdown(scan: ProjectScan) -> str:
         )
     lines.append("")
 
-    # -- actionable: removal candidates ----------------------------------
+    # -- developer-facing: incremental build tax -------------------------
+    # 与上一节是两个不同的成本口径，必须分开讲：全量成本高不等于编辑循环慢。
+    # 一个只在 1 个 TU 里用的巨型头，attributed_lines 很高但增量税很低；
+    # 反过来，一个被 200 个轻量 TU 共享的小头，增量税可能高得多。
+    taxed = sorted(
+        (stats for stats in project_headers if stats.incremental_seconds > 0),
+        key=lambda stats: stats.incremental_seconds,
+        reverse=True,
+    )
+    if taxed:
+        lines.append("## 实验性：增量构建税（未校准，勿据此决策）")
+        lines.append("")
+        lines.append(
+            "上一节回答「整个项目为它付了多少解析量」；这一节试答「**你改它一行，"
+            "下一次增量构建要等多久**」。这是编辑循环里的实际痛感，也是现有竞品没有"
+            "给出的视角——但它目前**只是原型**：受控实验（`experiments/incremental_tax.py`）"
+            "显示预测比实测**偏高约 1.7×**，因为扫描的 `--full-compile` 会为每个单元"
+            "额外链接一次，而真实增量构建只编译不链接。校准完成前，本表不得作为结论引用。"
+        )
+        lines.append("")
+        lines.append("| 头文件 | 重编 TU | 预计等待 | 占单次全量构建 |")
+        lines.append("|---|---:|---:|---:|")
+        for stats in taxed[:10]:
+            share = (
+                stats.incremental_seconds / scan.baseline_seconds * 100
+                if scan.baseline_seconds
+                else 0.0
+            )
+            lines.append(
+                f"| `{_rel(stats.path, root)}` | {stats.tu_reach} "
+                f"| {_fmt_seconds(stats.incremental_seconds)} | {share:.0f}% |"
+            )
+        lines.append("")
+        lines.append(
+            "> 口径：扫描期每个 TU 实测耗时之和（默认 `-fsyntax-only`，不含链接）。"
+            "它是一个**预测**，预测误差与验证方法见 `docs/methodology.md` 的"
+            "「增量构建税」一节。`0` 表示该单元没有可用计时，不是「瞬间完成」。"
+        )
+        lines.append("")
     if scan.candidates:
         lines.append("## 成本候选（按预计收益排序）")
         lines.append("")

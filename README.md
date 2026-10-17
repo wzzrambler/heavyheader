@@ -1,6 +1,7 @@
 # HeavyHeader
 
-**C/C++ 构建效能治理平台** —— 用编译器自己的输出，回答「这个头文件让我多等了几秒」。
+**面向 C/C++ 工程的可验证构建优化与性能回归治理工具** —— 找到候选、真实编译验证、
+把可信的结果变成可审计的 CI 基线。
 
 [![CI](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml/badge.svg)](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
@@ -34,6 +35,13 @@ HeavyHeader 的差异不在任何单一能力，而在把上面这些串成一�
 给出 `REMOVE / KEEP / HUMAN` 三态结论 → 按实测净收益门禁。**
 只有「编译通过 + 测试通过 + 收益超过噪声」才建议删除；估算与实测在报告里分开标注，
 绝不把估算写成结论。
+
+> **定位已按竞品尽调修订（2026-10-18）**：发现成本（谁最贵）**不是**我们的优势——
+> ClangBuildAnalyzer 与微软 C++ Build Insights 都已覆盖，且数据来自编译器内省。
+> 候选差异化在「验证、治理、低接入」三维，但**全部尚未完成同任务对照**。
+> 能力矩阵与逐格证据等级见 [`docs/competitor-matrix.md`](docs/competitor-matrix.md)，
+> 对照实验的预注册协议与三个门槛见 [`docs/benchmark-plan.md`](docs/benchmark-plan.md)。
+> 在这两项完成前，项目不声称任何「首创 / 唯一」。
 
 ## 核心能力
 

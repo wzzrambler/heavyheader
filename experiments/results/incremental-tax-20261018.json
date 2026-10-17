@@ -1,0 +1,19 @@
+{
+  "compiler": "g++",
+  "tus": 8,
+  "predicted_core_seconds": 4.7984,
+  "actual_incremental_seconds": 2.9747,
+  "ratio": 1.6131,
+  "predicted_mid_seconds": 2.4139,
+  "plain_build_seconds": 2.7963,
+  "scan_seconds": 5.592,
+  "scan_overhead": 1.9998,
+  "totals": {
+    "translation_units": 8,
+    "failed_translation_units": 0,
+    "dependency_edges": 13,
+    "attributed_lines": 17413,
+    "total_project_lines": 4532,
+    "blowup_factor": 3.8422
+  }
+}

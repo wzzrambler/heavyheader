@@ -240,6 +240,9 @@ def _tu_to_dict(tu: TranslationUnit) -> dict:
             }
             for t in tu.timings
         ],
+        # 墙钟必须随缓存一起持久化：增量税依赖它，丢了就退化成 CPU 时间，
+        # 在 Windows 上会把「改一行等 3 秒」算成「0.2 秒」。
+        "wall_seconds": tu.wall_seconds,
         "unguarded_headers": [str(p) for p in tu.unguarded_headers],
         "timing_discarded": list(tu.timing_discarded),
         "error": tu.error,
@@ -269,6 +272,7 @@ def _tu_from_dict(data: dict) -> TranslationUnit | None:
                 )
                 for t in data.get("timings", [])
             ],
+            wall_seconds=float(data.get("wall_seconds", 0.0)),
             unguarded_headers=[Path(p) for p in data.get("unguarded_headers", [])],
             timing_discarded=list(data.get("timing_discarded", [])),
             error=data.get("error"),

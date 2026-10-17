@@ -79,6 +79,8 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "source": str(tu.source),
                 "dependencies": [str(p) for p in tu.dependencies],
                 "total_seconds": round(tu.total_wall_seconds(), 6),
+                # 驱动实测墙钟（含进程启动），增量构建税的口径。
+                "wall_seconds": round(tu.wall_seconds, 6),
                 "preprocessing_seconds": round(tu.phase_seconds("preprocessing"), 6),
                 "parsing_seconds": round(tu.phase_seconds("parsing"), 6),
                 "template_instantiation_seconds": round(
@@ -100,6 +102,9 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "transitive_headers": stats.transitive_headers,
                 "transitive_lines": stats.transitive_lines,
                 "attributed_lines": stats.attributed_lines,
+                # 增量构建税：改这个头文件后要重编的 TU 耗时之和。
+                # 与 attributed_lines 是两个不同的成本口径，报告里分开列。
+                "incremental_seconds": round(stats.incremental_seconds, 6),
             }
             for stats in scan.header_stats.values()
         ],
@@ -252,6 +257,8 @@ def scan_from_dict(data: dict) -> ProjectScan:
             transitive_headers=entry.get("transitive_headers", 0),
             transitive_lines=entry.get("transitive_lines", 0),
             attributed_lines=entry.get("attributed_lines", 0),
+            # 旧 JSON 没有这个字段，缺失即「未统计」，保持 0.0 而不是估算。
+            incremental_seconds=float(entry.get("incremental_seconds", 0.0)),
         )
         for entry in data.get("headers", [])
     }

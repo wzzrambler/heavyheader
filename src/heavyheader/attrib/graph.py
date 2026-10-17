@@ -126,12 +126,21 @@ def _normalise_header_key(path: Path, root: Path) -> Path:
     GCC/Clang 是相对正斜杠，MSVC 可能是相对也可能是绝对反斜杠。若直接拿原始
     字符串当 key，同一个头会被当成多个，归因与跨编译器逐头对比都会错位。
 
-    归一策略：先按系统分隔符统一，再按真实文件 ``resolve`` 成绝对真实路径。
-    绝对路径对 ``classify_headers``（用路径是否在 root 下来判定项目头）是
-    无歧义的，也让 GCC/Clang 的相对路径与 MSVC 的绝对/相对多形态落到同一个
-    key 上——MSVC 把同一文件报成两种路径的形态就此被合并。
+    归一策略：先按系统分隔符统一，再把相对路径接到 ``root`` 上，最后
+    ``resolve`` 成绝对真实路径。绝对路径对 ``classify_headers``（用路径是否在
+    root 下来判定项目头）是无歧义的，也让 GCC/Clang 的相对路径与 MSVC 的
+    绝对/相对多形态落到同一个 key 上。
+
+    为什么相对路径必须接 ``root`` 而不是直接 ``resolve()``：``resolve()`` 以
+    **进程当前目录**为基准。用户在仓库根运行 ``heavyheader scan src/`` 时，
+    ``-H`` 给出的 ``include/core.h`` 会按仓库根解析成 ``<repo>/include/core.h``，
+    而真实位置是 ``<repo>/src/include/core.h``——于是项目头被判成 SYSTEM，
+    悄悄从成本表里消失。这类错误不报错、数字看起来正常，只会在换目录运行时
+    才露出来，比崩溃更难发现。
     """
     normalised = Path(os.path.normpath(str(path).replace("\\", "/")))
+    if not normalised.is_absolute():
+        normalised = Path(root) / normalised
     try:
         return normalised.resolve()
     except OSError:
@@ -192,6 +201,9 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
     max_depth: dict[Path, int] = defaultdict(int)
     closure_sizes: dict[Path, set[Path]] = {}
     closure_lines: dict[Path, int] = defaultdict(int)
+    # 增量构建税：一个头文件改动后，所有「传递包含它」的 TU 都要重编。
+    # 这里按 TU 的实测总耗时累加，得到「改这一行要等多少秒」。
+    tax_seconds: dict[Path, float] = defaultdict(float)
 
     for tu in scan.ok_tus:
         # 邻接表与统计都用归一后的 key，确保同一文件的多形态被并成一条。
@@ -210,6 +222,13 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
                 max_depth[canon] = event.depth
         for direct in tu.direct_includes():
             direct_count[_normalise_header_key(direct, root)] += 1
+        # 增量税问的是「用户要等多久」，所以优先用驱动实测的墙钟；只有旧数据
+        # /手工构造的 TU 没有墙钟时，才退回 -ftime-report 的 TOTAL（CPU 时间）。
+        # 直接用 CPU 时间会在 Windows 上把税额低估一个数量级——那是把
+        # 「改了要等 3 秒」报成「0.2 秒」，比不报更糟。
+        tu_seconds = (
+            tu.wall_seconds if tu.wall_seconds > 0 else tu.total_wall_seconds()
+        )
         for header in {
             _normalise_header_key(e.included, root) for e in tu.include_events
         }:
@@ -217,6 +236,8 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
                 continue
             seen_in_tu.add(header)
             reach_count[header] += 1
+            # 这个 TU 传递包含 header，所以 header 一改它就要重编 —— 税加一次。
+            tax_seconds[header] += tu_seconds
             closure = closure_of(adjacency_map, header)
             closure_sizes[header] = closure
             closure_lines[header] += sizes.total(closure)
@@ -234,6 +255,7 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
             transitive_headers=len(closure),
             transitive_lines=sizes.total(closure),
             attributed_lines=sizes.lines(header) * reach,
+            incremental_seconds=tax_seconds.get(header, 0.0),
         )
         scan.header_stats[header] = stats
 

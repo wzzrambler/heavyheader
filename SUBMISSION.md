@@ -15,6 +15,8 @@
 | 完整构建实验 | ✅ 真实工程 63 TU，完整构建 −7.1% 墙上 / −11.4% CPU，断言逐个一致 | `experiments/` + `experiments/results/` |
 | 删除建议决策层 | ✅ 222 候选全部实测：建议删除 1 / 保留 187 / 需人工判断 34，三维度数据 + 竞品交叉 | `attrib/advice.py` + `experiments/results/decision-*.md` |
 | 竞品真实对比 | ✅ clang-include-cleaner 同工程同任务：0 删除 / 101 补充；我们 1 条实测 −43.5% | `experiments/results/competitor-*.md` |
+| 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
+| 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
@@ -43,7 +45,7 @@
 
 | 字段 | 填什么 |
 |---|---|
-| 项目名称 | `HeavyHeader — C/C++ 构建效能治理平台` |
+| 项目名称 | `HeavyHeader — 面向 C/C++ 工程的可验证构建优化与性能回归治理工具` |
 | 参赛赛道 | 赛道一 · 开源基础软件与解决方案 |
 | 申报主体类型 | **开源社区** |
 | 单位 / 学校 | 你的姓名或常用 ID（个人申报） |

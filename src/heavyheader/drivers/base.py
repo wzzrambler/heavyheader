@@ -323,6 +323,7 @@ class GccLikeDriver(CompilerDriver):
             return TranslationUnit(
                 source=source,
                 error=_first_error_line(stderr) or f"compiler exited with {returncode}",
+                wall_seconds=wall_seconds,
             )
 
         events = parse_include_tree(stderr, source)
@@ -360,6 +361,7 @@ class GccLikeDriver(CompilerDriver):
             dependencies=list(dependencies),
             include_events=events,
             timings=timings,
+            wall_seconds=wall_seconds,
             unguarded_headers=guards,
             timing_discarded=list(sanity.discarded),
         )

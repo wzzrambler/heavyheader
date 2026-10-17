@@ -87,6 +87,13 @@ class TranslationUnit:
     include_events: list[IncludeEvent] = field(default_factory=list)
     #: Per-phase timings from ``-ftime-report``.
     timings: list[PhaseTiming] = field(default_factory=list)
+    #: 驱动围绕一次编译进程实测的墙钟秒数——**用户真实等待的时间**。
+    #: 为什么不直接用 ``-ftime-report`` 的 TOTAL：那个是编译器自报的 CPU
+    #: 时间。Windows 上进程启动、杀毒扫描、文件系统开销都不计入 CPU，
+    #: 实测同一单元 CPU 0.02s / 墙钟 0.60s（差 30 倍）。「改一行要等多久」
+    #: 问的是墙钟，所以增量构建税必须用这个字段；阶段细分仍用 ``timings``。
+    #: 0.0 表示没有测量（旧数据或手工构造），调用方须回退到 ``timings``。
+    wall_seconds: float = 0.0
     #: Headers the compiler flagged as missing an include guard.
     unguarded_headers: list[Path] = field(default_factory=list)
     #: Timing rows the sanity check rejected as physically impossible.
@@ -222,6 +229,12 @@ class HeaderStats:
     #: ``line_count * tu_reach`` -- how much text the project parses because
     #: of this header.
     attributed_lines: int = 0
+    #: 增量构建税：改一行这个头文件后，预计要重编的编译单元耗时之和（秒）。
+    #: 口径是「扫描期每个 TU 的实测耗时求和」，只含编译、不含链接；它是
+    #: *编辑循环* 的等待成本，与 ``attributed_lines`` 的「全量成本」不同：
+    #: 一个只在 1 个 TU 用的巨型头，全量成本高、增量税反而低。
+    #: 0.0 表示没有可用计时（未编译/计时被丢弃），不是「瞬间完成」。
+    incremental_seconds: float = 0.0
     #: Number of ``template<`` declarations in the header.  Textual, so it
     #: counts declarations in disabled ``#if`` branches too -- a known
     #: over-estimate that errs on the side of flagging.

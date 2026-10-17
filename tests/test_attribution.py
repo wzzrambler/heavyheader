@@ -596,3 +596,33 @@ def test_usage_still_flags_a_rare_identifier_as_real_use(tmp_path):
     assert signal.provided_by == special
     # 通用词仍然被单独标出来，不混进证据里。
     assert "config" in signal.ambient_identifiers
+
+
+def test_relative_include_is_resolved_against_root_not_process_cwd(tmp_path, monkeypatch):
+    """回归：相对 include 必须按 ``root`` 解析，不能按进程 CWD。
+
+    旧实现直接 ``resolve()``，在仓库根运行 ``heavyheader scan src/`` 时，
+    ``-H`` 给出的 ``include/core.h`` 会被解析到 ``<repo>/include/core.h``，
+    而真实位置是 ``<repo>/src/include/core.h``——项目头因此被判成 SYSTEM，
+    从成本表里静默消失。这种错误不崩溃、数字看着正常，只在换目录运行时暴露。
+    """
+    root = tmp_path / "src"
+    (root / "include").mkdir(parents=True)
+    (root / "include" / "core.h").write_text("int a;\n", encoding="utf-8")
+    (tmp_path / "unrelated").mkdir()
+
+    # 把进程 CWD 挪到一个无关目录，模拟「从别处运行」。
+    monkeypatch.chdir(tmp_path / "unrelated")
+
+    scan = ProjectScan(
+        root=root,
+        compiler="g++",
+        compiler_family=CompilerFamily.GCC,
+        standard="c++17",
+        tus=[_tu("a.cpp", [("a.cpp", "include/core.h", 1)])],
+    )
+    build_header_stats(scan, HeaderSizes())
+
+    stats = next(iter(scan.header_stats.values()))
+    assert stats.kind is HeaderKind.PROJECT
+    assert stats.line_count == 1

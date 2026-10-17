@@ -39,8 +39,12 @@ __all__ = ["parse_include_tree", "parse_include_guards", "parse_show_includes"]
 
 
 _DOT_LINE = re.compile(r"^(?P<dots>\.+)\s(?P<path>.+?)\s*$")
+# MSVC 的 /showIncludes 前缀会跟随系统语言本地化：英文 Windows 是
+# "Note: including file:"，中文 Windows 是「注意: 包含文件:」。两种都接受，
+# 否则在中文环境下前缀匹配不上、整个 include 树被解析成 0 条边。
 _NOTE_LINE = re.compile(
-    r"^Note: including file:(?P<indent>\s*)(?P<path>.+?)\s*$", re.IGNORECASE
+    r"^(?:Note:\s*including file:|注意:\s*包含文件:)(?P<indent>\s*)(?P<path>.+?)\s*$",
+    re.IGNORECASE,
 )
 _GUARD_HEADER = re.compile(r"^Multiple include guards may be useful for:", re.IGNORECASE)
 

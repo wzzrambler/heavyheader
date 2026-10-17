@@ -29,6 +29,7 @@ sizes, and returns statistics and candidates.  It never touches a compiler.
 
 from __future__ import annotations
 
+import os
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -117,6 +118,25 @@ def _is_relative_to(path: Path, parent: Path) -> bool:
         return False
 
 
+def _normalise_header_key(path: Path, root: Path) -> Path:
+    """把一个头文件路径归一到用于统计的稳定 key。
+
+    同一个文件，不同编译器（甚至同一个 MSVC 在不同 TU 里）会给出不同形式：
+    GCC/Clang 是相对正斜杠，MSVC 可能是相对也可能是绝对反斜杠。若直接拿原始
+    字符串当 key，同一个头会被当成多个，归因与跨编译器逐头对比都会错位。
+
+    归一策略：先按系统分隔符统一，再按真实文件 ``resolve`` 成绝对真实路径。
+    绝对路径对 ``classify_headers``（用路径是否在 root 下来判定项目头）是
+    无歧义的，也让 GCC/Clang 的相对路径与 MSVC 的绝对/相对多形态落到同一个
+    key 上——MSVC 把同一文件报成两种路径的形态就此被合并。
+    """
+    normalised = Path(os.path.normpath(str(path).replace("\\", "/")))
+    try:
+        return normalised.resolve()
+    except OSError:
+        return normalised
+
+
 # --------------------------------------------------------------------------
 # per-TU graph helpers
 # --------------------------------------------------------------------------
@@ -159,7 +179,11 @@ def closure_of(adjacency: dict[Path, list[Path]], start: Path) -> set[Path]:
 
 def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
     """Fill ``scan.header_stats`` in place."""
-    kinds = classify_headers(scan.root, {h for tu in scan.ok_tus for h in tu.dependencies})
+    root = scan.root
+    kinds = classify_headers(
+        root,
+        {_normalise_header_key(h, root) for tu in scan.ok_tus for h in tu.dependencies},
+    )
 
     reach_count: dict[Path, int] = defaultdict(int)
     direct_count: dict[Path, int] = defaultdict(int)
@@ -169,20 +193,30 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
     closure_lines: dict[Path, int] = defaultdict(int)
 
     for tu in scan.ok_tus:
-        adjacency = _build_adjacency(tu)
+        # 邻接表与统计都用归一后的 key，确保同一文件的多形态被并成一条。
+        adjacency: dict[Path, dict[Path, None]] = defaultdict(dict)
+        for event in tu.include_events:
+            adjacency[_normalise_header_key(event.includer, root)][
+                _normalise_header_key(event.included, root)
+            ] = None
+        adjacency_map = {p: list(c) for p, c in adjacency.items()}
+
         seen_in_tu: set[Path] = set()
         for event in tu.include_events:
-            event_count[event.included] += 1
-            if event.depth > max_depth[event.included]:
-                max_depth[event.included] = event.depth
+            canon = _normalise_header_key(event.included, root)
+            event_count[canon] += 1
+            if event.depth > max_depth[canon]:
+                max_depth[canon] = event.depth
         for direct in tu.direct_includes():
-            direct_count[direct] += 1
-        for header in {e.included for e in tu.include_events}:
+            direct_count[_normalise_header_key(direct, root)] += 1
+        for header in {
+            _normalise_header_key(e.included, root) for e in tu.include_events
+        }:
             if header in seen_in_tu:
                 continue
             seen_in_tu.add(header)
             reach_count[header] += 1
-            closure = closure_of(adjacency, header)
+            closure = closure_of(adjacency_map, header)
             closure_sizes[header] = closure
             closure_lines[header] += sizes.total(closure)
 

@@ -102,6 +102,23 @@ def test_show_includes_handles_three_levels():
     assert events[3].includer == Path("C:\\src\\a.h")
 
 
+def test_show_includes_accepts_localised_chinese_prefix():
+    """On a zh-CN install MSVC prints 「注意: 包含文件:」, not the English
+    'Note: including file:'.  The regex must accept both, otherwise every
+    edge is dropped and the include tree collapses to zero edges."""
+    msvc = (
+        "注意: 包含文件: C:\\src\\a.h\n"
+        "注意: 包含文件:  C:\\src\\b.h\n"
+        "注意: 包含文件:   C:\\src\\c.h\n"
+        "注意: 包含文件:  C:\\src\\d.h\n"
+    )
+    events = parse_show_includes(msvc, TU)
+    assert [e.depth for e in events] == [0, 1, 2, 1]
+    assert events[0].included == Path("C:\\src\\a.h")
+    assert events[2].includer == Path("C:\\src\\b.h")
+    assert events[3].includer == Path("C:\\src\\a.h")
+
+
 # --------------------------------------------------------------------------
 # -ftime-report
 # --------------------------------------------------------------------------

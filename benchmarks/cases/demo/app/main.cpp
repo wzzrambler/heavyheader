@@ -1,4 +1,4 @@
-#include "core.h"
+﻿#include "core.h"
 #include "heavy.h"
 #include "mid.h"
 #include "unguarded.h"

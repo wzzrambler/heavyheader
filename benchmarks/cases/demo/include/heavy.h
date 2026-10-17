@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 // 传递闭包很大的重量级头文件
 #include <vector>
 #include <map>

@@ -19,6 +19,8 @@ passes disagree if a header changed in between.
 
 from __future__ import annotations
 
+import locale
+import os
 import re
 import shlex
 import subprocess
@@ -115,9 +117,10 @@ class CompilerDriver(ABC):
                     cwd=str(cwd) if cwd else None,
                     capture_output=True,
                     text=True,
-                    encoding="utf-8",
+                    encoding=self._output_encoding(),
                     errors="replace",
                     timeout=timeout,
+                    env=self._subprocess_env(),
                 )
             except subprocess.TimeoutExpired as exc:
                 # 编译确实太慢，超出了预算。重试只会再等一个超时，没有意义，
@@ -158,6 +161,24 @@ class CompilerDriver(ABC):
         # 记下来以便扫描层能提示用户：这个 TU 差一点就被误记成失败了。
         tu.spawn_retries = attempts - 1
         return tu
+
+    def _subprocess_env(self) -> dict | None:
+        """传给 ``subprocess.run`` 的环境变量。
+
+        默认 ``None``——直接继承当前进程环境。子类可在此注入编译器需要的
+        特定变量（例如 MSVC 的语言/编码相关设置），而不必改动调用方。
+        """
+        return None
+
+    def _output_encoding(self) -> str:
+        """读取编译器输出时用的解码方式。
+
+        默认 UTF-8。子类可覆盖——例如 MSVC 在本机把诊断输出按系统 ANSI
+        代码页（中文 Windows 上是 GBK/936）编码，必须用对应编码解码，
+        否则中文（等）内容会变成乱码、连带着 ``/showIncludes`` 的本地化
+        前缀也匹配不上。
+        """
+        return "utf-8"
 
 
 def _perf_counter() -> float:
@@ -266,6 +287,45 @@ class MsvcDriver(CompilerDriver):
 
     def __init__(self, executable: str = "cl") -> None:
         self.executable = executable
+
+    def _subprocess_env(self) -> dict | None:
+        """让 MSVC 的诊断文本尽量用英文 ASCII。
+
+        ``VSLANG=1033`` 会把**错误/警告**描述改成英文 ASCII，避免错误文本里
+        出现本地化乱码（前提是下面 ``_output_encoding`` 按正确的系统代码页解码）。
+
+        注意：它**不会**改变 ``/showIncludes`` 的本地化前缀——中文 Windows 上
+        前缀始终是「注意: 包含文件:」，与 VSLANG 无关。前缀的本地化由
+        ``parse_show_includes`` 里的双前缀正则负责（中英文都接受），所以这里
+        设不设 VSLANG 都不影响 include 树解析，只影响出错时错误文本的语言。
+        （源文件自身的编码问题属于用户工程，工具无法代劳；含非 ASCII 源码时
+        建议源码存为带 BOM 的 UTF-8，MSVC 会据此按 UTF-8 读取。）
+        """
+        env = dict(os.environ)
+        env["VSLANG"] = "1033"
+        return env
+
+    def _output_encoding(self) -> str:
+        """按 MSVC 真实使用的代码页解码其诊断输出。
+
+        MSVC 把诊断信息（含 ``/showIncludes`` 的中文前缀「注意: 包含文件:」）
+        按**系统 OEM 代码页**写出：中文 Windows 上是 GBK/936。用 UTF-8 解码会
+        把中文变成乱码、前缀匹配不上，整个 include 树被解析成 0 条边。
+
+        注意 ``locale.getpreferredencoding()`` 在现代 Python（PEP 540 / UTF-8
+        mode）下常常返回 ``utf-8``，与控制台实际代码页不符，所以这里直接问
+        Windows 的 OEM 代码页；非 Windows 或查询失败时再退回 locale 结果。
+        """
+        if os.name == "nt":
+            try:
+                import ctypes
+
+                codepage = ctypes.windll.kernel32.GetOEMCP()  # type: ignore[attr-defined]
+                if codepage:
+                    return f"cp{codepage}"
+            except Exception:
+                pass
+        return locale.getpreferredencoding() or "utf-8"
 
     def build_command(self, source: Path, options: DriverOptions) -> list[str]:
         argv = [self.executable, "/nologo", "/showIncludes", "/Zs"]

@@ -23,6 +23,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Sequence
@@ -229,32 +230,68 @@ def build_costs(outcomes: Sequence[_Outcome]) -> list[ToolchainCost]:
     return costs
 
 
-def _header_spreads(costs: Sequence[ToolchainCost]) -> list[HeaderSpread]:
+def _canon_header(path: Path, root: Path) -> Path:
+    """把一个头文件路径归一到它真实所在的文件。
+
+    同一个文件，GCC/Clang 报的是相对（正斜杠）路径，MSVC 报的是绝对（反斜杠）
+    路径。直接按字符串当 key 会把同一个头算成两个，跨编译器逐头对比就错位了。
+    这里统一成 realpath，让不同工具链对同一文件的报告落到同一个 key 上。
+    """
+    normalised = Path(os.path.normpath(str(path).replace("\\", "/")))
+    try:
+        return normalised.resolve()
+    except OSError:
+        return normalised
+
+
+def _header_spreads(costs: Sequence[ToolchainCost], root: Path) -> list[HeaderSpread]:
     """项目头在各编译器间的归因行数分歧，按差值从大到小。
 
     只统计出现在**至少两个成功编译器**里、且数值确有分歧的项目头：数值一致
     的头没有「差异」可言，列出来只会淹没真正的分歧。
+
+    不同编译器给出的路径形式不同（见 ``_canon_header``），先归一到真实文件
+    再对齐，否则同名头会被当成两个、差异表出现重复行。
     """
     ok = [c for c in costs if c.ok and c.scan is not None]
     if len(ok) < 2:
         return []
 
-    project_paths: set[Path] = set()
+    # 每个编译器的 raw path -> 归一后的真实文件（per-cost 用列表存，因为
+    # ToolchainCost 是不可哈希的 slots dataclass，不能当 dict key）。
+    per_cost: list[tuple[ToolchainCost, dict[Path, Path], dict[Path, Path]]] = []
+    canon_paths: set[Path] = set()
     for cost in ok:
-        for path, stats in cost.scan.header_stats.items():
-            if stats.kind is HeaderKind.PROJECT:
-                project_paths.add(path)
+        mapping = {p: _canon_header(p, root) for p in cost.scan.header_stats}
+        raw_for = {canon: raw for raw, canon in mapping.items()}
+        per_cost.append((cost, mapping, raw_for))
+        canon_paths.update(mapping.values())
 
     spreads: list[HeaderSpread] = []
-    for path in project_paths:
+    for canon in canon_paths:
         lines: dict[str, int] = {}
-        for cost in ok:
-            stats = cost.scan.header_stats.get(path)
-            lines[cost.compiler] = stats.attributed_lines if stats else 0
-        spread = HeaderSpread(path=path, lines=lines)
+        for cost, _mapping, raw_for in per_cost:
+            raw = raw_for.get(canon)
+            stats = cost.scan.header_stats.get(raw) if raw else None
+            lines[cost.compiler] = (
+                stats.attributed_lines
+                if stats and stats.kind is HeaderKind.PROJECT
+                else 0
+            )
+        if all(v == 0 for v in lines.values()):
+            continue
+        spread = HeaderSpread(path=canon, lines=lines)
         if spread.spread == 0:
             continue
         spreads.append(spread)
+
+    # 显示路径化归到相对 root，方便阅读（不同编译器报的绝对/相对都统一）。
+    root_resolved = Path(root).resolve()
+    for spread in spreads:
+        try:
+            spread.path = spread.path.relative_to(root_resolved)
+        except ValueError:
+            pass
     return sorted(spreads, key=lambda s: s.spread, reverse=True)
 
 
@@ -264,7 +301,7 @@ def compare_toolchains(
     """把各编译器成本折叠成对比矩阵（纯函数，不跑编译器）。"""
     costs = list(costs)
     comparison = ToolchainComparison(
-        root=root, costs=costs, header_spreads=_header_spreads(costs)
+        root=root, costs=costs, header_spreads=_header_spreads(costs, root)
     )
 
     failed = [c for c in costs if not c.ok]

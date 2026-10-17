@@ -377,7 +377,15 @@ def scan_project(
 
     sizes = HeaderSizes()
     build_header_stats(scan, sizes)
-    kinds = classify_headers(root, set(scan.header_stats))
+    # 注意：kinds 必须用**原始** TU 路径当 key（与 find_removal_candidates /
+    # redundant_reparse_warnings 的查找口径一致），不能用 scan.header_stats 的
+    # 归一化 key。build_header_stats 为了跨编译器逐头对齐，把头文件归一到绝对
+    # realpath；但候选检测与缺 guard 提示用的是 TU 报告里的原始 include 路径，
+    # 两者 key 空间不同——这里若用归一化 key，kinds.get(raw_include) 永远 miss，
+    # 候选数会塌成 0（graph.py 归一化引入的回归，已由此行修正）。
+    kinds = classify_headers(
+        root, {h for tu in scan.ok_tus for h in tu.dependencies}
+    )
     scan.candidates = find_removal_candidates(scan, sizes, kinds)
     scan.baseline_seconds = sum(tu.total_wall_seconds() for tu in scan.ok_tus)
     # Template instantiation cost.  This also fills each header's

@@ -144,7 +144,9 @@ def test_header_spread_only_reports_project_headers_that_diverge():
     comparison = compare_toolchains(Path("/proj"), costs)
 
     # 只有 h.h 有分歧；same.h 数值一致、系统头路径不同，都不该出现。
-    assert [s.path for s in comparison.header_spreads] == [Path("include/h.h")]
+    # （路径经 _canon_header 归一成真实文件，可能带绝对前缀，只校验结尾。）
+    assert len(comparison.header_spreads) == 1
+    assert comparison.header_spreads[0].path.as_posix().endswith("include/h.h")
     spread = comparison.header_spreads[0]
     assert spread.lines == {"g++": 100, "clang++": 120}
     assert spread.spread == 20
@@ -174,6 +176,35 @@ def test_identical_project_headers_produce_no_spread_rows():
     )
 
     assert compare_toolchains(Path("/proj"), costs).header_spreads == []
+
+
+def test_header_spread_aligns_one_file_reported_with_different_path_forms(tmp_path):
+    """GCC 报相对正斜杠、MSVC 报绝对反斜杠，但指向同一个文件，跨编译器
+    逐头对比必须对齐到同一行，而不是把同一个头当成两个。
+
+    这是真实存在的陷阱：demo 基准里 MSVC 给出的就是绝对反斜杠路径。
+    """
+    header = tmp_path / "include" / "h.h"
+    header.parent.mkdir(parents=True)
+    header.write_text("// filler\n", encoding="utf-8")
+
+    gcc_path = header                         # 正斜杠绝对路径
+    msvc_path = Path(str(header).replace("/", "\\"))  # 反斜杠绝对路径
+
+    gcc = _scan(project={str(gcc_path): 100})
+    clang = _scan(project={str(msvc_path): 120})
+
+    costs = build_costs(
+        [_Outcome("g++", "gcc", gcc, None), _Outcome("clang++", "clang", clang, None)]
+    )
+    comparison = compare_toolchains(tmp_path, costs)
+
+    assert len(comparison.header_spreads) == 1
+    spread = comparison.header_spreads[0]
+    # 同一个头的两份报告归到了一行。
+    assert spread.lines == {"g++": 100, "clang++": 120}
+    # 显示路径统一成相对 root（tmp_path 是该文件的祖先目录）。
+    assert spread.path == Path("include/h.h")
 
 
 # --------------------------------------------------------------------------

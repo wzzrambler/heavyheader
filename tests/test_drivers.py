@@ -15,6 +15,7 @@ compile failure, and must be retried rather than recorded as a failed TU.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from unittest import mock
@@ -51,6 +52,25 @@ def test_detects_clang_by_name():
 
 def test_detects_msvc_by_name():
     assert isinstance(detect_driver("cl.exe"), MsvcDriver)
+
+
+def test_msvc_driver_forces_english_diagnostics_via_vslang():
+    """On a localized Windows, cl emits e.g. Chinese 'Note: including file:'
+
+    and GBK-encoded output, which breaks ``parse_show_includes`` and the
+    utf-8 decode in ``run``.  MsvcDriver must set ``VSLANG=1033`` so cl
+    prints English ASCII diagnostics regardless of the machine locale.
+    """
+    env = MsvcDriver()._subprocess_env()
+    assert env is not None
+    assert env.get("VSLANG") == "1033"
+    # It must still inherit the surrounding environment, not replace it.
+    assert env.get("PATH") == os.environ.get("PATH")
+
+
+def test_gcc_like_driver_inherits_environment_unchanged():
+    """GCC/Clang need no locale tweaks; their env hook stays a plain inherit."""
+    assert GccLikeDriver("g++")._subprocess_env() is None
 
 
 def test_missing_compiler_gives_compilation_error_not_attribute_error():

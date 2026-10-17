@@ -28,7 +28,13 @@ from heavyheader.models import (
     RemovalCandidate,
     TranslationUnit,
 )
-from heavyheader.verify import verify_candidates
+from heavyheader.verify import (
+    _path_matches,
+    find_include_line,
+    find_include_lines,
+    locate_include_line,
+    verify_candidates,
+)
 
 
 def _header_stats(path: Path, lines: int, reach: int) -> HeaderStats:
@@ -155,3 +161,95 @@ def test_unreadable_source_is_reported_not_raised(tmp_path):
     assert len(results) == 1
     assert results[0].status == "error"
     assert "cannot read" in results[0].message
+
+
+# --------------------------------------------------------------------------
+# same-named headers
+# --------------------------------------------------------------------------
+
+_SOURCE_TWO_THINGS = (
+    '#include "util/thing.h"\n'
+    '#include "other/thing.h"\n'
+    "int main() { return 0; }\n"
+)
+
+
+def test_include_text_is_matched_against_the_full_path():
+    """``util/thing.h`` 与 ``other/thing.h`` 只比文件名时完全一样，
+    比完整路径后缀就能分开。"""
+    util = Path("/proj/util/thing.h")
+    other = Path("/proj/other/thing.h")
+
+    assert _path_matches("util/thing.h", util) is True
+    assert _path_matches("util/thing.h", other) is False
+    assert _path_matches("other/thing.h", other) is True
+    assert _path_matches("other/thing.h", util) is False
+
+
+def test_each_same_named_header_gets_its_own_line():
+    """修复前两行都会被判给先出现的那个，于是删掉的是另一个文件。"""
+    util = Path("/proj/util/thing.h")
+    other = Path("/proj/other/thing.h")
+
+    assert find_include_lines(_SOURCE_TWO_THINGS, other) == [2]
+    assert find_include_lines(_SOURCE_TWO_THINGS, util) == [1]
+
+
+def test_find_include_line_refuses_to_guess_between_same_named_headers():
+    source = '#include "thing.h"\n#include "thing.h"\nint main(){return 0;}\n'
+
+    assert find_include_line(source, Path("/proj/other/thing.h")) is None
+
+
+def test_locate_reports_ambiguous_instead_of_picking_a_line(tmp_path):
+    """删错一行的代价：verify 给出一条看起来可信、实则指向别处的结论。"""
+    source = '#include "thing.h"\n#include "util/thing.h"\nint main(){return 0;}\n'
+    location = locate_include_line(source, Path("/proj/util/thing.h"))
+
+    assert location.line is None
+    assert location.status == "ambiguous"
+    assert location.matches >= 2
+
+
+def test_verify_reports_ambiguous_without_touching_the_file(tmp_path):
+    """歧义时不能照常编译——那等于替用户随机删一行。"""
+    header = tmp_path / "util" / "thing.h"
+    header.parent.mkdir()
+    header.write_text("#pragma once\nstruct T{};\n", encoding="utf-8")
+    source = tmp_path / "src" / "a.cpp"
+    source.parent.mkdir()
+    source.write_text(
+        '#include "thing.h"\n#include "util/thing.h"\nint main(){return 0;}\n',
+        encoding="utf-8",
+    )
+
+    tu = TranslationUnit(source=source, dependencies=[header])
+    scan = ProjectScan(
+        root=tmp_path,
+        compiler="g++",
+        compiler_family=CompilerFamily.GCC,
+        standard="c++17",
+        tus=[tu],
+        header_stats={header: _header_stats(header, 2, 1)},
+    )
+    scan.candidates = [
+        RemovalCandidate(
+            tu=source,
+            header=header,
+            line=None,
+            kind=HeaderKind.PROJECT,
+            exclusive_headers=[header],
+            estimated_lines_saved=2,
+            estimated_percent=100.0,
+        )
+    ]
+
+    results = verify_candidates(
+        scan, _RecordingDriver(), DriverOptions(standard="c++17")
+    )
+
+    assert len(results) == 1
+    assert results[0].status == "ambiguous"
+    assert "无法判断该注释掉哪一行" in results[0].message
+    # 原始文件一个字节都没动。
+    assert source.read_text(encoding="utf-8").count("#include") == 2

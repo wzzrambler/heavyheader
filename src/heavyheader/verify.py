@@ -32,13 +32,22 @@ import re
 import shutil
 import tempfile
 from dataclasses import dataclass, field, replace
+from typing import NamedTuple
 from pathlib import Path
 
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import ProjectScan, RemovalCandidate, TranslationUnit
 from .scanner import default_include_dirs
 
-__all__ = ["VerifyOptions", "VerificationResult", "verify_candidates", "find_include_line"]
+__all__ = [
+    "VerifyOptions",
+    "VerificationResult",
+    "verify_candidates",
+    "find_include_line",
+    "find_include_lines",
+    "locate_include_line",
+    "IncludeLocation",
+]
 
 
 @dataclass(slots=True)
@@ -57,7 +66,8 @@ class VerificationResult:
     """Outcome of trying to remove one include."""
 
     candidate: RemovalCandidate
-    status: str  # "improved" | "no-change" | "compile-error" | "not-found" | "error"
+    #: improved / no-change / compile-error / not-found / ambiguous / error
+    status: str
     baseline_seconds: float | None = None
     patched_seconds: float | None = None
     message: str = ""
@@ -125,20 +135,97 @@ def _strip_comments(source: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def find_include_line(source_text: str, header: Path) -> int | None:
-    """Return the 1-based line of the ``#include`` for ``header``, if any.
+class IncludeLocation(NamedTuple):
+    """Where the ``#include`` for a header lives, and how sure we are."""
 
-    Matches on the file name, which is what both ``"foo/bar.h"`` and
-    ``<bar.h>`` spellings have in common.  The first uncommented match wins;
-    a file that includes the same header twice is a separate (and rarer)
-    problem we do not try to solve here.
+    line: int | None
+    #: ""（已定位）/ "not-found" / "ambiguous"
+    status: str
+    #: 文本匹配到的行数。歧义时用来把情况说清楚，而不是含糊一句「找不到」。
+    matches: int
+
+
+def _normalise(text: str) -> str:
+    """统一路径分隔符，去掉 ``./`` 前缀，便于比较。"""
+    return text.strip().replace("\\", "/").lstrip("./")
+
+
+def _path_matches(target: str, header: Path) -> bool:
+    """``#include`` 的文本是否指向这个头文件（强匹配）。
+
+    比只比文件名强得多：``#include "other/thing.h"`` 的文本是路径，与候选头的
+    完整路径做后缀比较即可。这样 ``util/thing.h`` 与 ``other/thing.h`` 两个
+    同名头能被区分开——只比文件名时它们完全一样，verify 会注释掉先出现的那行，
+    于是给出一条指向错误文件的结论。
+
+    这不是重新实现预处理器：只是把 include 文本当作路径后缀来比，不做宏展开、
+    不算条件编译。比不出来时调用方会退回弱匹配。
     """
-    wanted = header.name
-    for number, line in enumerate(_strip_comments(source_text).splitlines(), start=1):
-        match = _INCLUDE_RE.match(line)
-        if match and Path(match.group("target")).name == wanted:
-            return number
-    return None
+    wanted = str(header).replace("\\", "/")
+    target = _normalise(target)
+    return bool(target) and (wanted == target or wanted.endswith("/" + target))
+
+
+def _match_lines(source_text: str, header: Path, predicate) -> list[int]:
+    return [
+        number
+        for number, line in enumerate(_strip_comments(source_text).splitlines(), start=1)
+        if (match := _INCLUDE_RE.match(line)) and predicate(match.group("target"))
+    ]
+
+
+def find_include_lines(source_text: str, header: Path) -> list[int]:
+    """Every 1-based line whose ``#include`` names ``header``.
+
+    两级匹配：先用完整路径后缀（强），只有强匹配定不下来时才退回文件名（弱）。
+    返回**全部**候选行，由调用方决定——同名头冲突时若随便挑一行，删掉的可能是
+    另一个文件，而结论看起来完全可信。
+    """
+    strong = _match_lines(source_text, header, lambda t: _path_matches(t, header))
+    if strong:
+        return strong
+    # 弱匹配：include 文本只有文件名（``#include <thing.h>``），或路径对不上。
+    return _match_lines(source_text, header, lambda t: Path(t).name == header.name)
+
+
+def find_include_line(source_text: str, header: Path) -> int | None:
+    """The include line for ``header``, but only when it is unambiguous.
+
+    同名冲突时返回 ``None``，而不是「第一个匹配胜出」。宁可验证不了，也不能
+    把另一条 include 注释掉——那会让 verify 给出一个指向错误文件的结论。
+    """
+    matches = find_include_lines(source_text, header)
+    return matches[0] if len(matches) == 1 else None
+
+
+def locate_include_line(
+    source_text: str, header: Path, hint_line: int | None = None
+) -> IncludeLocation:
+    """Pin down which line to comment out.
+
+    ``hint_line`` 是编译器上报的行号（``RemovalCandidate.line``，来自 ``-H``
+    或 ``/showIncludes``）。它是权威数据：哪个头被包含、在第几行，编译器比
+    正则清楚。所以先用它，再用文本匹配兜底（MSVC 等工具链不报行号）。
+
+    用 hint 之前会校验那一行确实是 include 且名字对得上——扫描之后源码可能
+    被改动过，行号会错位，盲信一个失效的行号比不用更糟。
+
+    文本匹配出现同名冲突时报告 ``ambiguous``：**不猜**。删错一行的代价是
+    verify 给出一条看起来可信、实际指向别处的结论。
+    """
+    if hint_line is not None:
+        lines = source_text.splitlines()
+        if 1 <= hint_line <= len(lines):
+            match = _INCLUDE_RE.match(lines[hint_line - 1])
+            if match and Path(match.group("target")).name == header.name:
+                return IncludeLocation(hint_line, "", 1)
+
+    matches = find_include_lines(source_text, header)
+    if not matches:
+        return IncludeLocation(None, "not-found", 0)
+    if len(matches) > 1:
+        return IncludeLocation(None, "ambiguous", len(matches))
+    return IncludeLocation(matches[0], "", 1)
 
 
 def _comment_out(source_text: str, line_number: int) -> str:
@@ -223,16 +310,33 @@ def verify_candidates(
             )
             continue
 
-        line_number = find_include_line(original_text, candidate.header)
-        if line_number is None:
-            results.append(
-                VerificationResult(
-                    candidate=candidate,
-                    status="not-found",
-                    message="在源码中找不到对应的 #include 行",
+        location = locate_include_line(
+            original_text, candidate.header, candidate.line
+        )
+        if location.line is None:
+            if location.status == "ambiguous":
+                results.append(
+                    VerificationResult(
+                        candidate=candidate,
+                        status="ambiguous",
+                        message=(
+                            f"源码里有 {location.matches} 行 include 都叫 "
+                            f"{candidate.header.name}，无法判断该注释掉哪一行"
+                            "——注释错行会让结论指向另一个文件，因此跳过。"
+                            "改用更完整的 include 路径，或用编译器的行号信息消歧"
+                        ),
+                    )
                 )
-            )
+            else:
+                results.append(
+                    VerificationResult(
+                        candidate=candidate,
+                        status="not-found",
+                        message="在源码中找不到对应的 #include 行",
+                    )
+                )
             continue
+        line_number = location.line
 
         # Measure the unmodified file first: the baseline must come from the
         # same process, same machine, same run as the patched measurement.

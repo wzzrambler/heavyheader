@@ -302,9 +302,18 @@ def _cmd_verify(args) -> int:
 
     print(f"# HeavyHeader 实测验证（每侧 {args.runs} 次，取最小值）\n")
     improved = 0
+    # 同名头会让两行输出长得一模一样（都叫 thing.h），读者无从判断哪条是哪条。
+    # 出现重名时补上一级目录来区分。
+    names = [r.candidate.header.name for r in results]
+    duplicated = {name for name in names if names.count(name) > 1}
     for result in results:
         candidate = result.candidate
-        print(f"## {candidate.header.name} ← {candidate.tu.name}")
+        shown = candidate.header.name
+        if shown in duplicated:
+            parent = candidate.header.parent.name
+            if parent:
+                shown = f"{parent}/{shown}"
+        print(f"## {shown} ← {candidate.tu.name}")
         print(f"   状态：{result.status} — {result.message}")
         if result.seconds_saved is not None and result.status == "improved":
             improved += 1

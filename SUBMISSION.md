@@ -7,7 +7,7 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 95 文件 / 42 commit | `src/heavyheader/` |
+| 代码 | ✅ 95 文件 / 43 commit | `src/heavyheader/` |
 | 测试 | ✅ 305 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
@@ -16,13 +16,13 @@
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 42 commit / 95 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 43 commit / 95 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，42 commit，95 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，43 commit，95 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）

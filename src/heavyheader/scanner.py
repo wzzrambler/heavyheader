@@ -196,12 +196,51 @@ def _tasks_from_compile_commands(
 
 
 def _split_command(command: str) -> list[str]:
+    """按命令行规则切分 compile_commands 里的一条命令。
+
+    为什么不能无条件 ``posix=True``：Windows 上 MSBuild/Ninja 生成的
+    ``compile_commands.json`` 常把路径写成 ``C:\\a\\b``。posix 模式把反斜杠当
+    转义符，``-I C:\\a\\b`` 被切成 ``-I C:ab``——每个头文件搜索路径都指向不
+    存在的位置，于是**所有编译单元都编译失败**，扫描结果看起来是「0 个单元」，
+    而错误信息只是普通的「找不到头文件」。
+
+    Windows 风格命令走 :func:`_split_windows_command`：反斜杠是普通字符，
+    双引号成对包住的空格不切分（``-I"C:\\Program Files\\x"`` 是一个参数）。
+    POSIX 系统的命令不含反斜杠，仍走 ``shlex``，行为不变。
+    """
+    if "\\" in command:
+        return _split_windows_command(command)
     import shlex
 
     try:
         return shlex.split(command, posix=True)
     except ValueError:
         return command.split()
+
+
+def _split_windows_command(command: str) -> list[str]:
+    """Windows 参数切分：保留反斜杠，双引号内不切分。
+
+    不用 ``shlex(posix=False)`` 的原因很具体：它不把引号内的空格当作受保护
+    内容，``-I"C:\\Program Files\\x"`` 会被切成 ``-I"C:\\Program`` 与
+    ``Files\\x"`` 两段——路径依旧断在空格上，问题只是换了种表现形式。
+    """
+    args: list[str] = []
+    buffer: list[str] = []
+    in_quotes = False
+    for char in command:
+        if char == '"':
+            in_quotes = not in_quotes
+            continue
+        if char in " \t" and not in_quotes:
+            if buffer:
+                args.append("".join(buffer))
+                buffer = []
+            continue
+        buffer.append(char)
+    if buffer:
+        args.append("".join(buffer))
+    return args
 
 
 def _strip_output_flag(argv: list[str]) -> list[str]:

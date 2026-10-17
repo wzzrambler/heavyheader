@@ -172,3 +172,35 @@ def test_no_retry_warning_when_all_tus_launched_cleanly(tmp_path):
     )
 
     assert not any("自动重试成功" in w for w in scan.warnings)
+
+
+def test_windows_backslash_paths_in_compile_commands_survive_tokenising(tmp_path):
+    """Windows 路径里的反斜杠不能被当作 shell 转义符吃掉。
+
+    真实故障：MSBuild 生成的 compile_commands.json 写的是
+    ``-I C:\\sdk\\include``；按 posix 规则切分会得到 ``C:sdkinclude``，
+    于是每个头文件搜索路径都指向不存在的目录，**全部编译单元编译失败**，
+    而扫描只报告「0 个单元」。用户会以为工具不工作，实际是路径被解析吃掉了。
+    """
+    db = [
+        {
+            "directory": str(tmp_path),
+            "command": (
+                'g++ -IC:\\sdk\\include -I"C:\\Program Files\\sdk\\inc" '
+                "-DFOO=1 -c src\\f1.cpp"
+            ),
+            "file": "src/f1.cpp",
+        }
+    ]
+    cc_path = tmp_path / "compile_commands.json"
+    cc_path.write_text(json.dumps(db), encoding="utf-8")
+
+    tasks = _tasks_from_compile_commands(cc_path, max_tus=10, root=tmp_path)
+
+    assert len(tasks) == 1
+    flags = tasks[0].options.extra_flags
+    assert "-IC:\\sdk\\include" in flags
+    # 引号内的空格不切分：整条 `-I...` 保持是一个参数。
+    assert "-IC:\\Program Files\\sdk\\inc" in flags
+    assert "-DFOO=1" in flags
+    assert "src\\f1.cpp" in flags

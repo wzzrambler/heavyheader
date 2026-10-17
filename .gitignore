@@ -36,6 +36,10 @@ history.jsonl
 video_build/
 video_build_*/
 
+# 竞赛实验的工作区：拉取的第三方源码 + 测试语料 + 对象文件（约 400 MB）
+# results/ 下的 JSON/Markdown 是受控产物，要提交；_work/ 只是可重建的输入。
+experiments/_work/
+
 # Editors / OS
 .idea/
 .vscode/

@@ -28,7 +28,10 @@ ROOT = Path(__file__).resolve().parent.parent
 #: 那些是某次运行的历史快照，不属于源码保证范围。
 SCANNED_SUFFIXES = {".py", ".md", ".toml", ".yml", ".yaml", ".cfg", ".txt"}
 SCANNED_DIRS = ("src", ".")
-SKIP_DIR_NAMES = {".git", "__pycache__", "video_build_0", ".pytest_cache"}
+#: ``_work`` 是竞赛实验拉取的第三方源码树（nlohmann/json 的 tarball 展开），
+#: 里面的 markdown 不属于本项目，它们的链接好坏与本仓库无关——把它扫进来只会
+#: 让测试因为别人的文档失败。
+SKIP_DIR_NAMES = {".git", "__pycache__", "video_build_0", ".pytest_cache", "_work"}
 
 #: 这两个文件**刻意**携带畸形链接：finalize.py 要用它当修复目标，
 #: 本文件要用它当断言对象。把它们排除，否则扫描会自己告自己。

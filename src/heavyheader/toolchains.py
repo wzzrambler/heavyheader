@@ -42,6 +42,11 @@ __all__ = [
     "to_dict",
 ]
 
+#: 低于这个相对差就当作噪声，不判定「谁更快」。
+#: 与 ``verify`` 的 2% 噪声地板同一口径：单次编译耗时在这个量级上的差异
+#: 主要来自调度与缓存，不足以支撑一个结论。报「快 1%」比不报更误导。
+_TIME_NOISE_PERCENT = 2.0
+
 
 @dataclass(slots=True)
 class ToolchainCost:
@@ -314,7 +319,9 @@ def _relative_time(cost: ToolchainCost, fastest: ToolchainCost | None) -> str:
     if cost.time_discarded or fastest is None or fastest.seconds <= 0:
         return "—"
     if cost is fastest:
-        return "最快"
+        # 「基准」而不是「最快」：最快只是本次计时的参照点，差在噪声内时
+        # 并没有谁真的更快。是否下结论交给渲染末尾的噪声判定。
+        return "基准"
     delta = (cost.seconds - fastest.seconds) / fastest.seconds * 100.0
     return f"+{delta:.1f}%"
 
@@ -331,7 +338,7 @@ def render_toolchains(comparison: ToolchainComparison, *, top: int = 15) -> str:
         "",
         f"编译器：{', '.join(comparison.compilers)}",
         "",
-        "| 编译器 | TU | 归因行数 | 项目头 | 非项目头 | 依赖边 | 耗时(s) | 相对最快 | 备注 |",
+        "| 编译器 | TU | 归因行数 | 项目头 | 非项目头 | 依赖边 | 耗时(s) | 相对基准 | 备注 |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
 
@@ -363,18 +370,23 @@ def render_toolchains(comparison: ToolchainComparison, *, top: int = 15) -> str:
         )
 
     if fastest is not None and comparison.comparable:
-        slowest = max(
-            (c for c in comparison.ok_costs if not c.time_discarded),
-            key=lambda c: c.seconds,
-            default=fastest,
-        )
-        if slowest is not fastest:
+        timed = [c for c in comparison.ok_costs if not c.time_discarded]
+        slowest = max(timed, key=lambda c: c.seconds, default=fastest)
+        if slowest is not fastest and slowest.seconds > 0:
             gain = (slowest.seconds - fastest.seconds) / slowest.seconds * 100.0
-            lines += [
-                "",
-                f"本机实测：`{fastest.compiler}` 最快，比 `{slowest.compiler}` "
-                f"少花 {gain:.1f}% 的墙钟时间。",
-            ]
+            if gain < _TIME_NOISE_PERCENT:
+                # 单次计时的 1% 差异基本是调度噪声，据此宣布「谁更快」是不诚实的。
+                lines += [
+                    "",
+                    f"各编译器耗时差异在噪声范围内（<{_TIME_NOISE_PERCENT:.0f}%），"
+                    "不判定快慢；结构指标一致说明解析量本身没有差别。",
+                ]
+            else:
+                lines += [
+                    "",
+                    f"本机实测：`{fastest.compiler}` 最快，比 `{slowest.compiler}` "
+                    f"少花 {gain:.1f}% 的墙钟时间。",
+                ]
 
     if comparison.header_spreads:
         headers = comparison.compilers

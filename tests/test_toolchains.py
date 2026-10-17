@@ -318,6 +318,20 @@ def test_render_includes_the_header_spread_table():
     assert "最快" in text
 
 
+def test_close_timings_are_not_declared_a_winner():
+    """1% 的差异是噪声，不能报成「快 1%」——与 verify 的 2% 地板同一口径。"""
+    a = _scan(seconds=1.00)
+    b = _scan(seconds=1.01)
+    costs = build_costs(
+        [_Outcome("gcc", "gcc", a, None), _Outcome("g++", "gcc", b, None)]
+    )
+
+    text = render_toolchains(compare_toolchains(Path("/proj"), costs))
+
+    assert "噪声范围" in text
+    assert "少花" not in text
+
+
 def test_to_dict_is_stable_and_complete():
     costs = build_costs(
         [

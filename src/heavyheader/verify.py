@@ -31,11 +31,12 @@ from __future__ import annotations
 import re
 import shutil
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import ProjectScan, RemovalCandidate, TranslationUnit
+from .scanner import default_include_dirs
 
 __all__ = ["VerifyOptions", "VerificationResult", "verify_candidates", "find_include_line"]
 
@@ -193,7 +194,17 @@ def verify_candidates(
     comparison is only meaningful if both sides are compiled identically.
     """
     verify = verify or VerifyOptions()
-    include_dirs = list(include_dirs or [])
+
+    # 有效包含路径 = 扫描时用的（options）+ 调用方额外给的（kwarg）；
+    # 两者都为空时套用与 scan 相同的布局兜底。
+    #
+    # 以前基线编译直接透传 options（无兜底），而打补丁那侧又改用 kwarg、
+    # 丢掉了 options 里的 -I。两个后果：include/ 布局的项目基线就编译不过，
+    # 以及两侧口径不一致导致「移除后编译失败」的误报。
+    effective_includes = list(options.include_dirs) + list(include_dirs or [])
+    if not effective_includes:
+        effective_includes = default_include_dirs(scan.root)
+    baseline_options = replace(options, include_dirs=effective_includes)
 
     ranked = scan.candidates_by_estimate()[: max(0, verify.top)]
     results: list[VerificationResult] = []
@@ -226,7 +237,7 @@ def verify_candidates(
         # Measure the unmodified file first: the baseline must come from the
         # same process, same machine, same run as the patched measurement.
         baseline_seconds, baseline_error = _measure(
-            driver, source_path, options, None, verify.runs, verify.timeout
+            driver, source_path, baseline_options, None, verify.runs, verify.timeout
         )
         if baseline_seconds is None:
             results.append(
@@ -249,7 +260,7 @@ def verify_candidates(
             # access to its siblings.  Add the original directory explicitly.
             patched_options = DriverOptions(
                 standard=options.standard,
-                include_dirs=[*include_dirs, source_path.parent],
+                include_dirs=[*effective_includes, source_path.parent],
                 defines=list(options.defines),
                 extra_flags=list(options.extra_flags),
                 full_compile=options.full_compile,

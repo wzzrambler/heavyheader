@@ -264,6 +264,18 @@ def evaluate_gate(
             f"{comparison.tu_count_after} -- did the scan miss files?"
         )
 
+    # 一个编译单元都没编译成功时，这次扫描没有任何数据可依据：回归算出来是
+    # -100%，三条判定全部落空，门禁会「通过」。构建坏得越彻底越容易通过——
+    # 这把门禁的作用完全反转了。CI 上换工具链、漏传 -I、缺第三方头都会触发。
+    if comparison.tu_count_after == 0:
+        failed_after = len(after.failed_tus)
+        reasons.append(
+            "the scan produced no usable translation unit"
+            + (f" ({failed_after} failed to compile)" if failed_after else "")
+            + " -- a gate cannot conclude anything from an empty scan, so it "
+            "fails rather than passing silently"
+        )
+
     return GateResult(
         passed=not reasons,
         comparison=comparison,

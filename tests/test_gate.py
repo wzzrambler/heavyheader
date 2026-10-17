@@ -271,3 +271,61 @@ def test_gate_defaults_are_conservative():
     after = _scan([_header("/proj/a.h", 1005, 2)])
     result = evaluate_gate(before, after)
     assert result.passed
+
+
+# --------------------------------------------------------------------------
+# the gate's own failure modes
+# --------------------------------------------------------------------------
+
+
+def _failed_scan() -> ProjectScan:
+    """A scan where every TU failed to compile — no usable data at all."""
+    tu = TranslationUnit(source=Path("/proj/t0.cpp"), dependencies=[])
+    tu.error = "fatal error: missing header"
+    return ProjectScan(
+        root=Path("/proj"),
+        compiler="g++",
+        compiler_family=CompilerFamily.GCC,
+        standard="c++17",
+        tus=[tu],
+    )
+
+
+def test_gate_fails_when_the_scan_produced_nothing():
+    """The inverted gate.
+
+    With zero successful TUs the regression computes to -100%, so all three
+    checks miss and ``passed`` came out True: the more completely the build
+    was broken, the easier it was to pass.  A gate that passes on an empty
+    scan protects nothing, so it must fail instead.
+    """
+    before = _scan([_header("/proj/a.h", 100, 1)], tus=1)
+    after = _failed_scan()
+
+    result = evaluate_gate(before, after, max_regression_percent=5.0)
+
+    assert result.passed is False
+    assert any("no usable translation unit" in r for r in result.reasons)
+
+
+def test_gate_still_passes_a_legitimate_improvement():
+    """Guarding against over-correction: a real drop in cost is still a pass."""
+    before = _scan([_header("/proj/a.h", 100, 2)], tus=2)
+    after = _scan([_header("/proj/a.h", 40, 2)], tus=2)
+
+    result = evaluate_gate(before, after, max_regression_percent=5.0)
+
+    assert result.passed is True
+    assert result.reasons == []
+
+
+def test_gate_warns_when_units_disappeared_but_still_passes():
+    """Deleting a source file legitimately lowers cost; it must not be
+    reported as a regression, but the coverage change must be visible."""
+    before = _scan([_header("/proj/a.h", 100, 2)], tus=2)
+    after = _scan([_header("/proj/a.h", 50, 1)], tus=1)
+
+    result = evaluate_gate(before, after, max_regression_percent=5.0)
+
+    assert result.passed is True
+    assert any("translation units dropped" in w for w in result.warnings)

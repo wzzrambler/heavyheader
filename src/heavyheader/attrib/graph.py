@@ -260,6 +260,13 @@ def find_removal_candidates(
             continue
 
         for header in directs:
+            # The contract, stated twice elsewhere (HeaderKind and
+            # classify_headers): only project-owned headers are ever proposed
+            # for removal.  We cannot edit <vector>, and a ranked list topped
+            # by "delete <vector>" buries everything actionable.
+            if kinds.get(header, HeaderKind.SYSTEM) is not HeaderKind.PROJECT:
+                continue
+
             # Union of everything reachable from *other* direct includes.  A
             # header in this union is already being paid for, so removing this
             # include cannot save it.
@@ -279,8 +286,22 @@ def find_removal_candidates(
 
             closure = analysis.closures.get(header, set())
             exclusive = closure - shared
-            # A header that includes itself only is not a saving.
-            exclusive.discard(header)
+            # Dropping this include stops the compiler parsing ``header``
+            # itself as well as its exclusive transitive closure.
+            #
+            # ``closure`` deliberately answers "what does this reach" and
+            # excludes its start node, so without adding ``header`` back a
+            # header that includes nothing -- a leaf -- reports zero savings
+            # and is dropped entirely.  That blind spot hid the most common
+            # optimisation there is: deleting an unused standalone header,
+            # which ``verify`` would happily confirm improves build time
+            # while ``scan`` insisted it was worth nothing.
+            #
+            # It only counts when no other direct include already reaches
+            # ``header``; in that case it is in ``shared`` and keeps being
+            # paid for, so removing this include saves nothing.
+            if header not in shared:
+                exclusive.add(header)
             saved = sizes.total(exclusive)
             if saved < min_savings:
                 continue

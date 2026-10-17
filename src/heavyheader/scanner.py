@@ -199,8 +199,12 @@ def _strip_output_flag(argv: list[str]) -> list[str]:
     return out
 
 
-def _default_include_dirs(root: Path) -> list[Path]:
-    """Common C++ layout conventions, so headers resolve without help."""
+def default_include_dirs(root: Path) -> list[Path]:
+    """Common C++ layout conventions, so headers resolve without help.
+
+    公开而非私有：`verify` 必须和 `scan` 用同一套兜底路径，否则扫描能找到的
+    头文件在验证时找不到，基线编译直接失败（见 verify.py）。
+    """
     candidates = [root, root / "include", root / "src", root / "include" / "src"]
     seen: dict[Path, None] = {}
     for candidate in candidates:
@@ -222,7 +226,7 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
         driver = detect_driver(options.compiler)
 
     root = options.root.resolve()
-    include_dirs = list(options.include_dirs) or _default_include_dirs(root)
+    include_dirs = list(options.include_dirs) or default_include_dirs(root)
 
     tasks = discover_translation_units(
         options.root,

@@ -312,11 +312,25 @@ def _cmd_gate(args) -> int:
         f"({comparison.seconds_percent:+.1f}%)"
     )
 
+    # 警告无论通过与否都要打印。以前只在失败分支打印，于是「编译单元从 12
+    # 掉到 3」这类信号恰好在门禁通过（最需要被看见的时候）被吞掉。
+    for warning in result.warnings:
+        print(f"警告：{warning}", file=sys.stderr)
+
     if result.passed:
         print(f"门禁通过：成本回归在 {args.max_regression:+.1f}% 预算内。")
         if args.update_baseline:
-            save_baseline(args.baseline, scan)
-            print(f"基线已更新：{args.baseline}")
+            # 别用一份没有成功编译单元的扫描覆盖掉好基线——下一轮会拿它
+            # 算出莫名其妙的 +100% 回归。
+            if scan.ok_tus:
+                save_baseline(args.baseline, scan)
+                print(f"基线已更新：{args.baseline}")
+            else:
+                print(
+                    "警告：本次扫描没有成功的编译单元，拒绝覆盖基线"
+                    f"（{args.baseline} 保持不变）。",
+                    file=sys.stderr,
+                )
         if args.report:
             _emit(render_html(scan), args.report)
         return 0
@@ -324,8 +338,6 @@ def _cmd_gate(args) -> int:
     print("门禁失败：", file=sys.stderr)
     for reason in result.reasons:
         print(f"  - {reason}", file=sys.stderr)
-    for warning in result.warnings:
-        print(f"  ! {warning}", file=sys.stderr)
     if args.report:
         _emit(render_html(scan), args.report)
     return 1

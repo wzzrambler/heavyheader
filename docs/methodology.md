@@ -38,12 +38,23 @@ attributed_lines(h) = line_count(h) × tu_reach(h)
 删掉 TU `t` 中的一条直接 include `d` 后，唯一会停止被解析的头文件集合：
 
 ```
-exclusive(d) = closure(d) \ ( ⋃_{d' ∈ direct_includes(t), d' ≠ d} closure(d') )
+shared(d)    = ⋃_{d' ∈ direct_includes(t), d' ≠ d} closure(d')
+exclusive(d) = ( closure(d) \ shared(d) ) ∪ ( {d} 当 d ∉ shared(d) )
 ```
 
 **这是本工具与普通 lint 工具的本质区别。** 一个头文件如果能从别的 include 到达，那么删掉
 当前这条 include **并不会**让它停止被解析——钱已经花了。只有独占闭包里的头文件才是删掉
 这条 include 的真实收益。
+
+**为什么公式里要显式把 `d` 自己加回来**：`closure()` 回答的是「这个头能到达什么」，
+按设计不含起始节点（见 `test_closure_excludes_the_start_node`）。而删掉一条 include
+停止解析的不只是它拖进来的东西，**还包括 `d` 自身的文本**。漏掉这一项时，一个不 include
+任何东西的「叶子头」独占闭包为空、预计收益为 0，于是被 `saved < min_savings` 直接丢弃——
+`scan` 会说「删它毫无收益」，而 `verify` 实测同样一个头却能量到真实的提速。两个命令自相
+矛盾，且被漏掉的恰好是最常见的一类优化：删掉一个没人用的独立头文件。
+
+只有当 `d` 自己也在 `shared(d)` 里（别的 include 已经付过钱）时才不加回来——那种情况下
+删掉这条 include 确实一分不省。
 
 > **实现注记（一个真实的 bug）**：早先版本把 `d` 自己也放进了「已付费」并集，
 > 导致每个候选的独占集合恒为空，于是所有项目都报告「没有可优化项」。
@@ -71,7 +82,13 @@ estimated_lines_saved = Σ_{h ∈ exclusive(d)} line_count(h)
 estimated_percent = estimated_lines_saved / processed_lines(t) × 100%
 ```
 
-`processed_lines(t)` 是该编译单元实际解析的全部头文件行数之和。
+`exclusive(d)` 含 `d` 自身（见上一节），`processed_lines(t)` 是该编译单元实际解析的全部
+头文件行数之和。
+
+**只有项目自己的头会进入候选清单。** 系统头与第三方头照常出现在统计表里（这样各项数字才
+加得起来），但从不作为「可删除」建议——`<vector>` 不是我们能改的东西，一条以「建议删除
+`<vector>`」开头的排序清单会把所有可执行项都埋掉。这条契约在 `HeaderKind` 与
+`classify_headers` 的文档字符串里各写了一遍。
 
 ## 5. 实测节省（Measured Savings）
 

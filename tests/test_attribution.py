@@ -142,12 +142,14 @@ def test_exclusive_closure_is_not_emptied_by_the_candidate_itself(tmp_path):
     expensive = [c for c in scan.candidates if c.header == root / "expensive.h"]
     assert len(expensive) == 1
     candidate = expensive[0]
-    # huge_a.h and huge_b.h are reachable only through expensive.h.
+    # huge_a.h and huge_b.h are reachable only through expensive.h, and
+    # expensive.h's own text stops being parsed too (3 lines).
     assert set(candidate.exclusive_headers) == {
         root / "huge_a.h",
         root / "huge_b.h",
+        root / "expensive.h",
     }
-    assert candidate.estimated_lines_saved == 90
+    assert candidate.estimated_lines_saved == 93
 
 
 def test_shared_closure_is_not_counted_as_a_saving(tmp_path):
@@ -191,8 +193,76 @@ def test_only_direct_includes_become_candidates(tmp_path):
     scan = _scan([main], root)
     assert scan.candidates, "expected the direct include to be a candidate"
     assert all(c.header == root / "top.h" for c in scan.candidates)
-    # deep.h is reached only through top.h, so removing top.h saves it.
-    assert scan.candidates[0].exclusive_headers == [root / "deep.h"]
+    # deep.h is reached only through top.h, and top.h's own 5 lines stop
+    # being parsed as well -- dropping an include stops parsing the header
+    # it names, not just what that header drags in.
+    assert set(scan.candidates[0].exclusive_headers) == {
+        root / "deep.h",
+        root / "top.h",
+    }
+    assert scan.candidates[0].estimated_lines_saved == 55
+
+
+def test_leaf_header_is_still_a_candidate(tmp_path):
+    """The blind spot: a header that includes nothing was reported as worthless.
+
+    ``closure_of`` deliberately excludes its start node, so a leaf header had
+    an empty exclusive closure, estimated zero savings, and was dropped by
+    the ``saved < min_savings`` filter.  Deleting an unused standalone header
+    is the most common optimisation there is, and ``verify`` would confirm a
+    real speed-up while ``scan`` insisted it was worth nothing.
+    """
+    root = tmp_path
+    _write(root, "leaf.h", 300)
+    _write(root, "other.h", 4)
+    source = root / "main.cpp"
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+
+    main = _tu(
+        str(source),
+        [
+            (str(source), str(root / "leaf.h"), 0),
+            (str(source), str(root / "other.h"), 0),
+        ],
+    )
+    scan = _scan([main], root)
+
+    leaf = [c for c in scan.candidates if c.header == root / "leaf.h"]
+    assert leaf, "a 300-line leaf header must not be invisible"
+    # 300 lines of body written by _write, plus its own text counted now.
+    assert leaf[0].estimated_lines_saved >= 300
+    assert root / "leaf.h" in leaf[0].exclusive_headers
+
+
+def test_system_headers_are_never_proposed_for_removal(tmp_path):
+    """Stated twice in the source (HeaderKind, classify_headers): we cannot
+    edit <vector>, so proposing it would be noise that buries the actionable
+    candidates.  The detector used to emit them anyway.
+    """
+    # 分类规则是「在 root 之下即为项目头」，所以「系统头」必须放在 root 之外。
+    root = tmp_path / "proj"
+    root.mkdir()
+    _write(root, "mine.h", 100)
+    system_root = tmp_path / "sysroot" / "include"
+    _write(system_root, "vector", 4000)  # outside root → SYSTEM
+    source = root / "main.cpp"
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+
+    main = _tu(
+        str(source),
+        [
+            (str(source), str(system_root / "vector"), 0),
+            (str(source), str(root / "mine.h"), 0),
+        ],
+    )
+    scan = _scan([main], root)
+
+    assert scan.candidates, "the project header should still be proposed"
+    for candidate in scan.candidates:
+        assert candidate.kind is HeaderKind.PROJECT
+        assert candidate.header != system_root / "vector"
+    # ...but the system header is still reported for context.
+    assert scan.header_stats, "system headers must still appear in the stats"
 
 
 # --------------------------------------------------------------------------

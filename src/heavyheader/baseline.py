@@ -46,7 +46,7 @@ class BaselineError(RuntimeError):
 def load_baseline(path: str | Path) -> ProjectScan:
     try:
         return scan_from_dict(read_json(path))
-    except (FileNotFoundError, ValueError) as exc:
+    except (FileNotFoundError, ValueError, KeyError, TypeError) as exc:
         raise BaselineError(str(exc)) from exc
 
 

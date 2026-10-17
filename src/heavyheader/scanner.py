@@ -125,7 +125,7 @@ def discover_translation_units(
     cc_path = compile_commands or (root / "compile_commands.json")
 
     if cc_path.is_file():
-        tasks = _tasks_from_compile_commands(cc_path, max_tus)
+        tasks = _tasks_from_compile_commands(cc_path, max_tus, root=root)
         if tasks:
             return tasks
 
@@ -146,7 +146,14 @@ def discover_translation_units(
     return [_CompileTask(source=path, options=options) for path in found]
 
 
-def _tasks_from_compile_commands(cc_path: Path, max_tus: int) -> list[_CompileTask]:
+def _tasks_from_compile_commands(
+    cc_path: Path, max_tus: int, root: Path | None = None
+) -> list[_CompileTask]:
+    """Build compile tasks from a compilation database.
+
+    ``root`` is the scan root, used as the working-directory fallback when an
+    entry points at a build directory that no longer exists.
+    """
     try:
         raw = json.loads(cc_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -158,6 +165,12 @@ def _tasks_from_compile_commands(cc_path: Path, max_tus: int) -> list[_CompileTa
         if not source.name:
             continue
         directory = Path(entry.get("directory", "."))
+        # 构建目录被删掉/移动过是很常见的事（先 CMake 生成、再清理 build 目录）。
+        # 原样透传会让 subprocess 抛 NotADirectoryError——那不是 CompilationError，
+        # 线程池接不住，一条坏记录就能带走整个扫描及其余已完成的编译结果。
+        # 退回到项目根：多数项目的相对路径在那里依然成立。
+        if not directory.is_dir():
+            directory = root
         command = entry.get("command") or " ".join(entry.get("arguments", []))
         if not command:
             continue
@@ -268,6 +281,15 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
                 tus.append(
                     TranslationUnit(source=task.source, error=str(exc))
                 )
+            except Exception as exc:  # noqa: BLE001 - 见下方说明
+                # 以前只接 CompilationError。驱动抛出的其余异常（失效的 cwd
+                # 是 NotADirectoryError、权限问题、畸形 argv…）会穿透线程池，
+                # 让整个扫描带着回溯中断——500 个 TU 里有 1 条坏记录，其余
+                # 499 个已完成的编译结果全部丢失。一个编译单元的出问题不该
+                # 报废整次扫描，所以在这里兜住并记为该单元的失败。
+                message = f"{task.source}: {type(exc).__name__}: {exc}"
+                failures.append(message)
+                tus.append(TranslationUnit(source=task.source, error=message))
 
     scan = ProjectScan(
         root=root,

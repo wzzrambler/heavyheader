@@ -35,6 +35,22 @@ def _path(value) -> str | None:
     return str(value) if value is not None else None
 
 
+def _require_key(entry, key: str, what: str):
+    """Fetch a mandatory field, or explain the file instead of raising KeyError.
+
+    A stale or hand-edited baseline used to blow up here with a bare
+    ``KeyError``, which no caller catches.  Naming the record and the field
+    turns a traceback into something the user can act on.
+    """
+    if not isinstance(entry, dict) or key not in entry:
+        raise ValueError(
+            f"baseline {what} record is missing {key!r}; the file may come "
+            "from an older version. Re-generate it with "
+            "`heavyheader scan --save`."
+        )
+    return entry[key]
+
+
 def scan_to_dict(scan: ProjectScan) -> dict:
     """Serialise a :class:`ProjectScan` to JSON-compatible data."""
     return {
@@ -142,13 +158,41 @@ def scan_from_dict(data: dict) -> ProjectScan:
     The rebuilt scan is intentionally lossy: include trees and per-phase
     timings are not persisted, so the restored object is suitable for
     *comparison and reporting* but not for re-running attribution.
+
+    Raises ``ValueError`` for anything structurally wrong, because that is
+    what ``load_baseline`` translates into a usable ``BaselineError``. Without
+    the explicit checks a stale or hand-edited baseline surfaced as a bare
+    ``KeyError: 'path'`` from deep inside this function, which no caller
+    catches -- CI got an exit code and a traceback instead of a diagnosis.
     """
+    if not isinstance(data, dict):
+        raise ValueError(
+            f"baseline is not a scan object (got {type(data).__name__}); "
+            "expecting the JSON produced by `heavyheader scan --save`"
+        )
+
+    version = data.get("schema")
+    if version != _SCHEMA_VERSION:
+        raise ValueError(
+            f"baseline schema version is {version!r}, but this build of "
+            f"HeavyHeader reads version {_SCHEMA_VERSION}. Re-generate the "
+            "baseline with `heavyheader scan --save`."
+        )
+
+    missing = [key for key in ("root", "translation_units", "headers") if key not in data]
+    if missing:
+        raise ValueError(
+            "baseline is missing required field(s): "
+            + ", ".join(missing)
+            + ". Re-generate it with `heavyheader scan --save`."
+        )
+
     family = CompilerFamily(data.get("compiler_family", "gcc"))
     tus: list[TranslationUnit] = []
     for entry in data.get("translation_units", []):
         tus.append(
             TranslationUnit(
-                source=Path(entry["source"]),
+                source=Path(_require_key(entry, "source", "translation unit")),
                 dependencies=[Path(p) for p in entry.get("dependencies", [])],
                 timings=[
                     PhaseTiming(
@@ -160,7 +204,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
         )
 
     headers = {
-        Path(entry["path"]): HeaderStats(
+        Path(_require_key(entry, "path", "header")): HeaderStats(
             path=Path(entry["path"]),
             kind=HeaderKind(entry.get("kind", "system")),
             line_count=entry.get("line_count", 0),
@@ -177,8 +221,8 @@ def scan_from_dict(data: dict) -> ProjectScan:
 
     candidates = [
         RemovalCandidate(
-            tu=Path(entry["tu"]),
-            header=Path(entry["header"]),
+            tu=Path(_require_key(entry, "tu", "candidate")),
+            header=Path(_require_key(entry, "header", "candidate")),
             line=entry.get("line"),
             kind=HeaderKind(entry.get("kind", "system")),
             exclusive_headers=[Path(p) for p in entry.get("exclusive_headers", [])],

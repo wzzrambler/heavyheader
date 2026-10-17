@@ -329,3 +329,50 @@ def test_gate_warns_when_units_disappeared_but_still_passes():
 
     assert result.passed is True
     assert any("translation units dropped" in w for w in result.warnings)
+
+
+# --------------------------------------------------------------------------
+# malformed baselines
+# --------------------------------------------------------------------------
+
+
+def _write_json(path, payload):
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_incompatible_schema_is_reported_not_raised(tmp_path):
+    """A stale baseline used to surface as a bare KeyError from deep inside
+    the deserialiser, which no caller catches — CI got a traceback."""
+    payload = scan_to_dict(_scan([_header("/proj/a.h", 10, 2)]))
+    payload["schema"] = 99
+    path = _write_json(tmp_path / "old.json", payload)
+
+    with pytest.raises(BaselineError, match="schema version is 99"):
+        load_baseline(path)
+
+
+def test_baseline_that_is_not_an_object(tmp_path):
+    path = _write_json(tmp_path / "list.json", [1, 2, 3])
+
+    with pytest.raises(BaselineError, match="not a scan object"):
+        load_baseline(path)
+
+
+def test_baseline_missing_required_fields(tmp_path):
+    payload = scan_to_dict(_scan([_header("/proj/a.h", 10, 2)]))
+    del payload["headers"]
+    path = _write_json(tmp_path / "partial.json", payload)
+
+    with pytest.raises(BaselineError, match="missing required field"):
+        load_baseline(path)
+
+
+def test_baseline_record_missing_a_key(tmp_path):
+    """Hard subscripts inside the lists produced KeyError; name the field."""
+    payload = scan_to_dict(_scan([_header("/proj/a.h", 10, 2)]))
+    payload["headers"] = [{"line_count": 10}]
+    path = _write_json(tmp_path / "broken.json", payload)
+
+    with pytest.raises(BaselineError, match="header record is missing 'path'"):
+        load_baseline(path)

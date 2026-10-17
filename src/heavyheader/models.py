@@ -206,6 +206,16 @@ class TranslationUnit:
 # --------------------------------------------------------------------------
 
 
+def tu_compile_seconds(tu: "TranslationUnit") -> float:
+    """一次编译中**用户实际等待**的秒数：优先驱动实测墙钟，退回自报 TOTAL。
+
+    这个函数存在的理由是把「用户等待」收敛成唯一口径。验证、增量税、累计耗时
+    三处都必须调用它；如果各处自己写 ``wall or total``，迟早会漏掉一处——而漏掉
+    的表现是数字变小、看起来更好，不会报错，比崩溃更难发现。
+    """
+    return tu.wall_seconds if tu.wall_seconds > 0 else tu.total_wall_seconds()
+
+
 @dataclass(slots=True)
 class HeaderStats:
     """Aggregated facts about one header across the whole project."""
@@ -245,9 +255,15 @@ class HeaderStats:
     template_surface: int = 0
 
     @property
-    def cost_rank_key(self) -> tuple[int, int]:
-        """Sort key: biggest attributed cost first, then widest reach."""
-        return (self.attributed_lines, self.tu_reach)
+    def cost_rank_key(self) -> tuple[int, int, str]:
+        """排序键：先按归因行数，再按覆盖 TU 数，最后按路径。
+
+        第三项不是装饰：前两项经常并列（尤其小工程），没有最终 tie-breaker
+        时排出来的顺序取决于字典/集合的迭代顺序，而集合里的 Path 受 Python
+        哈希随机化影响，**同输入两次运行会给出不同的 Top-10**。A/A 对照实测
+        抓到过这个现象；一个会抖动的排行榜不能用来和竞品比一致性。
+        """
+        return (self.attributed_lines, self.tu_reach, str(self.path))
 
 
 @dataclass(slots=True)

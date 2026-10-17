@@ -1,0 +1,44 @@
+{
+  "runs": 3,
+  "tus_per_run": [
+    25,
+    25,
+    25
+  ],
+  "attributed_lines": [
+    4233937,
+    4233937,
+    4233937
+  ],
+  "attributed_identical": true,
+  "top10_identical": true,
+  "top10": [
+    "doctest.h",
+    "json.hpp",
+    "binary_reader.hpp",
+    "hedley.hpp",
+    "binary_writer.hpp",
+    "lexer.hpp",
+    "to_chars.hpp",
+    "json_pointer.hpp",
+    "serializer.hpp",
+    "type_traits.hpp"
+  ],
+  "scan_wall_seconds": [
+    41.9383,
+    41.5681,
+    41.6351
+  ],
+  "scan_wall_median": 41.6351,
+  "scan_wall_spread_percent": 0.89,
+  "compiled_wall_seconds": [
+    35.8484,
+    35.4661,
+    35.3168
+  ],
+  "compiled_wall_median": 35.4661,
+  "compiled_wall_spread_percent": 1.5,
+  "per_tu_wall_spread_median_percent": 1.58,
+  "tus_without_timing": 0,
+  "scan_overhead_ratio": 1.174
+}

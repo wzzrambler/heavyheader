@@ -44,7 +44,7 @@ from .attrib.forward import find_forward_declaration_candidates
 from .attrib.pch import estimate_pch
 from .attrib.templates import profile_project
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
-from .models import CompilerFamily, ProjectScan, TranslationUnit
+from .models import CompilerFamily, ProjectScan, TranslationUnit, tu_compile_seconds
 
 __all__ = ["ScanOptions", "ScanError", "scan_project", "discover_translation_units"]
 
@@ -490,7 +490,12 @@ def scan_project(
         root, {h for tu in scan.ok_tus for h in tu.dependencies}
     )
     scan.candidates = find_removal_candidates(scan, sizes, kinds)
-    scan.baseline_seconds = sum(tu.total_wall_seconds() for tu in scan.ok_tus)
+    # 「累计编译耗时」对外呈现的是**墙钟**，所以这里优先用驱动实测的
+    # wall_seconds。-ftime-report 的 TOTAL 是 CPU 时间，Windows 上两者可差
+    # 30 倍（0.02s vs 0.60s，实测），用 CPU 时间会让报告里的「累计耗时」
+    # 与 verify 的墙钟节省率口径不一致，百分比失真。旧数据没有 wall_seconds
+    # 时退回 TOTAL，并保持原样而不是猜一个值。
+    scan.baseline_seconds = sum(tu_compile_seconds(tu) for tu in scan.ok_tus)
     # Template instantiation cost.  This also fills each header's
     # template_declarations / template_surface, which the reports read.
     scan.template_profile = profile_project(scan)

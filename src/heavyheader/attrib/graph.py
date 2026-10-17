@@ -42,6 +42,7 @@ from ..models import (
     RemovalCandidate,
     TranslationUnit,
     candidate_rank_key,
+    tu_compile_seconds,
 )
 
 __all__ = [
@@ -226,12 +227,13 @@ def build_header_stats(scan: ProjectScan, sizes: HeaderSizes) -> None:
         # /手工构造的 TU 没有墙钟时，才退回 -ftime-report 的 TOTAL（CPU 时间）。
         # 直接用 CPU 时间会在 Windows 上把税额低估一个数量级——那是把
         # 「改了要等 3 秒」报成「0.2 秒」，比不报更糟。
-        tu_seconds = (
-            tu.wall_seconds if tu.wall_seconds > 0 else tu.total_wall_seconds()
-        )
-        for header in {
-            _normalise_header_key(e.included, root) for e in tu.include_events
-        }:
+        tu_seconds = tu_compile_seconds(tu)
+        # 排序后再迭代：header_stats 的插入顺序会决定 JSON 里 headers 的
+        # 顺序，而集合迭代受哈希随机化影响，不排序会导致同输入不同输出。
+        for header in sorted(
+            {_normalise_header_key(e.included, root) for e in tu.include_events},
+            key=str,
+        ):
             if header in seen_in_tu:
                 continue
             seen_in_tu.add(header)

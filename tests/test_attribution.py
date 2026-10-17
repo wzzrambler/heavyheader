@@ -626,3 +626,19 @@ def test_relative_include_is_resolved_against_root_not_process_cwd(tmp_path, mon
     stats = next(iter(scan.header_stats.values()))
     assert stats.kind is HeaderKind.PROJECT
     assert stats.line_count == 1
+
+
+def test_equal_cost_headers_are_ordered_by_path_not_by_hash(tmp_path):
+    """并列成本必须有最终 tie-breaker，否则 Top-10 会随哈希随机化抖动。
+
+    A/A 对照（同输入跑三次）实测到过：归因行数完全一致，但 Top-10 列表
+    每次不同。根因是 header 集合迭代顺序不稳定 + 排序键只到 tu_reach。
+    """
+    from heavyheader.models import HeaderStats
+
+    a = HeaderStats(path=tmp_path / "b.h", line_count=10, tu_reach=2, attributed_lines=20)
+    b = HeaderStats(path=tmp_path / "a.h", line_count=10, tu_reach=2, attributed_lines=20)
+    # 成本完全相同，键必须仍能区分，且按路径稳定排序。
+    assert a.cost_rank_key != b.cost_rank_key
+    ordered = sorted([a, b], key=lambda s: s.cost_rank_key)
+    assert [s.path.name for s in ordered] == ["a.h", "b.h"]

@@ -106,7 +106,9 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 # 与 attributed_lines 是两个不同的成本口径，报告里分开列。
                 "incremental_seconds": round(stats.incremental_seconds, 6),
             }
-            for stats in scan.header_stats.values()
+            # 按路径排序，保证同一份输入两次导出字节级可比；否则下游
+            # 做 diff/基线对比时会看到假变化。
+            for stats in sorted(scan.header_stats.values(), key=lambda s: str(s.path))
         ],
         "candidates": [
             {

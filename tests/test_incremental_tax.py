@@ -20,6 +20,7 @@ from heavyheader.models import (
     PhaseTiming,
     ProjectScan,
     TranslationUnit,
+    tu_compile_seconds,
 )
 from heavyheader.report.jsonio import scan_from_dict, scan_to_dict
 from heavyheader.report.markdown import render_markdown
@@ -127,3 +128,22 @@ def test_json_roundtrip_keeps_tax(tmp_path: Path):
 
     again = scan_from_dict(data)
     assert _stat(again, "core.h").incremental_seconds == pytest.approx(3.0)
+
+
+def test_wait_time_prefers_wall_clock_over_cpu():
+    """用户等的是墙钟；-ftime-report 的 CPU 时间在 Windows 上可小 30 倍。"""
+    tu = TranslationUnit(
+        source=Path("a.cpp"),
+        wall_seconds=2.0,
+        timings=[PhaseTiming(name="TOTAL", wall_seconds=0.1)],
+    )
+    assert tu_compile_seconds(tu) == pytest.approx(2.0)
+
+
+def test_wait_time_falls_back_to_total_when_wall_missing():
+    """旧数据没有墙钟时退回 TOTAL，而不是当成 0 秒（0 会被读成免费）。"""
+    tu = TranslationUnit(
+        source=Path("a.cpp"),
+        timings=[PhaseTiming(name="TOTAL", wall_seconds=0.4)],
+    )
+    assert tu_compile_seconds(tu) == pytest.approx(0.4)

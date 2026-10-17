@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from .. import PROJECT_URL
 from ..models import HeaderKind, ProjectScan
 
 __all__ = ["render_markdown", "markdown_summary_line"]
@@ -274,7 +275,7 @@ def render_markdown(scan: ProjectScan) -> str:
     lines.append("---")
     lines.append("")
     lines.append(
-        "由 [HeavyHeader](https://github.com/) 生成 · "
+        f"由 [HeavyHeader]({PROJECT_URL}) 生成 · "
         "指标定义见 `docs/methodology.md`"
     )
     lines.append("")

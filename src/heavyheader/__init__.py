@@ -10,4 +10,10 @@
 from __future__ import annotations
 
 __version__ = "0.1.0"
-__all__ = ["__version__"]
+
+# 项目地址。曾经散落在各个渲染器里，且 markdown 报告页脚那一处是空链接
+# （"https://github.com/"），用户点开只能看到 GitHub 首页。统一成常量后由
+# tests/test_repo_links.py 守住：既防空链接，也防 finalize.py 式的重复前缀。
+PROJECT_URL = "https://github.com/wzzrambler/heavyheader"
+
+__all__ = ["__version__", "PROJECT_URL"]

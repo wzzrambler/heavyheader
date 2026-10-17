@@ -44,6 +44,34 @@ def replace_in(path: Path, old: str, new: str) -> int:
     return count
 
 
+def repair_double_scheme(text: str) -> tuple[str, int]:
+    """把 `https://github.com/https://github.com/...` 折叠回 `https://github.com/...`。
+
+    曾经的真实事故：占位符是裸的 ``heavyheader/heavyheader``，而它出现在
+    ``https://github.com/`` 之后，朴素替换于是拼出了双份前缀，污染了
+    README 徽章、pyproject 元数据与 CHANGELOG 链接。这里既用于修补历史
+    污染，也作为替换后的兜底校验。
+    """
+    doubled = "https://github.com/https://github.com/"
+    count = text.count(doubled)
+    if count:
+        text = text.replace(doubled, "https://github.com/")
+    return text, count
+
+
+def substitute_repo_url(text: str, repo: str) -> str:
+    """前缀感知地替换仓库地址，保证幂等且不产生重复 scheme。
+
+    先处理「带前缀的完整占位 URL」，再处理裸占位串；最后折叠任何遗留的
+    双份前缀。对已替换过的文件重跑不出变化（幂等）。
+    """
+    full_placeholder = "https://github.com/" + _PLACEHOLDER_URL
+    text = text.replace(full_placeholder, repo)
+    text = text.replace(_PLACEHOLDER_URL, repo)
+    text, _ = repair_double_scheme(text)
+    return text
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--author", required=True, help="项目负责人姓名（PDF 封面用）")
@@ -95,10 +123,31 @@ def main() -> int:
 
     print()
     for path, _, _, kind in plan:
-        old = _PLACEHOLDER_URL if kind == "URL" else _AUTHOR_PLACEHOLDER
-        new = repo if kind == "URL" else f"项目负责人：{args.author}"
-        n = replace_in(path, old, new)
+        if kind == "URL":
+            original = path.read_text(encoding="utf-8")
+            updated = substitute_repo_url(original, repo)
+            before = original.count(_PLACEHOLDER_URL)
+            path.write_text(updated, encoding="utf-8")
+            n = before
+        else:
+            n = replace_in(path, _AUTHOR_PLACEHOLDER, f"项目负责人：{args.author}")
         print(f"  已改 {path.relative_to(ROOT)}：{n} 处")
+
+    # 落盘后校验：双份前缀是唯一出现过的真实故障模式，必须当场拦住。
+    leftovers = []
+    for path in (ROOT / name for name in _URL_FILES):
+        if path.is_file():
+            text = path.read_text(encoding="utf-8")
+            cleaned, count = repair_double_scheme(text)
+            if count:
+                path.write_text(cleaned, encoding="utf-8")
+            if "github.com/https://" in cleaned or "https://github.com/)" in cleaned:
+                leftovers.append(path.relative_to(ROOT))
+    if leftovers:
+        print("\n错误：以下文件仍存在畸形的 GitHub 链接，请手工检查：", file=sys.stderr)
+        for rel in leftovers:
+            print(f"  {rel}", file=sys.stderr)
+        return 2
 
     print("\n重新生成 PDF...")
     result = subprocess.run(

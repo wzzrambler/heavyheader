@@ -2,7 +2,7 @@
 
 **C/C++ 构建效能治理平台** —— 用编译器自己的输出，回答「这个头文件让我多等了几秒」。
 
-[![CI](https://github.com/https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml/badge.svg)](https://github.com/https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml)
+[![CI](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml/badge.svg)](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
@@ -102,7 +102,7 @@ pip install heavyheader
 或从源码：
 
 ```bash
-git clone https://github.com/https://github.com/wzzrambler/heavyheader.git
+git clone https://github.com/wzzrambler/heavyheader.git
 cd heavyheader
 pip install -e .
 ```

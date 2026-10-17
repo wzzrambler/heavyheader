@@ -296,6 +296,18 @@ def _first_error_line(text: str) -> str | None:
     return fallback
 
 
+# 一个横幅里出现任一项即判为 GCC 家族。按可信度排列：先找 clang，
+# 再找这些，避免在同时提到两者的横幅上误判。
+_GCC_BANNER_MARKERS = (
+    "free software foundation",
+    "gcc",
+    "g++",
+    "mingw",
+    "gnu c",
+    "gnu c++",
+)
+
+
 def detect_driver(executable: str) -> CompilerDriver:
     """Pick a driver for ``executable``, probing it if the name is ambiguous.
 
@@ -322,12 +334,24 @@ def detect_driver(executable: str) -> CompilerDriver:
             errors="replace",
             timeout=30,
         )
-    except (OSError, subprocess.SubprocessExpired):  # pragma: no cover
-        raise CompilationError(f"cannot probe compiler {executable!r}")
+    # OSError covers "executable not found"; SubprocessError covers
+    # TimeoutExpired.  The old code named a non-existent attribute
+    # (subprocess.SubprocessExpired), so probing a missing compiler raised
+    # AttributeError from the error handler instead of a usable message.
+    except (OSError, subprocess.SubprocessError):
+        raise CompilationError(
+            f"cannot probe compiler {executable!r}: "
+            "not found, not executable, or it timed out"
+        )
     banner = (completed.stdout or "") + (completed.stderr or "")
-    if "clang" in banner.lower():
+    lowered = banner.lower()
+    if "clang" in lowered:
         return GccLikeDriver(executable, is_clang=True)
-    if "free software foundation" in banner.lower() or "gcc" in banner.lower():
+    # Cross-compilers and vendor builds are inconsistent about what they
+    # print: MinGW g++ leads with "g++.exe (x86_64-win32-seh-rev1...)" and
+    # only mentions the FSF on a later line, and some vendor toolchains drop
+    # the FSF line entirely.  Match any of the usual GCC-family markers.
+    if any(marker in lowered for marker in _GCC_BANNER_MARKERS):
         return GccLikeDriver(executable, is_clang=False)
     raise CompilationError(
         f"cannot tell which compiler {executable!r} is; "

@@ -255,3 +255,72 @@ def test_run_reports_zero_retries_on_clean_compile():
         tu = _gcc_driver().run(Path("a.cpp"), DriverOptions())
     assert tu.ok
     assert tu.spawn_retries == 0
+
+
+# --------------------------------------------------------------------------
+# object-file measurement (the size dimension of the removal advice)
+# --------------------------------------------------------------------------
+
+
+def test_output_path_replaces_syntax_only_for_gcc():
+    """``-o`` 与 ``-fsyntax-only`` 同时出现时 GCC 拒绝编译——
+    体积测量必须显式剥掉语法检查开关，否则每次测量都是编译失败。"""
+    out = Path("/tmp/probe.o")
+    driver = _gcc_driver()
+    argv = driver.build_command(
+        Path("a.cpp"),
+        DriverOptions(
+            standard="c++17",
+            include_dirs=[Path("/inc")],
+            extra_flags=["-c", "-O2", "-MD", "-MF", "a.d"],
+            output_path=out,
+        ),
+    )
+
+    assert "-fsyntax-only" not in argv
+    assert str(out) in argv
+    assert argv[-1] == "a.cpp"
+    # -o 与目标必须相邻成对，不能被 extra_flags 拆开。
+    assert argv[argv.index("-o") + 1] == str(out)
+    # 与 codegen 无关的参数必须原样保留，否则两次编译不可比。
+    assert "-O2" in argv and "-c" in argv
+    # 依赖文件参数必须剥掉：-MF 是相对路径时会写到调用方 cwd，污染工程。
+    assert "-MD" not in argv and "-MF" not in argv and "a.d" not in argv
+
+
+def test_output_path_keeps_every_other_flag_identical_for_gcc():
+    """除了「产出 .o」必需的改动，两次编译必须逐字节同参数。"""
+    driver = _gcc_driver()
+    out = Path("/tmp/p.o")
+    plain = driver.build_command(
+        Path("a.cpp"), DriverOptions(standard="c++20", extra_flags=["-Wall", "-DFOO=1"])
+    )
+    sized = driver.build_command(
+        Path("a.cpp"),
+        DriverOptions(
+            standard="c++20", extra_flags=["-Wall", "-DFOO=1"], output_path=out
+        ),
+    )
+
+    assert set(plain) - {"-fsyntax-only"} == set(sized) - {"-o", str(out)}
+
+
+def test_output_path_replaces_zs_for_msvc():
+    """MSVC 的 ``/Zs`` 同样拒绝产出对象文件；``/Fo`` 是它的 ``-o``。"""
+    from heavyheader.drivers.base import MsvcDriver
+
+    out = Path("C:/tmp/probe.obj")
+    argv = MsvcDriver().build_command(
+        Path("a.cpp"),
+        DriverOptions(
+            standard="c++17",
+            include_dirs=[Path("C:/inc")],
+            extra_flags=["/c", "/O2", "/showIncludes"],
+            output_path=out,
+        ),
+    )
+
+    assert "/Zs" not in argv
+    assert "/showIncludes" not in argv
+    assert f"/Fo{out}" in argv
+    assert "/c" in argv and "/O2" in argv

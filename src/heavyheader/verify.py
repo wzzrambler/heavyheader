@@ -37,6 +37,7 @@ from pathlib import Path
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from .attrib.advice import TIME_NOISE_FLOOR, build_advice
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import ProjectScan, RemovalCandidate, TranslationUnit
 from .scanner import default_include_dirs
@@ -105,6 +106,15 @@ class VerificationResult:
     baseline_seconds: float | None = None
     patched_seconds: float | None = None
     message: str = ""
+    #: 编译器自报的 GGC 内存分配峰值（``-ftime-report`` 的 TOTAL 行），
+    #: 单位字节。``None`` = 该工具链不提供（MSVC）或未测。**不是进程 RSS**，
+    #: 报告里必须带上这个口径说明，否则读者会拿它跟任务管理器比。
+    baseline_memory_kb: int | None = None
+    patched_memory_kb: int | None = None
+    #: 目标文件大小（一次完整编译实测）。``None`` = 未测（只在实测有收益的
+    #: 候选上才值得多花两次完整编译）。0 字节与 None 是两回事。
+    baseline_object_bytes: int | None = None
+    patched_object_bytes: int | None = None
 
     @property
     def seconds_saved(self) -> float | None:
@@ -284,21 +294,57 @@ def _measure(
     cwd: Path | None,
     runs: int,
     timeout: float,
-) -> tuple[float | None, str | None]:
-    """Compile ``source`` ``runs`` times, return ``(min_seconds, error)``."""
+) -> tuple[float | None, int | None, str | None]:
+    """Compile ``source`` ``runs`` times, return ``(min_seconds, memory, error)``.
+
+    ``memory`` is the compiler-reported GGC allocation peak of the best run
+    (bytes), or ``None`` when the toolchain does not report one.  It is kept
+    beside the timing rather than folded into it: a candidate can save wall
+    time without saving a byte of allocation, and the advice must be able to
+    say so honestly.
+    """
     best: float | None = None
-    last_error: str | None = None
+    best_memory: int | None = None
     for _ in range(max(1, runs)):
         try:
             tu = driver.run(source, options, cwd=cwd, timeout=timeout)
         except CompilationError as exc:
-            return None, str(exc)
+            return None, None, str(exc)
         if not tu.ok:
-            return None, tu.error or "compile failed"
+            return None, None, tu.error or "compile failed"
         seconds = tu.total_wall_seconds()
         if best is None or seconds < best:
             best = seconds
-    return best, last_error
+            best_memory = tu.total_memory_bytes()
+    return best, best_memory, None
+
+
+def _object_size(
+    driver: CompilerDriver,
+    source: Path,
+    options: DriverOptions,
+    timeout: float,
+) -> int | None:
+    """Full-compile ``source`` to a temp object file and return its size.
+
+    Returns ``None`` -- never a guess -- when the compile fails or produces
+    no file.  A ``None`` here means the size dimension is simply absent from
+    the advice; inventing "unchanged" from a failed measurement is exactly
+    the kind of number this tool exists to not produce.
+    """
+    with tempfile.TemporaryDirectory(prefix="heavyheader-size-") as tmp:
+        target = Path(tmp) / "probe.o"
+        sized = replace(options, output_path=target)
+        try:
+            tu = driver.run(source, sized, cwd=None, timeout=timeout)
+        except CompilationError:
+            return None
+        if not tu.ok or not target.is_file():
+            return None
+        try:
+            return target.stat().st_size
+        except OSError:
+            return None
 
 
 def _unit_options(
@@ -341,12 +387,16 @@ def _patched_options(
     unit_options: DriverOptions,
     effective_includes: list[Path],
     source_path: Path,
+    output_path: Path | None = None,
 ) -> DriverOptions:
     """Options for compiling the *patched* copy of ``source_path``.
 
     A quoted include resolves against the including file's directory, so a
     file compiled from a temp directory would lose access to its siblings.
     The original directory is added explicitly.
+
+    ``output_path`` is for the object-size measurement: everything else
+    stays identical so the size comparison means something.
     """
     return DriverOptions(
         standard=unit_options.standard,
@@ -354,6 +404,7 @@ def _patched_options(
         defines=list(unit_options.defines),
         extra_flags=list(unit_options.extra_flags),
         full_compile=unit_options.full_compile,
+        output_path=output_path,
     )
 
 
@@ -368,6 +419,7 @@ class _BaselineCache:
 
     def __init__(self) -> None:
         self._values: dict[Path, float | None] = {}
+        self._memory: dict[Path, int | None] = {}
         self.compiles = 0
 
     def get(
@@ -380,10 +432,14 @@ class _BaselineCache:
     ) -> float | None:
         if source_path in self._values:
             return self._values[source_path]
-        seconds, _error = _measure(driver, source_path, options, None, runs, timeout)
+        seconds, memory, _error = _measure(driver, source_path, options, None, runs, timeout)
         self._values[source_path] = seconds
+        self._memory[source_path] = memory
         self.compiles += max(1, runs)
         return seconds
+
+    def memory(self, source_path: Path) -> int | None:
+        return self._memory.get(source_path)
 
 
 def verify_candidates(
@@ -493,7 +549,7 @@ def verify_candidates(
             patched_options = _patched_options(
                 unit_options, effective_includes, source_path
             )
-            seconds, error = _measure(
+            seconds, _memory, error = _measure(
                 driver,
                 patched_path,
                 patched_options,
@@ -566,7 +622,8 @@ def verify_candidates(
         survivors.append((index, candidate, patched_seconds))
 
     # 完整测量本身也可以并行（每个候选一次 patched 编译，runs 次取最小）。
-    measured: dict[int, tuple[float, float]] = {}
+    # measured: pending 下标 -> (基线秒, 移除后秒, 移除后 GGC 内存字节)
+    measured: dict[int, tuple[float, float, int | None]] = {}
 
     def _measure_one(index: int, source_path: Path, line_number: int) -> None:
         original_text = source_path.read_text(encoding="utf-8", errors="replace")
@@ -581,11 +638,11 @@ def verify_candidates(
             patched_options = _patched_options(
                 unit_options, effective_includes, source_path
             )
-            seconds, _error = _measure(
+            seconds, memory, _error = _measure(
                 driver, patched_path, patched_options, None, verify.runs, verify.timeout
             )
         baseline = baselines._values[source_path]
-        measured[index] = (baseline, seconds or 0.0)
+        measured[index] = (baseline, seconds or 0.0, memory)
 
     if survivors:
         with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
@@ -603,34 +660,97 @@ def verify_candidates(
                 try:
                     future.result()
                 except Exception as exc:  # noqa: BLE001
-                    measured[index] = (0.0, 0.0)
+                    measured[index] = (0.0, 0.0, None)
                     probe_errors[index] = f"{type(exc).__name__}: {exc}"
 
+    # 目标文件大小：只对「实测有收益」的候选再花两次完整编译。
+    # 「收益全在编译时间、产物体积不变」是个有价值的结论，但为每个噪声内
+    # 的候选都测一遍体积，是把预算花在回答不了问题的测量上。
+    # sizes: pending 下标 -> (基线字节, 移除后字节)
+    sizes: dict[int, tuple[int | None, int | None]] = {}
+
+    def _measure_sizes(index: int, source_path: Path, line_number: int) -> None:
+        candidate = pending[index][0]
+        original_text = source_path.read_text(encoding="utf-8", errors="replace")
+        with tempfile.TemporaryDirectory(prefix="heavyheader-size-") as tmp:
+            patched_path = Path(tmp) / source_path.name
+            patched_path.write_text(
+                _comment_out(original_text, line_number), encoding="utf-8"
+            )
+            unit_options = _unit_options(scan, candidate, options, effective_includes)
+            baseline_size = _object_size(
+                driver,
+                source_path,
+                _patched_options(unit_options, effective_includes, source_path),
+                verify.timeout,
+            )
+            patched_size = _object_size(
+                driver,
+                patched_path,
+                _patched_options(unit_options, effective_includes, source_path),
+                verify.timeout,
+            )
+        sizes[index] = (baseline_size, patched_size)
+
+    improved: list[tuple[int, VerificationResult]] = []
     for index, candidate, _probe in survivors:
         if index not in measured:
             continue
-        baseline_seconds, patched_seconds = measured[index]
+        baseline_seconds, patched_seconds, memory = measured[index]
         saved = baseline_seconds - patched_seconds
-        # A change smaller than 2% is inside the noise floor of a single
-        # file's compile time on a loaded machine; reporting it as a win
-        # would be dishonest.
-        meaningful = baseline_seconds > 0 and abs(saved) / baseline_seconds >= 0.02
-        results.append(
-            VerificationResult(
-                candidate=candidate,
-                status="improved" if saved > 0 and meaningful else "no-change",
-                baseline_seconds=baseline_seconds,
-                patched_seconds=patched_seconds,
-                message=(
-                    f"基线 {baseline_seconds * 1000:.0f} ms → "
-                    f"移除后 {patched_seconds * 1000:.0f} ms"
-                    if meaningful
-                    else f"差异在噪声范围内（{saved * 1000:+.0f} ms）"
-                ),
-            )
+        # A change smaller than the noise floor is inside the noise of a
+        # single file's compile time on a loaded machine; reporting it as a
+        # win would be dishonest.  The floor is defined once, in
+        # attrib.advice, so this status and the REMOVE verdict can never
+        # disagree about what "improved" means.
+        meaningful = (
+            baseline_seconds > 0 and abs(saved) / baseline_seconds >= TIME_NOISE_FLOOR
         )
-        candidate.measured_seconds_saved = max(0.0, saved)
-        candidate.verified = True
+        result = VerificationResult(
+            candidate=candidate,
+            status="improved" if saved > 0 and meaningful else "no-change",
+            baseline_seconds=baseline_seconds,
+            patched_seconds=patched_seconds,
+            message=(
+                f"基线 {baseline_seconds * 1000:.0f} ms → "
+                f"移除后 {patched_seconds * 1000:.0f} ms"
+                if meaningful
+                else f"差异在噪声范围内（{saved * 1000:+.0f} ms）"
+            ),
+            baseline_memory_kb=baselines.memory(pending[index][1]),
+            patched_memory_kb=memory,
+        )
+        results.append(result)
+        if result.status == "improved":
+            improved.append((index, result))
+
+    if improved:
+        with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
+            futures = {
+                pool.submit(
+                    _measure_sizes,
+                    index,
+                    pending[index][1],
+                    pending[index][2],
+                ): index
+                for index, _r in improved
+            }
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception:  # noqa: BLE001 - 体积测不到不影响时间结论
+                    pass
+        for index, result in improved:
+            baseline_bytes, patched_bytes = sizes.get(index, (None, None))
+            result.baseline_object_bytes = baseline_bytes
+            result.patched_object_bytes = patched_bytes
+
+    for index, candidate, _probe in survivors:
+        if index in measured:
+            candidate.measured_seconds_saved = max(
+                0.0, measured[index][0] - measured[index][1]
+            )
+            candidate.verified = True
 
     # 失败也要留下痕迹。以前只有成功的候选被写回 scan，失败的候选在列表里
     # 看起来跟没探过一模一样——于是报告会把一个「已经实测编译不过」的候选
@@ -638,6 +758,10 @@ def verify_candidates(
     # 「这条已经证伪了」。
     for result in results:
         result.candidate.probe_status = result.status
+        # 明确结论「值不值得删」。规则在 attrib.advice，纯函数、可单测；
+        # 这里只负责把证据喂给它。写回候选而不是只放在 result 里，是因为
+        # 报告与排序读的都是候选——结论必须跟着候选走。
+        result.candidate.advice = build_advice(result.candidate, result, scan)
 
     # 结果按候选的排序顺序返回（探针是并行完成的，顺序不能丢）。
     order = {id(candidate): position for position, (candidate, _s, _l) in enumerate(pending)}

@@ -10,7 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from .. import PROJECT_URL
-from ..models import HeaderKind, ProjectScan
+from ..attrib.advice import MAINTENANCE_LEAN_LINES, TIME_NOISE_FLOOR
+from ..models import AdviceVerdict, HeaderKind, ProjectScan
 
 __all__ = ["render_markdown", "markdown_summary_line"]
 
@@ -25,6 +26,115 @@ def _fmt_seconds(value: float) -> str:
     if value >= 1:
         return f"{value:.2f} s"
     return f"{value * 1000:.0f} ms"
+
+
+def _verdict_cell(candidate) -> str:
+    """The one-word answer for the candidate table.
+
+    An unprobed candidate shows "未实测", never a guess.  The whole point of
+    this column is that it is never softer than the evidence behind it.
+    """
+    advice = candidate.advice
+    if advice is None:
+        return "未实测"
+    label = advice.verdict_label
+    if advice.verdict is AdviceVerdict.HUMAN and advice.lean:
+        lean = {"remove": "偏删", "keep": "偏留"}.get(advice.lean, "")
+        if lean:
+            return f"{label}（{lean}）"
+    return label
+
+
+def _reason_line(reason) -> str:
+    if reason.evidence:
+        return f"  - **{reason.aspect.value}**：{reason.text}（{reason.evidence}）"
+    return f"  - **{reason.aspect.value}**：{reason.text}"
+
+
+_ADVICE_ORDER = {
+    AdviceVerdict.REMOVE: 0,
+    AdviceVerdict.HUMAN: 1,
+    AdviceVerdict.KEEP: 2,
+}
+
+
+def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
+    """删除建议与取舍依据——本报告的核心小节。
+
+    旧版到这里只有一句「疑似未使用」，把判断留给读者。这一节按三个维度
+    （功能影响 / 维护成本 / 构建体验）把每条证据摆出来，最后给一个明确
+    结论：建议删除 / 保留 / 需人工判断。没有证据支持的结论不存在——
+    未实测的候选连结论都不给。
+    """
+    advised = [c for c in scan.candidates if c.advice is not None]
+    if not advised:
+        return []
+
+    # 组内排序：有实测收益的按省下的秒数排，其余按独占闭包行数排——
+    # 都是「读者先看哪个」的顺序，与 candidate_rank_key 同一精神。
+    advised.sort(
+        key=lambda c: (
+            _ADVICE_ORDER[c.advice.verdict],
+            -(c.measured_seconds_saved or 0.0),
+            -c.estimated_lines_saved,
+            str(c.tu),
+        )
+    )
+
+    lines = [
+        "## 删除建议：值不值得删",
+        "",
+        "每个候选一个明确结论，依据按三个维度分开列。结论规则是确定性的，",
+        "写死在代码里（`attrib/advice.py`），不由模型临场发挥：",
+        "",
+        "- **建议删除**：实测编译通过 **且** 耗时下降超过 "
+        f"{TIME_NOISE_FLOOR * 100:.0f}% 噪声线；",
+        "- **保留**：编译器已经否决（编译不过），或定位不到该注释哪一行；",
+        "- **需人工判断**：编译通过但收益在噪声内、或本轮没有实测。"
+        f"其中独占闭包超过 {MAINTENANCE_LEAN_LINES:,} 行且全项目仅一个使用者的，"
+        "倾向删除（维护收益），否则倾向保留。",
+        "",
+        "> **编译通过 ≠ 功能正确。** 「建议删除」的全部含义是「这个编译单元"
+        "不带这行也能编、而且更快」；合并前请运行该单元的测试。",
+        "",
+    ]
+
+    groups: list[tuple[str, list] ] = [
+        ("建议删除（实测有效）", [c for c in advised if c.advice.verdict is AdviceVerdict.REMOVE]),
+        ("需人工判断（编译可行，但证据不足以下结论）",
+         [c for c in advised if c.advice.verdict is AdviceVerdict.HUMAN]),
+        ("保留（实测不可行，别再试）", [c for c in advised if c.advice.verdict is AdviceVerdict.KEEP]),
+    ]
+
+    for title, members in groups:
+        if not members:
+            continue
+        lines.append(f"### {title}")
+        lines.append("")
+        for candidate in members:
+            advice = candidate.advice
+            location = f"第 {candidate.line} 行" if candidate.line else "行号未知"
+            lines.append(
+                f"#### `{_rel(candidate.tu, root)}` → `{_rel(candidate.header, root)}`"
+                f"（{location}）——{_verdict_cell(candidate)}"
+            )
+            lines.append("")
+            for reason in advice.reasons:
+                lines.append(_reason_line(reason))
+            lines.append("")
+
+    if scan.reproduce_command:
+        lines += [
+            "### 复现方式",
+            "",
+            "以上每条结论都可以用同一条命令重跑复现：",
+            "",
+            "```bash",
+            scan.reproduce_command,
+            "```",
+            "",
+        ]
+    return lines
 
 
 def _rel(path: Path, root: Path) -> str:
@@ -83,22 +193,63 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
     improved = [r for r in results if r.status == "improved"]
     if improved:
         improved.sort(key=lambda r: -(r.seconds_saved or 0.0))
-        lines += [
-            "### 实测有效的改动",
-            "",
-            "| 编译单元 | include | 基线 | 移除后 | 节省 |",
-            "|---|---|---:|---:|---:|",
-        ]
+        has_memory = any(
+            r.baseline_memory_kb is not None and r.patched_memory_kb is not None
+            for r in improved
+        )
+        has_size = any(
+            r.baseline_object_bytes is not None and r.patched_object_bytes is not None
+            for r in improved
+        )
+        header = "| 编译单元 | include | 基线 | 移除后 | 节省 |"
+        sep = "|---|---|---:|---:|---:|"
+        if has_memory:
+            header += " GGC 内存 |"
+            sep += "---:|"
+        if has_size:
+            header += " 目标文件 |"
+            sep += "---:|"
+        lines += ["### 实测有效的改动", "", header, sep]
         for result in improved:
             saved = result.percent_saved or 0.0
-            lines.append(
+            row = (
                 f"| `{_rel(result.candidate.tu, root)}` "
                 f"| `{_rel(result.candidate.header, root)}` "
                 f"| {result.baseline_seconds * 1000:.0f} ms "
                 f"| {result.patched_seconds * 1000:.0f} ms "
                 f"| **{saved:.1f}%** |"
             )
-        lines.append("")
+            if has_memory:
+                if (
+                    result.baseline_memory_kb is not None
+                    and result.patched_memory_kb is not None
+                ):
+                    row += (
+                        f" {result.baseline_memory_kb / 1024:.0f} kB → "
+                        f"{result.patched_memory_kb / 1024:.0f} kB |"
+                    )
+                else:
+                    row += " 该工具链不提供 |"
+            if has_size:
+                if (
+                    result.baseline_object_bytes is not None
+                    and result.patched_object_bytes is not None
+                ):
+                    delta = result.patched_object_bytes - result.baseline_object_bytes
+                    row += (
+                        f" {result.baseline_object_bytes:,} B → "
+                        f"{result.patched_object_bytes:,} B（{delta:+,} B） |"
+                    )
+                else:
+                    row += " 未测 |"
+            lines.append(row)
+        lines += [
+            "",
+            "> GGC 内存是编译器自报的分配峰值（`-ftime-report`），不是进程 RSS；",
+            "> 目标文件大小为一次完整编译实测。两列缺列表示该工具链不提供或未测，",
+            "> **不是 0**。每个候选的完整取舍依据见上一节「删除建议」。",
+            "",
+        ]
 
     rejected = [
         r
@@ -179,13 +330,12 @@ def render_markdown(scan: ProjectScan) -> str:
         )
         lines.append(">")
         lines.append(
-            "> 「使用状态」是文本启发式：源码中若未出现该头文件声明的任何标识符，"
-            "标记为「疑似未使用」。它**不是**安全性保证——为副作用而包含的头文件"
-            "（如 `<iostream>` 的流初始化）会被误判。权威结论来自 "
-            "`heavyheader verify`：真的删掉、重新编译、实测耗时。"
+            "> 「结论」列是明确判断（建议删除/保留/需人工判断），依据见下一节；"
+            "「未实测」表示这一轮没有跑 `--probe`，此时不给结论——"
+            "没测过就下判断是编造。"
         )
         lines.append("")
-        lines.append("| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 | 使用状态 | 置信度 |")
+        lines.append("| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 | 使用状态 | 结论 |")
         lines.append("|---|---|---:|---:|---:|---|---|")
         for candidate in scan.candidates_by_estimate()[:20]:
             lines.append(
@@ -195,9 +345,12 @@ def render_markdown(scan: ProjectScan) -> str:
                 f"| {_fmt_int(candidate.estimated_lines_saved)} "
                 f"| {candidate.estimated_percent:.1f}% "
                 f"| {candidate.usage_label} "
-                f"| {candidate.confidence} |"
+                f"| {_verdict_cell(candidate)} |"
             )
         lines.append("")
+
+    # -- the decision: worth removing or not ------------------------------
+    lines += _advice_section(scan, root)
 
     # -- measured: what the probe stage actually established --------------
     lines += _probe_section(scan, root)

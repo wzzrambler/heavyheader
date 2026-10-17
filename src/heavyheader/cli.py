@@ -299,9 +299,44 @@ def _run_scan(args) -> ProjectScan:
     scan = scan_project(
         _scan_options_from_args(args), driver=driver, cache_path=cache_path
     )
+    # 复现命令：报告里每条实测结论都要能让读者在自己机器上重跑。
+    # 没有它，「实测」就只是我们机器上的一串数字。
+    scan.reproduce_command = _reproduce_command(args)
     if cache_path is not None:
         _report_cache_stats(scan)
     return scan
+
+
+def _reproduce_command(args) -> str:
+    """Rebuild the ``heavyheader scan`` invocation from the parsed args.
+
+    Only flags that actually exist on the ``scan`` subparser are emitted --
+    a command that cannot run is worse than no command.  ``--probe-runs``
+    is deliberately absent: it is a library knob, not a CLI flag.
+    """
+    parts = [
+        "heavyheader",
+        "scan",
+        str(getattr(args, "path", ".")),
+        f"--compiler {args.compiler}",
+    ]
+    if getattr(args, "std", None):
+        parts.append(f"--std {args.std}")
+    for directory in getattr(args, "includes", []) or []:
+        parts.append(f"-I {directory}")
+    for define in getattr(args, "defines", []) or []:
+        parts.append(f"-D {define}")
+    for flag in getattr(args, "flags", []) or []:
+        parts.append(str(flag))
+    if getattr(args, "compile_commands", None):
+        parts.append(f"--compile-commands {args.compile_commands}")
+    if getattr(args, "probe", False):
+        parts.append("--probe")
+        if getattr(args, "probe_top", 0):
+            parts.append(f"--probe-top {args.probe_top}")
+        if getattr(args, "probe_budget", 0.0):
+            parts.append(f"--probe-budget {args.probe_budget}")
+    return " ".join(parts)
 
 
 def _report_cache_stats(scan: ProjectScan) -> None:

@@ -16,12 +16,16 @@ import json
 from pathlib import Path
 
 from ..models import (
+    AdviceAspect,
+    AdviceReason,
+    AdviceVerdict,
     CompilerFamily,
     HeaderKind,
     HeaderStats,
     IncludeEvent,
     PhaseTiming,
     ProjectScan,
+    RemovalAdvice,
     RemovalCandidate,
     TranslationUnit,
 )
@@ -109,11 +113,38 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "usage_label": candidate.usage_label,
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
+                "advice": _advice_to_dict(candidate.advice),
             }
             for candidate in scan.candidates
         ],
+        "reproduce_command": scan.reproduce_command,
         "warnings": list(scan.warnings),
         "template_profile": _template_profile_to_dict(scan),
+    }
+
+
+def _advice_to_dict(advice) -> dict | None:
+    """Serialise the removal advice, if this scan produced one.
+
+    The verdict is the part a downstream tool (CI gate, dashboard) acts on;
+    the reasons are kept verbatim because the sentence *is* the deliverable
+    for a human reader -- flattening it to a score would throw away exactly
+    what makes the advice auditable.
+    """
+    if advice is None:
+        return None
+    return {
+        "verdict": advice.verdict.value,
+        "verdict_label": advice.verdict_label,
+        "lean": advice.lean,
+        "reasons": [
+            {
+                "aspect": reason.aspect.value,
+                "text": reason.text,
+                "evidence": reason.evidence,
+            }
+            for reason in advice.reasons
+        ],
     }
 
 
@@ -233,6 +264,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
             usage_label=entry.get("usage_label", "无法判定"),
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
+            advice=_advice_from_dict(entry.get("advice")),
         )
         for entry in data.get("candidates", [])
     ]
@@ -247,8 +279,37 @@ def scan_from_dict(data: dict) -> ProjectScan:
         candidates=candidates,
         baseline_seconds=data.get("baseline_seconds", 0.0),
         warnings=list(data.get("warnings", [])),
+        reproduce_command=data.get("reproduce_command", ""),
     )
     return scan
+
+
+def _advice_from_dict(payload) -> object | None:
+    """Rebuild a :class:`RemovalAdvice` from :func:`_advice_to_dict` output."""
+    if not isinstance(payload, dict):
+        return None
+    try:
+        verdict = AdviceVerdict(payload.get("verdict", "human"))
+    except ValueError:
+        return None
+    reasons = []
+    for item in payload.get("reasons", []):
+        try:
+            aspect = AdviceAspect(item.get("aspect", ""))
+        except ValueError:
+            continue
+        reasons.append(
+            AdviceReason(
+                aspect=aspect,
+                text=str(item.get("text", "")),
+                evidence=str(item.get("evidence", "")),
+            )
+        )
+    return RemovalAdvice(
+        verdict=verdict,
+        reasons=reasons,
+        lean=str(payload.get("lean", "")),
+    )
 
 
 def write_json(path: str | Path, payload: dict) -> Path:

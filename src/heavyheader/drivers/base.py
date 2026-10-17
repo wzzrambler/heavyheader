@@ -66,6 +66,18 @@ class DriverOptions:
     #: Emit full compilation instead of ``-fsyntax-only``.  Slower but
     #: produces the ``opt and generate`` phase too.
     full_compile: bool = False
+    #: Where to write the object file.  ``None`` = do not produce one
+    #: (the ``-fsyntax-only`` default).
+    #:
+    #: This exists for the *size* dimension of the removal advice: "the
+    #: object file is byte-identical without this include" is a real,
+    #: reproducible finding, and the only way to get it is to actually
+    #: produce both object files.  Setting this implies full compilation
+    #: for that one invocation and strips the flags that would conflict
+    #: (``-fsyntax-only``/``/Zs`` refuse to emit an object; ``-MF``-style
+    #: dependency flags would write next to the *caller's* cwd and
+    #: pollute the project).
+    output_path: Path | None = None
 
 
 class CompilerDriver(ABC):
@@ -198,6 +210,45 @@ _MAX_SPAWN_ATTEMPTS = 3
 _SPAWN_BACKOFF = 0.05
 
 
+#: Flags that prevent an object file from being written.  Stripped (not
+#: warned about) when ``output_path`` is set: the caller asked for an
+#: object, and a refusal here would silently degrade the size measurement
+#: into a compile error.
+_NO_OBJECT_FLAGS_GCC = ("-fsyntax-only", "-fsyntax")
+#: Dependency-file flags: they write ``*.d`` relative to the process cwd,
+#: which for a probe is the *user's* project directory.  Pollution, and
+#: they contribute nothing to codegen.
+_DEP_FILE_FLAGS_GCC = ("-MD", "-MMD", "-MP", "-MF", "-MT", "-MQ")
+_NO_OBJECT_FLAGS_MSVC = ("/Zs",)
+_DEP_FILE_FLAGS_MSVC = ("/showIncludes",)
+
+
+def _strip_for_object(
+    argv: list[str], no_object: tuple[str, ...], dep: tuple[str, ...]
+) -> list[str]:
+    """Remove flags that conflict with producing an object file.
+
+    ``-MF``/``-MT``/``-MQ`` take their target as the next argv element, so
+    that element goes too.  Everything else passes through untouched -- the
+    compile must stay otherwise identical to the one that produced the
+    baseline, or the size comparison is meaningless.
+    """
+    out: list[str] = []
+    skip_next = False
+    for token in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if token in dep:
+            if token in ("-MF", "-MT", "-MQ"):
+                skip_next = True
+            continue
+        if token in no_object:
+            continue
+        out.append(token)
+    return out
+
+
 class GccLikeDriver(CompilerDriver):
     """GCC and Clang share a flag dialect, so they share a driver.
 
@@ -226,9 +277,20 @@ class GccLikeDriver(CompilerDriver):
         # breakdown; -fsyntax-only keeps us from writing object files and
         # from paying for code generation we do not measure.
         argv += ["-H", "-ftime-report"]
+        extra = list(options.extra_flags)
+        if options.output_path is not None:
+            # 目标文件测量：剥掉与「产出 .o」冲突的参数，再显式指定输出。
+            # 编译单元自带的 extra_flags 常含 -c、-MD -MF xxx.d（来自
+            # compile_commands.json），原样带上会把 .d 写到调用方 cwd，
+            # 也可能让编译器以「不允许 -o 与 -fsyntax-only 同用」为由拒绝。
+            extra = _strip_for_object(extra, _NO_OBJECT_FLAGS_GCC, _DEP_FILE_FLAGS_GCC)
+            argv += extra
+            argv += ["-o", str(options.output_path)]
+            argv.append(str(source))
+            return argv
         if not options.full_compile:
             argv.append("-fsyntax-only")
-        argv += options.extra_flags
+        argv += extra
         argv.append(str(source))
         return argv
 
@@ -328,14 +390,23 @@ class MsvcDriver(CompilerDriver):
         return locale.getpreferredencoding() or "utf-8"
 
     def build_command(self, source: Path, options: DriverOptions) -> list[str]:
-        argv = [self.executable, "/nologo", "/showIncludes", "/Zs"]
+        argv = [self.executable, "/nologo"]
+        extra = list(options.extra_flags)
+        if options.output_path is not None:
+            extra = _strip_for_object(extra, _NO_OBJECT_FLAGS_MSVC, _DEP_FILE_FLAGS_MSVC)
+            argv += extra
+            argv.append(f"/Fo{options.output_path}")
+            argv.append(str(source))
+            return argv
+        argv.append("/showIncludes")
+        argv.append("/Zs")
         if options.standard:
             argv.append(f"/std:{options.standard}")
         for directory in options.include_dirs:
             argv.append(f"/I{directory}")
         for define in options.defines:
             argv.append(f"/D{define}")
-        argv += options.extra_flags
+        argv += extra
         argv.append(str(source))
         return argv
 

@@ -158,6 +158,22 @@ class TranslationUnit:
             return 0.0
         return self.template_instantiation_seconds() / total * 100.0
 
+    def total_memory_bytes(self) -> int | None:
+        """编译器自报的内存分配峰值（GCC/Clang 的 ``-ftime-report`` GGC 列）。
+
+        ``None`` 表示这个工具链不给这个数（MSVC 没有对应输出）。
+        调用方必须区分 ``None`` 与 ``0``——「测不到」不是「不占内存」，
+        把 None 当 0 汇报等于编造一个「删除后内存不变」的结论。
+
+        口径说明：GGC 是编译器内部的垃圾回收堆分配，不是进程 RSS。
+        它衡量的是「编译器为这个 TU 付出了多少内存」，对头文件成本这个
+        问题恰好是对的口径；但它不是操作系统看到的进程峰值内存。
+        """
+        for timing in self.timings:
+            if timing.is_total:
+                return timing.memory_bytes
+        return None
+
     def direct_includes(self) -> list[Path]:
         """Headers included *directly* by the source file, first-seen order."""
         seen: dict[Path, None] = {}
@@ -257,6 +273,87 @@ class RemovalCandidate:
     #: Why we think it is (or is not) safe to remove.
     confidence: str = "unknown"
     notes: list[str] = field(default_factory=list)
+    #: 明确结论「值不值得删」，由 ``attrib.advice.build_advice`` 生成。
+    #: ``None`` = 还没走到下结论那一步（没跑探针）。它和 ``usage_label`` 的
+    #: 区别是根本性的：usage_label 说的是「这个头文件还用不用」（可能性），
+    #: advice 说的是「删掉它划不划算」（决定）——后者才是开发者真正问的问题。
+    advice: "RemovalAdvice | None" = None
+
+
+# --------------------------------------------------------------------------
+# the decision layer: "is this worth removing?"
+# --------------------------------------------------------------------------
+
+
+class AdviceVerdict(enum.Enum):
+    """The explicit answer a developer is asking for.
+
+    Three states, deliberately.  The first version of the report answered with
+    "疑似未使用" -- a *possibility*, which pushes the decision back onto the
+    reader and makes the tool a todo-list generator instead of an advisor.
+    Every candidate now lands in exactly one of:
+
+    * ``REMOVE`` -- probed: compiles without it, **and** measured faster
+      beyond the noise floor.  "Do this."
+    * ``KEEP`` -- the compiler already vetoed it (or we cannot locate the
+      line at all).  "Don't bother."
+    * ``HUMAN`` -- compiles, but the evidence does not settle the question
+      (no measurable win, or never measured).  "Here is both sides; you
+      decide" -- with a ``lean`` when the evidence supports one.
+
+    ``HUMAN`` is not a fuzzy state: it is a statement that *this* tool's
+    evidence ends here, and the reasons say exactly where.
+    """
+
+    REMOVE = "remove"
+    KEEP = "keep"
+    HUMAN = "human"
+
+
+class AdviceAspect(enum.Enum):
+    """Which dimension of the trade-off a reason speaks to."""
+
+    FUNCTION = "功能影响"
+    MAINTENANCE = "维护成本"
+    BUILD = "构建体验"
+
+
+@dataclass(slots=True)
+class AdviceReason:
+    """One line of the trade-off, attributed to a dimension.
+
+    ``evidence`` carries the number(s) behind the sentence so the report can
+    show "独占闭包 12 个头 / 3,400 行" instead of "闭包较大".
+    """
+
+    aspect: AdviceAspect
+    text: str
+    evidence: str = ""
+
+
+@dataclass(slots=True)
+class RemovalAdvice:
+    """The verdict plus the reasons it rests on.
+
+    ``lean`` only exists for ``HUMAN``: which way the evidence points when it
+    does not reach a verdict.  ``""`` when the evidence points neither way
+    (e.g. never measured -- guessing a direction there would be fabrication).
+    """
+
+    verdict: AdviceVerdict
+    reasons: list[AdviceReason] = field(default_factory=list)
+    lean: str = ""  # "remove" / "keep" / ""
+
+    @property
+    def verdict_label(self) -> str:
+        return {
+            AdviceVerdict.REMOVE: "建议删除",
+            AdviceVerdict.KEEP: "保留",
+            AdviceVerdict.HUMAN: "需人工判断",
+        }[self.verdict]
+
+    def by_aspect(self, aspect: AdviceAspect) -> list[AdviceReason]:
+        return [reason for reason in self.reasons if reason.aspect is aspect]
 
 
 #: 探针结论里表示「这个候选不能按原样采纳」的那些。
@@ -285,7 +382,22 @@ def candidate_rank_key(candidate: RemovalCandidate) -> tuple[int, float]:
 
     Tier 4 stays in the list on purpose: "we tried this and the compiler said
     no" is a finding worth showing.  It just never outranks a live suggestion.
+
+    With :class:`RemovalAdvice` filled in (post-probe), the tiers collapse
+    onto the verdict: ``REMOVE`` is tier 0, a ``HUMAN`` that leans remove is
+    tier 1, any other ``HUMAN`` is tier 2, ``KEEP`` joins tier 4.  The
+    heuristic tiers remain for scans that never probed.
     """
+    advice = candidate.advice
+    if advice is not None:
+        if advice.verdict is AdviceVerdict.REMOVE:
+            return (0, -(candidate.measured_seconds_saved or 0.0))
+        if advice.verdict is AdviceVerdict.KEEP:
+            return (4, 0.0)
+        if advice.lean == "remove":
+            return (1, -(candidate.measured_seconds_saved or 0.0))
+        return (2, -(candidate.estimated_seconds_saved or 0.0))
+
     if candidate.probe_status in _PROBE_FAILURES:
         return (4, 0.0)
     if candidate.verified:
@@ -333,6 +445,10 @@ class ProjectScan:
     #: 增量扫描统计。未启用缓存时为 None；有了它 CLI 能说明「复用了多少、
     #: 重编了多少」，让用户确认增量确实生效，而不是只看总耗时变短。
     cache_stats: object | None = None
+    #: 复现本次扫描的完整命令。报告里的每条实测结论都必须能让读者在自己
+    #: 机器上重跑一遍——这是「实测数据」与「宣传数字」的分界线。由 CLI 或
+    #: 实验脚本设置；为空表示没有记录（旧数据/单元测试构造的 scan）。
+    reproduce_command: str = ""
 
     # -- convenience accessors -------------------------------------------
 

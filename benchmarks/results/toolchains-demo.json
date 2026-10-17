@@ -1,0 +1,59 @@
+{
+  "root": "benchmarks\\cases\\demo",
+  "compilers": [
+    "g++",
+    "C:/Program Files/LLVM/bin/clang++.exe",
+    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe"
+  ],
+  "comparable": true,
+  "fastest": "g++",
+  "rows": [
+    {
+      "compiler": "g++",
+      "family": "gcc",
+      "ok": true,
+      "error": null,
+      "tu_count": 2,
+      "failed_tu_count": 0,
+      "attributed_lines": 206106,
+      "project_attributed_lines": 44,
+      "non_project_attributed_lines": 206062,
+      "dependency_edges": 425,
+      "seconds": 0.75,
+      "candidate_count": 6,
+      "unguarded_count": 13
+    },
+    {
+      "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+      "family": "clang",
+      "ok": true,
+      "error": null,
+      "tu_count": 2,
+      "failed_tu_count": 0,
+      "attributed_lines": 166159,
+      "project_attributed_lines": 44,
+      "non_project_attributed_lines": 166115,
+      "dependency_edges": 368,
+      "seconds": 0.0,
+      "candidate_count": 6,
+      "unguarded_count": 10
+    },
+    {
+      "compiler": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.43.34808/bin/Hostx64/x64/cl.exe",
+      "family": "msvc",
+      "ok": true,
+      "error": null,
+      "tu_count": 2,
+      "failed_tu_count": 0,
+      "attributed_lines": 162943,
+      "project_attributed_lines": 44,
+      "non_project_attributed_lines": 162899,
+      "dependency_edges": 221,
+      "seconds": 0.9111,
+      "candidate_count": 7,
+      "unguarded_count": 1
+    }
+  ],
+  "header_spreads": [],
+  "warnings": []
+}

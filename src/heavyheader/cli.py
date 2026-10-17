@@ -98,6 +98,12 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("-o", "--output", type=Path, default=None, help="输出文件（默认打印到标准输出）")
     scan.add_argument("--save", type=Path, default=None, help="把扫描结果存为基线 JSON")
     scan.add_argument("--history", type=Path, default=None, help="追加到历史文件，用于趋势图")
+    scan.add_argument(
+        "--cache",
+        type=Path,
+        default=None,
+        help="增量扫描缓存文件：复用未改动的编译单元，只重编受影响的（默认不启用）",
+    )
 
     verify = subparsers.add_parser("verify", help="实测：移除候选 include 后重新编译并计时")
     add_common(verify)
@@ -146,7 +152,37 @@ def _scan_options_from_args(args) -> ScanOptions:
 
 def _run_scan(args) -> ProjectScan:
     driver = detect_driver(args.compiler)
-    return scan_project(_scan_options_from_args(args), driver=driver)
+    cache_path = getattr(args, "cache", None)
+    scan = scan_project(
+        _scan_options_from_args(args), driver=driver, cache_path=cache_path
+    )
+    if cache_path is not None:
+        _report_cache_stats(scan)
+    return scan
+
+
+def _report_cache_stats(scan: ProjectScan) -> None:
+    """把复用/重编计数打到 stderr，且不污染报告输出（报告可能重定向到文件）。"""
+    stats = getattr(scan, "cache_stats", None)
+    if stats is None or stats.total == 0:
+        return
+    if stats.cache_loaded and stats.fingerprint_matched:
+        print(
+            f"增量：复用 {stats.reused}/{stats.total} 个编译单元"
+            f"（跳过 {stats.reused} 次编译，{stats.reused_percent:.0f}%），"
+            f"重编 {stats.compiled} 个。",
+            file=sys.stderr,
+        )
+    else:
+        reason = (
+            "编译选项已变化，缓存全部作废"
+            if stats.cache_loaded
+            else "没有可用缓存（首次运行）"
+        )
+        print(
+            f"增量：{reason}，本次为全量扫描（{stats.compiled} 个编译单元）。",
+            file=sys.stderr,
+        )
 
 
 def _emit(text: str, output: Path | None) -> None:

@@ -125,7 +125,26 @@ heavyheader scan ./my-project --pch --forward-decl
 # 4. 接入 CI：保存基线，之后每次 PR 对比
 heavyheader scan ./my-project --save baseline.json
 heavyheader gate ./my-project --baseline baseline.json --max-regression 5
+
+# 5. 增量扫描：第二次起只重编受改动影响的编译单元
+heavyheader scan ./my-project --cache .heavyheader-cache.json
 ```
+
+### 增量扫描
+
+全量扫描要真编译每一个编译单元，改一行代码也要全跑一遍。加 `--cache` 之后，
+只有「源文件、依赖头、编译选项」三者之一变了的编译单元才会重新编译：
+
+```
+$ heavyheader scan ./my-project --cache .cache.json
+增量：复用 47/54 个编译单元（跳过 47 次编译，87%），重编 7 个。
+```
+
+判定分两级：文件的 size 与 mtime 都没变就**不读文件内容**；mtime 动过才比
+内容哈希——所以 `git checkout`、`touch` 不会让整个项目白白重编。缓存损坏或
+编译选项变化会自动退回全量扫描，不会给出过时的结论。**编译失败的单元不进缓存**：
+它的依赖集不完整，等缺失的头文件被补上，缓存里那批依赖「看起来没变」，
+会一直重复报同一个错误。
 
 ## 支持的工具链
 

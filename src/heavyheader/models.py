@@ -244,6 +244,9 @@ class ProjectScan:
     #: Forward-declaration candidates, only when ``--forward-decl`` is passed.
     forward_candidates: list = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    #: 增量扫描统计。未启用缓存时为 None；有了它 CLI 能说明「复用了多少、
+    #: 重编了多少」，让用户确认增量确实生效，而不是只看总耗时变短。
+    cache_stats: object | None = None
 
     # -- convenience accessors -------------------------------------------
 

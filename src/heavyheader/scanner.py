@@ -25,6 +25,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .cache import (
+    CacheStats,
+    ScanCache,
+    StampResolver,
+    compiler_fingerprint,
+    load_cache,
+    save_cache,
+)
 from .attrib.graph import (
     HeaderSizes,
     build_header_stats,
@@ -226,12 +234,20 @@ def default_include_dirs(root: Path) -> list[Path]:
     return list(seen)
 
 
-def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> ProjectScan:
-    """Run a full scan and return the aggregated result.
+def scan_project(
+    options: ScanOptions,
+    driver: CompilerDriver | None = None,
+    cache_path: Path | None = None,
+) -> ProjectScan:
+    """Run a scan and return the aggregated result.
 
     Compilation is parallelised across translation units: the driver calls out
     to a subprocess, so threads give us real concurrency without the
     complexity of a process pool.
+
+    ``cache_path`` 打开增量扫描：上次编译过、且此后源文件与依赖头都没变过的
+    编译单元直接复用结论，不再编译一次。缓存坏了或编译选项变了会自动退化成
+    全量，不会让扫描失败。
     """
     if driver is None:
         from .drivers.base import detect_driver
@@ -267,6 +283,49 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
     tus: list[TranslationUnit] = []
     failures: list[str] = []
 
+    # ------------------------------------------------------------------
+    # 增量：先挑出可以直接复用上次结论的编译单元
+    # ------------------------------------------------------------------
+    stats = CacheStats(total=len(tasks))
+    resolver = StampResolver()
+    cache: ScanCache | None = None
+
+    if cache_path is not None:
+        fingerprint = compiler_fingerprint(
+            compiler=options.compiler,
+            family=getattr(driver.family, "value", str(driver.family)),
+            standard=options.standard,
+            include_dirs=include_dirs,
+            defines=options.defines,
+            extra_flags=options.extra_flags,
+            full_compile=options.full_compile,
+        )
+        loaded = load_cache(cache_path)
+        if loaded is None:
+            # 没有缓存 / 缓存损坏：静默退化成全量扫描。
+            cache = ScanCache(fingerprint=fingerprint, root=str(root))
+        elif loaded.fingerprint != fingerprint:
+            # 编译选项变了，上次的结论一律作废——但不要丢文件，覆盖掉即可。
+            cache = ScanCache(fingerprint=fingerprint, root=str(root))
+            stats.cache_loaded = True
+            stats.fingerprint_matched = False
+        else:
+            cache = loaded
+            stats.cache_loaded = True
+            stats.fingerprint_matched = True
+
+        pending: list[_CompileTask] = []
+        for task in tasks:
+            reused = cache.lookup(task.source, resolver)
+            if reused is not None:
+                tus.append(reused)
+                stats.reused += 1
+            else:
+                pending.append(task)
+        tasks = pending
+
+    stats.compiled = len(tasks)
+
     with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
         futures = {
             pool.submit(driver.run, task.source, task.options, task.cwd, options.timeout): task
@@ -300,6 +359,21 @@ def scan_project(options: ScanOptions, driver: CompilerDriver | None = None) -> 
         baseline_seconds=0.0,
         warnings=failures,
     )
+
+    # 增量：把这次真正编译过的结果写回缓存，并让统计可见。
+    if cache is not None:
+        for tu in scan.ok_tus:
+            cache.record(tu, resolver)
+        # 只保留本次扫描涉及的编译单元，避免缓存随项目演进而无限膨胀。
+        cache.entries = {
+            key: entry
+            for key, entry in cache.entries.items()
+            if key in {str(tu.source) for tu in scan.ok_tus}
+        }
+        save_cache(cache_path, cache)
+    stats.total = len(scan.tus)
+    stats.compiled = stats.total - stats.reused
+    scan.cache_stats = stats
 
     sizes = HeaderSizes()
     build_header_stats(scan, sizes)

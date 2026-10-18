@@ -129,15 +129,21 @@ def main() -> int:
     parser.add_argument("--top", type=int, default=5)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument(
+        "--compiler",
+        default=CLANG,
+        help="默认 clang++；C 工程要传 clang.exe（.c 用 C++ 驱动会报 "
+             "invalid argument '-std=c++17'）",
+    )
     args = parser.parse_args()
 
     project = Path(args.project).resolve()
     db = Path(args.db).resolve()
-    driver = detect_driver(CLANG)
+    driver = detect_driver(args.compiler)
     scan = scan_project(
         ScanOptions(
             root=project,
-            compiler=CLANG,
+            compiler=args.compiler,
             compile_commands=db,
             max_tus=args.tus,
             jobs=1,
@@ -206,7 +212,7 @@ def main() -> int:
         "",
         f"- 工程：{project.name}，{payload['tus']} 个 TU。",
         f"- 候选池：可行性闸门开 {len(gated)} 条 / 关 {len(ungated)} 条。",
-        f"- 协议：clang，交替 min-of-{args.runs}，"
+        f"- 协议：{Path(args.compiler).name}，交替 min-of-{args.runs}，"
         f"聚合噪声线 {AGGREGATE_NOISE_FLOOR * 100:.0f}%，improved 需复测。",
         "",
         "| 臂 | 候选 | 编译通过 | improved | 采纳率 |",

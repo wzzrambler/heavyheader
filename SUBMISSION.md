@@ -8,7 +8,7 @@
 | 项 | 状态 | 位置 |
 |---|---|---|
 | 代码 | ✅ 148 文件 / 50+ commit | `src/heavyheader/` |
-| 测试 | ✅ 447 个全绿 | `tests/` |
+| 测试 | ✅ 460 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |

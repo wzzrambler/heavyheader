@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-18",
+  "project": "zlib",
+  "tus": 15,
+  "top": 5,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 0,
+    "ungated": 16
+  },
+  "arms": [
+    {
+      "arm": "ungated(header,top-by-size)",
+      "candidates": 5,
+      "compiled": 1,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "site": "zlib.h",
+          "header": "zconf.h",
+          "reach": 15,
+          "status": "ambiguous",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "源码里有 2 行 include 都叫 zconf.h，无法判断该注释掉哪一行——注释错行会让结论指向另一个文件，因此跳过。改用更完整的 include 路径，或用编译器的行号信息消歧"
+        },
+        {
+          "site": "zutil.h",
+          "header": "zlib.h",
+          "reach": 9,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（9 个单元之一）：adler32.c: C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/zlib\\zutil.h:44:16: error: expected ';' after top level declarator"
+        },
+        {
+          "site": "zconf.h",
+          "header": "limits.h",
+          "reach": 15,
+          "status": "no-change",
+          "baseline_ms": 5443.7,
+          "patched_ms": 5424.3,
+          "percent_saved": 0.356,
+          "message": "差异在噪声范围内（+19 ms / 15 个单元）"
+        },
+        {
+          "site": "deflate.h",
+          "header": "zutil.h",
+          "reach": 2,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（2 个单元之一）：deflate.c: C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/zlib\\deflate.h:74:9: error: unknown type name 'ush'"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "zlib.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzclose.c: C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/zlib\\gzguts.h:122:10: error: unknown type name 'voidp'; did you mean 'void'?"
+        }
+      ]
+    }
+  ]
+}

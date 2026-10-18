@@ -30,7 +30,6 @@ import pytest
 
 from heavyheader.attrib.advice import (
     MAINTENANCE_LEAN_LINES,
-    MAINTENANCE_LEAN_SHARE,
     TIME_NOISE_FLOOR,
     build_advice,
 )

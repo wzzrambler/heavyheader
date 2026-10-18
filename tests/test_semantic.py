@@ -8,7 +8,6 @@ successfully on 63/64 units.  These tests pin the subprocess contract so a
 regression is loud, not silent.
 """
 
-import subprocess
 from pathlib import Path
 
 from heavyheader.attrib.semantic import (

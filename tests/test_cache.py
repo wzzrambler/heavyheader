@@ -16,7 +16,6 @@ from pathlib import Path
 import pytest
 
 from heavyheader.cache import (
-    CacheStats,
     ScanCache,
     StampResolver,
     _matches,
@@ -25,7 +24,7 @@ from heavyheader.cache import (
     load_cache,
     save_cache,
 )
-from heavyheader.drivers.base import CompilerDriver, DriverOptions
+from heavyheader.drivers.base import CompilerDriver
 from heavyheader.models import CompilerFamily, IncludeEvent, TranslationUnit
 from heavyheader.scanner import ScanOptions, scan_project
 
@@ -119,8 +118,6 @@ def test_edited_file_is_stale(tmp_path):
 def test_missing_file_never_matches(tmp_path):
     target = tmp_path / "gone.h"
     target.write_text("data", encoding="utf-8")
-    stamp = _stamp(target)
-    encoded = f"{stamp.size}:{stamp.mtime_ns}:{stamp.digest}"
     target.unlink()
 
     assert _stamp(target) is None
@@ -324,7 +321,7 @@ def test_editing_a_header_recompiles_only_its_dependents(tmp_path):
     other = tmp_path / "other.h"
     other.write_text("struct O{};\n", encoding="utf-8")
     (tmp_path / "src").mkdir()
-    for name, dep in (("a", shared), ("b", shared), ("c", other)):
+    for name, _dep in (("a", shared), ("b", shared), ("c", other)):
         (tmp_path / "src" / f"{name}.cpp").write_text(
             f'int {name}(){{return 1;}}\n', encoding="utf-8"
         )

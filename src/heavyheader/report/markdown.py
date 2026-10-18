@@ -252,7 +252,10 @@ def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
         ("建议删除（实测有效）", [c for c in advised if c.advice.verdict is AdviceVerdict.REMOVE]),
         ("需人工判断（编译可行，但证据不足以下结论）",
          [c for c in advised if c.advice.verdict is AdviceVerdict.HUMAN]),
-        ("保留（实测不可行，别再试）", [c for c in advised if c.advice.verdict is AdviceVerdict.KEEP]),
+        (
+            "保留（实测不可行，别再试）",
+            [c for c in advised if c.advice.verdict is AdviceVerdict.KEEP],
+        ),
     ]
 
     for title, members in groups:

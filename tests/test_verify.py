@@ -424,7 +424,6 @@ def test_verify_runs_baseline_tests_before_trusting_a_patched_one(tmp_path, capt
         baseline = str(source_path) == str(source)
         return (0.520 if baseline else 0.320), None, None, ()
 
-    captured_monkey = None
     import heavyheader.verify as v
 
     original = v._measure

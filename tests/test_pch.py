@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from heavyheader.attrib.pch import estimate_pch
 from heavyheader.models import (
     CompilerFamily,

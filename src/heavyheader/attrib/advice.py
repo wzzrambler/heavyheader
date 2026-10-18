@@ -55,9 +55,9 @@ from ..models import (
     AdviceAspect,
     AdviceReason,
     AdviceVerdict,
+    ProjectScan,
     RemovalAdvice,
     RemovalCandidate,
-    ProjectScan,
 )
 
 if TYPE_CHECKING:
@@ -504,7 +504,10 @@ def _human_with_lean(
                 "耗时差异在 2% 噪声线以内，不能声称构建更快"
                 "（该阈值是实测经验值，不是统计置信界）"
             ),
-            evidence=f"{_fmt_ms(result.baseline_seconds)} → {_fmt_ms(result.patched_seconds)}（{saved * 1000:+.0f} ms）",
+            evidence=(
+                f"{_fmt_ms(result.baseline_seconds)} → "
+                f"{_fmt_ms(result.patched_seconds)}（{saved * 1000:+.0f} ms）"
+            ),
         ),
         AdviceReason(
             aspect=AdviceAspect.MAINTENANCE,

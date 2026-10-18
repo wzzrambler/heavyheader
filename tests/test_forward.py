@@ -11,7 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from heavyheader.attrib.forward import (
-    ForwardCandidate,
     declared_types,
     find_forward_declaration_candidates,
 )

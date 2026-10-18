@@ -25,7 +25,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .models import HeaderKind, ProjectScan
+from .models import ProjectScan
 from .report.jsonio import read_json, scan_from_dict, scan_to_dict, write_json
 
 __all__ = [

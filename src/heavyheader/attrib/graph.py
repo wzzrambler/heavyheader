@@ -31,10 +31,9 @@ from __future__ import annotations
 
 import os
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
-from .usage import analyse_usage
 from ..models import (
     HeaderKind,
     HeaderStats,
@@ -44,6 +43,7 @@ from ..models import (
     candidate_rank_key,
     tu_compile_seconds,
 )
+from .usage import analyse_usage
 
 __all__ = [
     "HeaderSizes",
@@ -326,7 +326,7 @@ def find_removal_candidates(
     -- verified wins first, then plausibly-unused by expected seconds, then the
     ones the usage heuristic says are still in use.
     """
-    from .usage import IdentifierIndex, UsageVerdict
+    from .usage import IdentifierIndex
 
     if kinds is None:
         kinds = classify_headers(
@@ -380,7 +380,9 @@ def find_removal_candidates(
             saved = sizes.total(exclusive)
             if saved < min_savings:
                 continue
-            percent = (saved / analysis.processed_lines * 100.0) if analysis.processed_lines else 0.0
+            percent = 0.0
+            if analysis.processed_lines:
+                percent = saved / analysis.processed_lines * 100.0
             line = _include_line(tu, header)
             # 用法判定必须覆盖「删掉这个 include 后不再被解析的那批头」，
             # 而不是候选头自己的那段文本——实验里 5 个失败候选全部栽在这里：

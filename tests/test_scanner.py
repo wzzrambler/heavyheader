@@ -17,9 +17,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-from heavyheader.drivers.base import CompilerDriver, CompilationError, DriverOptions
+from heavyheader.drivers.base import CompilationError, CompilerDriver
 from heavyheader.models import CompilerFamily, TranslationUnit
 from heavyheader.scanner import (
     ScanOptions,

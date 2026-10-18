@@ -30,7 +30,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..models import CompilerFamily, TranslationUnit
-from ..parse.depfile import parse_depfile
 from ..parse.includetree import (
     parse_include_guards,
     parse_include_tree,
@@ -546,7 +545,7 @@ def detect_driver(executable: str) -> CompilerDriver:
         raise CompilationError(
             f"cannot probe compiler {executable!r}: "
             "not found, not executable, or it timed out"
-        )
+        ) from None
     banner = (completed.stdout or "") + (completed.stderr or "")
     lowered = banner.lower()
     if "clang" in lowered:

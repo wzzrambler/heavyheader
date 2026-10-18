@@ -26,6 +26,19 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .attrib.cost import collect_trace_costs
+from .attrib.diagnosis import build_diagnosis
+from .attrib.forward import find_forward_declaration_candidates
+from .attrib.graph import (
+    HeaderSizes,
+    build_header_stats,
+    classify_headers,
+    find_removal_candidates,
+    redundant_reparse_warnings,
+)
+from .attrib.pch import estimate_pch
+from .attrib.sites import find_header_candidates
+from .attrib.templates import profile_project
 from .cache import (
     CacheStats,
     ScanCache,
@@ -34,21 +47,8 @@ from .cache import (
     load_cache,
     save_cache,
 )
-from .attrib.graph import (
-    HeaderSizes,
-    build_header_stats,
-    classify_headers,
-    find_removal_candidates,
-    redundant_reparse_warnings,
-)
-from .attrib.cost import collect_trace_costs
-from .attrib.diagnosis import build_diagnosis
-from .attrib.sites import find_header_candidates
-from .attrib.forward import find_forward_declaration_candidates
-from .attrib.pch import estimate_pch
-from .attrib.templates import profile_project
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
-from .models import CompilerFamily, ProjectScan, TranslationUnit, tu_compile_seconds
+from .models import ProjectScan, TranslationUnit, tu_compile_seconds
 
 __all__ = ["ScanOptions", "ScanError", "scan_project", "discover_translation_units"]
 
@@ -345,7 +345,7 @@ def _split_windows_command(command: str) -> list[str]:
 def _strip_output_flag(argv: list[str]) -> list[str]:
     out: list[str] = []
     skip_next = False
-    for index, token in enumerate(argv):
+    for token in argv:
         if skip_next:
             skip_next = False
             continue

@@ -29,7 +29,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass
 from pathlib import Path
 
 from . import __version__
@@ -166,7 +165,7 @@ def render_pr_comment(
 
     if candidate_count:
         lines += [
-            f"### 可精简的 include（候选）",
+            "### 可精简的 include（候选）",
             "",
             f"本次扫描发现 **{candidate_count}** 处可精简的 include，"
             f"预计可省 **{comparison.candidate_savings:,}** 行解析量。",

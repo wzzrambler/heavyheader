@@ -30,13 +30,11 @@ from __future__ import annotations
 
 import contextlib
 import re
-import shutil
 import tempfile
-from dataclasses import dataclass, field, replace
-from typing import NamedTuple
-from pathlib import Path
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import NamedTuple
 
 from .attrib.advice import AGGREGATE_NOISE_FLOOR, TIME_NOISE_FLOOR, build_advice
 from .attrib.semantic import SemanticBackend, SemanticVerdict
@@ -44,7 +42,6 @@ from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import (
     ProjectScan,
     RemovalCandidate,
-    TranslationUnit,
     tu_compile_seconds,
 )
 from .scanner import default_include_dirs
@@ -771,7 +768,7 @@ def verify_candidates(
     *,
     verify: VerifyOptions | None = None,
     include_dirs: list[Path] | None = None,
-    semantic: "SemanticBackend | None" = None,
+    semantic: SemanticBackend | None = None,
     build_path: Path | None = None,
 ) -> list[VerificationResult]:
     """Probe then measure the removal candidates, in rank order.
@@ -794,7 +791,6 @@ def verify_candidates(
     estimate and the measurement side by side instead of only the estimate.
     """
     verify = verify or VerifyOptions()
-    started = time.perf_counter()
 
     # 有效包含路径 = 扫描时用的（options）+ 调用方额外给的（kwarg）；
     # 两者都为空时套用与 scan 相同的布局兜底。
@@ -929,7 +925,7 @@ def verify_candidates(
     baselines = _BaselineCache()
     survivors: list[tuple[int, RemovalCandidate, float]] = []
 
-    for index, (candidate, source_path, line_number) in enumerate(pending):
+    for index, (candidate, source_path, _line_number) in enumerate(pending):
         patched_seconds = probe_seconds.get(index)
         if patched_seconds is None:
             results.append(

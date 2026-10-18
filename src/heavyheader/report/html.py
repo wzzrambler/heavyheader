@@ -52,31 +52,61 @@ body {
 h1 { font-size: 26px; margin: 0 0 4px; }
 h2 { font-size: 18px; margin: 36px 0 12px; }
 .sub { color: var(--muted); margin: 0 0 24px; }
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-.card .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
-.card .v { font-size: 24px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;
+}
+.card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+}
+.card .k {
+    color: var(--muted); font-size: 12px;
+    text-transform: uppercase; letter-spacing: .04em;
+}
+.card .v {
+    font-size: 24px; font-weight: 650; margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+}
 .card .n { color: var(--muted); font-size: 12px; margin-top: 2px; }
-.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-top: 14px; }
+.panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 20px; margin-top: 14px;
+}
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
-th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+th, td {
+    text-align: left; padding: 8px 10px;
+    border-bottom: 1px solid var(--border); font-size: 13.5px;
+}
+th {
+    color: var(--muted); font-weight: 600; font-size: 12px;
+    text-transform: uppercase; letter-spacing: .03em;
+}
 td.num, th.num { text-align: right; }
 tr:last-child td { border-bottom: none; }
 code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12.5px; }
 .path { word-break: break-all; }
-.tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; border: 1px solid var(--border); color: var(--muted); }
+.tag {
+    display: inline-block; padding: 1px 7px;
+    border-radius: 999px; font-size: 11.5px;
+    border: 1px solid var(--border); color: var(--muted);
+}
 .tag.high { color: var(--bad); border-color: #f0c6c2; background: #fdf1f0; }
 .tag.medium { color: var(--warn); border-color: #f0dcc0; background: #fdf7ee; }
 .tag.low { color: var(--muted); }
 .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
 .advice { margin: 0; padding-left: 20px; }
 .advice li { font-size: 13.5px; line-height: 1.65; margin: 6px 0; }
-.bar-row { display: grid; grid-template-columns: minmax(160px, 300px) 1fr 90px; gap: 10px; align-items: center; padding: 3px 0; }
+.bar-row {
+    display: grid; grid-template-columns: minmax(160px, 300px) 1fr 90px;
+    gap: 10px; align-items: center; padding: 3px 0;
+}
 .bar-track { background: #eef0f3; border-radius: 4px; height: 16px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
 .bar-fill.system { background: #b9c2cf; }
-.bar-val { text-align: right; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.bar-val {
+    text-align: right; color: var(--muted); font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+}
 footer { margin-top: 48px; color: var(--muted); font-size: 12.5px; text-align: center; }
 """
 
@@ -132,7 +162,10 @@ def _shorten(label: str, keep: int = 46) -> str:
 def trend_chart(points: list[TrendPoint]) -> str:
     """Inline SVG line chart of attributed lines over time."""
     if len(points) < 2:
-        return '<p class="note">历史点不足两点，无法绘制趋势。连续运行 `scan --history` 多次即可生成。</p>'
+        return (
+            '<p class="note">历史点不足两点，无法绘制趋势。'
+            "连续运行 `scan --history` 多次即可生成。</p>"
+        )
 
     width, height = 1000, 220
     pad_l, pad_r, pad_t, pad_b = 56, 16, 16, 34
@@ -395,17 +428,20 @@ def render_html(
   {trend_block}
 
   <h2>成本热点 Top 15</h2>
-  <p class="note">归因行数 = 头文件行数 × 引用它的编译单元数，衡量该头文件让整个项目多解析了多少行代码。</p>
+  <p class="note">归因行数 = 头文件行数 × 引用它的编译单元数，
+  衡量该头文件让整个项目多解析了多少行代码。</p>
   {bars}
 
   <h2>可精简的 include</h2>
-  <p class="note">独占闭包 = 删掉这条 include 后才会停止解析的头文件。若某头文件仍可从其他 include 到达，删除当前这条并不省钱。</p>
+  <p class="note">独占闭包 = 删掉这条 include 后才会停止解析的头文件。
+  若某头文件仍可从其他 include 到达，删除当前这条并不省钱。</p>
   {candidates_table}
 
   {diagnosis_block}
 
   <h2>缺少 include guard 的头文件</h2>
-  <p class="note">同一编译单元内被重复解析，对带 guard 的头文件不可能发生——这是确定性信号，补 <code>#pragma once</code> 即可，永远安全。</p>
+  <p class="note">同一编译单元内被重复解析，对带 guard 的头文件不可能发生——
+  这是确定性信号，补 <code>#pragma once</code> 即可，永远安全。</p>
   {guards_table}
 
   {failures}

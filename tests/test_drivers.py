@@ -23,11 +23,11 @@ from unittest import mock
 import pytest
 
 from heavyheader.drivers.base import (
+    _MAX_SPAWN_ATTEMPTS,
     CompilationError,
     DriverOptions,
     GccLikeDriver,
     MsvcDriver,
-    _MAX_SPAWN_ATTEMPTS,
     detect_driver,
 )
 

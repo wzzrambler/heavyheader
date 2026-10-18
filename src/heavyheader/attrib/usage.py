@@ -299,7 +299,7 @@ class IdentifierIndex:
 def analyse_usage(
     source: Path,
     header: Path,
-    closure: "tuple[Path, ...] | list[Path] | set[Path] | None" = None,
+    closure: tuple[Path, ...] | list[Path] | set[Path] | None = None,
     index: IdentifierIndex | None = None,
 ) -> UsageSignal:
     """Compare the identifiers a TU uses with those that disappear with an include.

@@ -22,7 +22,6 @@ from ..models import (
     CompilerFamily,
     HeaderKind,
     HeaderStats,
-    IncludeEvent,
     PhaseTiming,
     ProjectScan,
     RemovalAdvice,

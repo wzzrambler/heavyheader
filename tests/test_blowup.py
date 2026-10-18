@@ -190,7 +190,7 @@ def test_header_site_survives_json_round_trip():
 
 def test_legacy_json_without_verdict_is_ranked_by_label():
     """旧基线文件没有 verdict 字段；反推 label 而不是一律当成 unknown。"""
-    from heavyheader.models import ProjectScan, candidate_rank_key
+    from heavyheader.models import candidate_rank_key
     from heavyheader.report.jsonio import scan_from_dict
 
     data = {

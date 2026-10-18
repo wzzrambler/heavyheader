@@ -23,13 +23,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from heavyheader.attrib.graph import HeaderSizes, build_header_stats, classify_headers
-from heavyheader.attrib.sites import (
+from heavyheader.attrib.graph import (  # noqa: E402
+    HeaderSizes,
+    build_header_stats,
+    classify_headers,
+)
+from heavyheader.attrib.sites import (  # noqa: E402
     build_include_graph,
     find_header_candidates,
     tu_parsed_files,
 )
-from heavyheader.models import (
+from heavyheader.models import (  # noqa: E402
     CompilerFamily,
     IncludeEvent,
     ProjectScan,
@@ -185,7 +189,7 @@ class InPlacePatchTests(unittest.TestCase):
     """The edited file must come back even when the measurement explodes."""
 
     def test_restores_after_an_exception(self) -> None:
-        from heavyheader.verify import _comment_out, _patched_in_place
+        from heavyheader.verify import _patched_in_place
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "shared.h"

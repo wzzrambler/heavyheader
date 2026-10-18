@@ -10,6 +10,10 @@ from __future__ import annotations
 import enum
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .attrib.semantic import SemanticVerdict
 
 
 class CompilerFamily(enum.Enum):
@@ -206,7 +210,7 @@ class TranslationUnit:
 # --------------------------------------------------------------------------
 
 
-def tu_compile_seconds(tu: "TranslationUnit") -> float:
+def tu_compile_seconds(tu: TranslationUnit) -> float:
     """一次编译中**用户实际等待**的秒数：优先驱动实测墙钟，退回自报 TOTAL。
 
     这个函数存在的理由是把「用户等待」收敛成唯一口径。验证、增量税、累计耗时
@@ -309,12 +313,12 @@ class RemovalCandidate:
     #: ``None`` = 还没走到下结论那一步（没跑探针）。它和 ``usage_label`` 的
     #: 区别是根本性的：usage_label 说的是「这个头文件还用不用」（可能性），
     #: advice 说的是「删掉它划不划算」（决定）——后者才是开发者真正问的问题。
-    advice: "RemovalAdvice | None" = None
+    advice: RemovalAdvice | None = None
     #: AST 级交叉检查结论（clang-include-cleaner 子进程），默认 None。
     #: 只有显式开启 ``--semantic`` 才填充。它**只增强、不削弱**我们的结论：
     #: 工具把同一个头列为「可删」时作为佐证写进理由；工具沉默（没列为可删）
     #: 不等于「在用」，因此绝不据此降级我们的 REMOVE。详见 attrib/semantic.py。
-    semantic: "SemanticVerdict | None" = None
+    semantic: SemanticVerdict | None = None
     #: 这一行 ``#include`` 所在的**文件**，它可能不是编译单元自己。
     #: 头文件里的 include 会被几十个 TU 反复解析，删它一行影响的是那一批
     #: TU；只盯着 TU 自己的 include（旧行为）看不到这块空间——实测

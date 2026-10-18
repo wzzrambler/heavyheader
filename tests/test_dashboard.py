@@ -16,7 +16,6 @@ import urllib.request
 from pathlib import Path
 
 from heavyheader.dashboard import (
-    TrendSummary,
     load_trend,
     make_server,
     render_dashboard,

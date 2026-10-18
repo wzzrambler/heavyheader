@@ -28,7 +28,7 @@ import html
 import json
 import sys
 import webbrowser
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -157,8 +157,9 @@ def summarize(points: list[TrendPoint]) -> TrendSummary:
                 f"{before_point.label} → {after_point.label}",
             )
             for (before, before_point), (after, after_point) in zip(
-                zip(values[:-1], points[:-1]),
-                zip(values[1:], points[1:]),
+                zip(values[:-1], points[:-1], strict=True),
+                zip(values[1:], points[1:], strict=True),
+                strict=True,
             )
         ]
         worst = max(steps, key=lambda item: item[0])
@@ -381,7 +382,13 @@ table { border-collapse: collapse; width: 100%; background: var(--surface); }
 th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; font-size: 13px; }
 th { background: #1f3a5c; color: #fff; font-weight: 600; }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
-.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px; }
+.panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px;
+}
 .note { color: var(--muted); font-size: 13px; }
-footer { margin-top: 34px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+footer {
+    margin-top: 34px; color: var(--muted); font-size: 12px;
+    border-top: 1px solid var(--border); padding-top: 12px;
+}
 """

@@ -7,8 +7,9 @@ from some rows to exercise the parser's tolerance.
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from heavyheader.parse.includetree import (
     parse_include_guards,

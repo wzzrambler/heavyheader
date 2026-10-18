@@ -26,6 +26,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
     BaselineError,
     compare_scans,
@@ -36,11 +37,10 @@ from .baseline import (
 from .drivers.base import CompilationError, detect_driver
 from .models import ProjectScan
 from .report.html import TrendPoint, render_html
-from .report.jsonio import scan_from_dict, scan_to_dict, write_json
+from .report.jsonio import scan_to_dict
 from .report.markdown import markdown_summary_line, render_markdown
 from .scanner import ScanError, ScanOptions, scan_project
 from .verify import VerifyOptions, verify_candidates
-from .attrib.semantic import SemanticBackend, default_mingw_args
 
 __all__ = ["main", "build_parser"]
 
@@ -95,14 +95,55 @@ def build_parser() -> argparse.ArgumentParser:
                 "--compiler", default="g++", help="编译器可执行文件（默认 g++）"
             )
         sub.add_argument("--std", default=None, help="语言标准，如 c++17")
-        sub.add_argument("-I", "--include", dest="includes", action="append", default=[], type=Path, help="额外头文件搜索路径，可重复")
-        sub.add_argument("-D", "--define", dest="defines", action="append", default=[], help="预定义宏，可重复")
-        sub.add_argument("--flag", dest="flags", action="append", default=[], help="额外编译参数，可重复")
-        sub.add_argument("--compile-commands", type=Path, default=None, help="compile_commands.json 路径")
-        sub.add_argument("--max-tus", type=int, default=500, help="最多分析的编译单元数（默认 500）")
-        sub.add_argument("--exclude", dest="excludes", action="append", default=[], help="扫描时跳过的目录名，可重复（如 test、third_party）")
+        sub.add_argument(
+            "-I",
+            "--include",
+            dest="includes",
+            action="append",
+            default=[],
+            type=Path,
+            help="额外头文件搜索路径，可重复",
+        )
+        sub.add_argument(
+            "-D",
+            "--define",
+            dest="defines",
+            action="append",
+            default=[],
+            help="预定义宏，可重复",
+        )
+        sub.add_argument(
+            "--flag",
+            dest="flags",
+            action="append",
+            default=[],
+            help="额外编译参数，可重复",
+        )
+        sub.add_argument(
+            "--compile-commands",
+            type=Path,
+            default=None,
+            help="compile_commands.json 路径",
+        )
+        sub.add_argument(
+            "--max-tus",
+            type=int,
+            default=500,
+            help="最多分析的编译单元数（默认 500）",
+        )
+        sub.add_argument(
+            "--exclude",
+            dest="excludes",
+            action="append",
+            default=[],
+            help="扫描时跳过的目录名，可重复（如 test、third_party）",
+        )
         sub.add_argument("--jobs", "-j", type=int, default=0, help="并行编译数（默认 CPU 核数）")
-        sub.add_argument("--full-compile", action="store_true", help="完整编译而非 -fsyntax-only（更慢，但含代码生成阶段）")
+        sub.add_argument(
+            "--full-compile",
+            action="store_true",
+            help="完整编译而非 -fsyntax-only（更慢，但含代码生成阶段）",
+        )
         sub.add_argument("--pch", action="store_true", help="附带估算预编译头（PCH）收益")
         sub.add_argument("--pch-top", type=int, default=5, help="PCH 考虑纳入的头文件数（默认 5）")
         sub.add_argument("--forward-decl", action="store_true", help="寻找可改为前向声明的 include")
@@ -126,7 +167,10 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument(
             "--include-system-sites",
             action="store_true",
-            help="实验性：--header-sites 下也列出系统/第三方头文件内部的 include 行（仅供查看，不建议改）",
+            help=(
+                "实验性：--header-sites 下也列出系统/第三方头文件内部的 "
+                "include 行（仅供查看，不建议改）"
+            ),
         )
         sub.add_argument(
             "--cost-model",
@@ -141,8 +185,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan = subparsers.add_parser("scan", help="分析源码树并生成报告")
     add_common(scan)
-    scan.add_argument("--format", choices=["md", "html", "json"], default="md", help="输出格式（默认 md）")
-    scan.add_argument("-o", "--output", type=Path, default=None, help="输出文件（默认打印到标准输出）")
+    scan.add_argument(
+        "--format",
+        choices=["md", "html", "json"],
+        default="md",
+        help="输出格式（默认 md）",
+    )
+    scan.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="输出文件（默认打印到标准输出）",
+    )
     scan.add_argument("--save", type=Path, default=None, help="把扫描结果存为基线 JSON")
     scan.add_argument("--history", type=Path, default=None, help="追加到历史文件，用于趋势图")
     scan.add_argument(
@@ -206,7 +261,12 @@ def build_parser() -> argparse.ArgumentParser:
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
     add_common(gate)
     gate.add_argument("--baseline", type=Path, required=True, help="基线 JSON 路径")
-    gate.add_argument("--max-regression", type=float, default=5.0, help="允许的归因行数回归百分比（默认 5）")
+    gate.add_argument(
+        "--max-regression",
+        type=float,
+        default=5.0,
+        help="允许的归因行数回归百分比（默认 5）",
+    )
     gate.add_argument("--update-baseline", action="store_true", help="通过门禁时更新基线")
     gate.add_argument("--report", type=Path, default=None, help="同时写出 HTML 报告")
 
@@ -697,17 +757,29 @@ def _cmd_compare(args) -> int:
         "",
     ]
     if comparison.regressed_headers:
-        lines += ["## 成本上升的头文件", "", "| 头文件 | 之前 | 之后 | 变化 |", "|---|---:|---:|---:|"]
+        lines += [
+            "## 成本上升的头文件",
+            "",
+            "| 头文件 | 之前 | 之后 | 变化 |",
+            "|---|---:|---:|---:|",
+        ]
         for delta in comparison.regressed_headers[:15]:
             lines.append(
-                f"| `{delta.path}` | {delta.before:,} | {delta.after:,} | {delta.percent:+.1f}% |"
+                f"| `{delta.path}` | {delta.before:,} | "
+                f"{delta.after:,} | {delta.percent:+.1f}% |"
             )
         lines.append("")
     if comparison.improved_headers:
-        lines += ["## 成本下降的头文件", "", "| 头文件 | 之前 | 之后 | 变化 |", "|---|---:|---:|---:|"]
+        lines += [
+            "## 成本下降的头文件",
+            "",
+            "| 头文件 | 之前 | 之后 | 变化 |",
+            "|---|---:|---:|---:|",
+        ]
         for delta in comparison.improved_headers[:15]:
             lines.append(
-                f"| `{delta.path}` | {delta.before:,} | {delta.after:,} | {delta.percent:+.1f}% |"
+                f"| `{delta.path}` | {delta.before:,} | "
+                f"{delta.after:,} | {delta.percent:+.1f}% |"
             )
         lines.append("")
     print("\n".join(lines))

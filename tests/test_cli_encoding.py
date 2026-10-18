@@ -35,7 +35,7 @@ def test_redirected_stream_is_switched_to_utf8(monkeypatch):
     stream.flush()
 
     written = stream.buffer.getvalue()
-    assert "头文件解析量".encode("utf-8") in written
+    assert "头文件解析量".encode() in written
 
 
 def test_interactive_stream_keeps_its_encoding(monkeypatch):

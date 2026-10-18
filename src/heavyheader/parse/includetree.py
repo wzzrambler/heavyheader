@@ -145,7 +145,9 @@ def parse_show_includes(text: str, tu_source: Path) -> list[IncludeEvent]:
     # would report every nested include as depth 0 whenever the base
     # indentation is one space and nesting adds one more.
     distinct = sorted({indent for indent, _ in notes})
-    step = min((b - a for a, b in zip(distinct, distinct[1:])), default=1) or 1
+    step = min(
+        (b - a for a, b in zip(distinct, distinct[1:], strict=False)), default=1
+    ) or 1
 
     events: list[IncludeEvent] = []
     stack: list[Path] = []

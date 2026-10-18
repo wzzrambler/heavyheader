@@ -13,7 +13,6 @@ from pathlib import Path
 import pytest
 
 from heavyheader.attrib.templates import (
-    TemplateProfile,
     count_template_declarations,
     profile_project,
 )

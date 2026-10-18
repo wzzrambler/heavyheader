@@ -260,6 +260,23 @@ class ReportRenderingTests(unittest.TestCase):
         self.assertNotIn("没有可删的了", text)
         self.assertNotIn("成本去向", text)
 
+    def test_html_renders_the_section(self) -> None:
+        from heavyheader.report.html import render_html
+
+        page = render_html(self.scan)
+        self.assertIn("没有可删的了", page)
+        self.assertIn("拦下原因", page)
+        # 建议列表必须以「删除要先过 verify」收尾，不能只报原因不给边界。
+        self.assertIn("本诊断不构成删除建议", page)
+
+    def test_html_falls_back_to_the_plain_note(self) -> None:
+        from heavyheader.report.html import render_html
+
+        self.scan.site_diagnosis = None
+        page = render_html(self.scan)
+        self.assertNotIn("没有可删的了", page)
+        self.assertIn("没有发现值得精简的 include", page)
+
     def test_json_exports_the_diagnosis(self) -> None:
         payload = scan_to_dict(self.scan)
         payload_diag = payload["site_diagnosis"]

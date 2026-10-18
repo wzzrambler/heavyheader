@@ -70,6 +70,8 @@ code, .mono { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; f
 .tag.medium { color: var(--warn); border-color: #f0dcc0; background: #fdf7ee; }
 .tag.low { color: var(--muted); }
 .note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+.advice { margin: 0; padding-left: 20px; }
+.advice li { font-size: 13.5px; line-height: 1.65; margin: 6px 0; }
 .bar-row { display: grid; grid-template-columns: minmax(160px, 300px) 1fr 90px; gap: 10px; align-items: center; padding: 3px 0; }
 .bar-track { background: #eef0f3; border-radius: 4px; height: 16px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
@@ -189,6 +191,85 @@ def trend_chart(points: list[TrendPoint]) -> str:
     ).replace('stroke="#2f6f"', 'stroke="#2f6feb"')
 
 
+def _diagnosis_section_html(scan: ProjectScan) -> str:
+    """「0 条候选」那一节：成本在哪、每条被拦下的原因。
+
+    没有这份输出，空候选表在 HTML 里就是一句「没有发现值得精简的 include」——
+    读者只能理解为「构建没问题」，而实际情况往往是每条都被判了「删了编不过」
+    （G2 在 nlohmann/json 与 zlib 上就是如此）。
+    """
+    diagnosis = getattr(scan, "site_diagnosis", None)
+    if diagnosis is None:
+        return ""
+    empty = diagnosis.is_empty_handed
+    heading = (
+        "没有可删的了：成本在哪、为什么删不掉"
+        if empty
+        else "成本去向：其余 include 行为什么没进候选表"
+    )
+    note = (
+        "这一轮没有产出任何删除建议。空表不等于构建没问题：下面是成本分布，以及"
+        "收益最高的几条 include 行为什么被拦下。工具不会因为给不出建议而降低门槛。"
+        if empty
+        else "下面是其余 include 行没进候选表的原因，以及与候选表同一口径的成本分布。"
+    )
+    parts = [f"<h2>{_esc(heading)}</h2>", f'<p class="note">{_esc(note)}</p>']
+
+    if diagnosis.concentration:
+        rows = "".join(
+            "<tr>"
+            f'<td class="mono path">{_esc(str(row.path))}</td>'
+            f"<td>{'项目' if row.kind is HeaderKind.PROJECT else '系统/第三方'}</td>"
+            f'<td class="num">{_fmt_int(row.attributed_lines)}</td>'
+            f'<td class="num">{row.share * 100:.1f}%</td>'
+            "</tr>"
+            for row in diagnosis.concentration
+        )
+        parts.append(
+            '<div class="panel"><table><thead><tr>'
+            "<th>头文件</th><th>归属</th><th>归因行数</th><th>占全项目解析量</th>"
+            "</tr></thead><tbody>"
+            + rows
+            + "</tbody></table></div>"
+        )
+        tail = (
+            "（其余在系统/第三方头里，删 include 行对这部分无能为力）"
+            if diagnosis.project_share < 0.95
+            else "（成本基本都在自己的头文件里）"
+        )
+        parts.append(
+            f'<p class="note">前 {len(diagnosis.concentration)} 个头文件占 '
+            f"{diagnosis.top_share_percent}%；项目自有头文件占 "
+            f"{diagnosis.project_share_percent}%{tail}。</p>"
+        )
+
+    if diagnosis.blocked_top:
+        rows = "".join(
+            "<tr>"
+            f'<td class="mono path">{_esc(str(item.site_file))}</td>'
+            f'<td class="mono path">{_esc(str(item.header))}</td>'
+            f'<td class="num">{_fmt_int(item.amplified_lines)}</td>'
+            f'<td class="num">{item.reach}</td>'
+            f"<td>{_esc(item.reason_label)}</td>"
+            f"<td>{_esc(item.detail or '—')}</td>"
+            "</tr>"
+            for item in diagnosis.blocked_top
+        )
+        parts.append(
+            '<div class="panel"><table><thead><tr>'
+            "<th>位置</th><th>include</th><th>放大后行数</th><th>影响 TU</th>"
+            "<th>拦下原因</th><th>证据</th>"
+            "</tr></thead><tbody>"
+            + rows
+            + "</tbody></table></div>"
+        )
+
+    if diagnosis.advice:
+        items = "".join(f"<li>{_esc(line)}</li>" for line in diagnosis.advice)
+        parts.append(f'<div class="panel"><ul class="advice">{items}</ul></div>')
+    return "".join(parts)
+
+
 def render_html(
     scan: ProjectScan,
     *,
@@ -243,7 +324,11 @@ def render_html(
             "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></div>"
         )
     else:
-        candidates_table = '<p class="note">没有发现值得精简的 include。</p>'
+        candidates_table = (
+            '<p class="note">没有发现值得精简的 include'
+            + ("（原因见下一节）。" if getattr(scan, "site_diagnosis", None) else "。")
+            + "</p>"
+        )
 
     redundant = sorted(
         (
@@ -289,6 +374,8 @@ def render_html(
             + trend_chart(trend)
         )
 
+    diagnosis_block = _diagnosis_section_html(scan)
+
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -314,6 +401,8 @@ def render_html(
   <h2>可精简的 include</h2>
   <p class="note">独占闭包 = 删掉这条 include 后才会停止解析的头文件。若某头文件仍可从其他 include 到达，删除当前这条并不省钱。</p>
   {candidates_table}
+
+  {diagnosis_block}
 
   <h2>缺少 include guard 的头文件</h2>
   <p class="note">同一编译单元内被重复解析，对带 guard 的头文件不可能发生——这是确定性信号，补 <code>#pragma once</code> 即可，永远安全。</p>

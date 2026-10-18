@@ -130,6 +130,17 @@ def main() -> int:
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--jobs", type=int, default=1)
     parser.add_argument(
+        "--tag",
+        default="",
+        help="结果文件名后缀，避免覆盖此前的运行（如 all16）",
+    )
+    parser.add_argument(
+        "--arms",
+        default="all",
+        help="只跑指定臂：all / feasible / ungated / tu（逗号分隔）。"
+             "把 --top 设成候选总数 + --arms feasible 就得到「全部候选」的完整统计",
+    )
+    parser.add_argument(
         "--compiler",
         default=CLANG,
         help="默认 clang++；C 工程要传 clang.exe（.c 用 C++ 驱动会报 "
@@ -179,14 +190,19 @@ def main() -> int:
     ungated_arm = sorted(ungated, key=lambda c: -c.amplified_lines_saved)[: args.top]
     tu_arm = [c for c in sorted(scan.candidates, key=candidate_rank_key)][: args.top]
 
+    wanted = (
+        {"feasible", "ungated", "tu"}
+        if args.arms == "all"
+        else {item.strip() for item in args.arms.split(",") if item.strip()}
+    )
     arms = []
-    if feasible_arm:
+    if feasible_arm and "feasible" in wanted:
         res = run_arm(scan, driver, project, [clone(c) for c in feasible_arm], 2, args.runs, args.jobs)
         arms.append(summarize(res, "feasible(header,gated)"))
-    if ungated_arm:
+    if ungated_arm and "ungated" in wanted:
         res = run_arm(scan, driver, project, [clone(c) for c in ungated_arm], 2, args.runs, args.jobs)
         arms.append(summarize(res, "ungated(header,top-by-size)"))
-    if tu_arm:
+    if tu_arm and "tu" in wanted:
         res = run_arm(scan, driver, project, [clone(c) for c in tu_arm], 2, args.runs, args.jobs)
         arms.append(summarize(res, "tu-level(old strategy)"))
 
@@ -202,7 +218,8 @@ def main() -> int:
     }
     out_dir = ROOT / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = out_dir / f"g2-sites-{project.name}-{date.today():%Y%m%d}"
+    suffix = f"-{args.tag}" if args.tag else ""
+    stem = out_dir / f"g2-sites-{project.name}{suffix}-{date.today():%Y%m%d}"
     stem.with_suffix(".json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
     )

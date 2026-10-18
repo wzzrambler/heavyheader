@@ -23,14 +23,11 @@ jobs:
       - name: 安装
         run: pip install -e ".[dev]" pytest-cov
 
-      # --cov 不带 fail-under：覆盖率数字进 Codecov，不当门禁。
+      # --cov 不带 fail-under：覆盖率数字进 CI 日志给人看，不当门禁。
       # 一个为了覆盖率数字而写的测试，比没有测试更糟。
       - name: 测量覆盖率
-        run: pytest --cov=heavyheader --cov-report=term-missing --cov-report=xml
-
-      - name: 上报 Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
+        run: pytest --cov=heavyheader --cov-report=term-missing
+        # Codecov 上传已移除（2026-10-19）：codecov 自 2026-10 起拒绝无 token
+        # 上传（"Token required - not valid tokenless upload"），而本项目没有
+        # 展示 Codecov 徽章、不需要外部服务。数字进 CI 日志即可；若将来要徽章，
+        # 配 CODECOV_TOKEN 后把上传步骤加回来。

@@ -3,6 +3,12 @@
 **面向 C/C++ 工程的可验证构建优化与性能回归治理工具** —— 找到候选、真实编译验证、
 把可信的结果变成可审计的 CI 基线。
 
+**一句话**：HeavyHeader 把「删掉这行 include 会怎样」从经验猜测变成一次**可复现的
+受控实验**——这个范式我们称之为*反事实构建实验（CBE）*：依赖树取自真实编译器、
+收益用交替 A/B 实测越过噪声线才算数、结论三态可审计。竞品回答「谁贵」「缺什么」
+「还能编吗」；我们回答「删了的**净收益**是多少、有多大把握」。范式说明、三条
+创新点与消融检验见 [`docs/innovation.md`](docs/innovation.md)。
+
 [![CI](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml/badge.svg)](https://github.com/wzzrambler/heavyheader/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
@@ -30,18 +36,24 @@ Niklas Frykholm 2011 年的 [Header Hero](http://bitsquid.blogspot.com/2011/10/c
 | [deheader](http://www.catb.org/~esr/deheader/)（2010） | 注释掉一条 include、重新编译看是否通过；`-r` 可自动删 | 二值结论，不量化收益；跳过 `#if` 区域；无收益阈值 |
 | [include-what-you-use](https://include-what-you-use.org/) | AST 级判断 include 是否必需 | 不给成本量化，无法按收益排序 |
 
-HeavyHeader 的差异不在任何单一能力，而在把上面这些串成一条闭环：
-**真实编译器 `-H` 取依赖树 → 对候选做 A/B 两次真实编译 → 用实测 Δ时间/Δ内存/Δ体积
-给出 `REMOVE / KEEP / HUMAN` 三态结论 → 按实测净收益门禁。**
-只有「编译通过 + 测试通过 + 收益超过噪声」才建议删除；估算与实测在报告里分开标注，
-绝不把估算写成结论。
+HeavyHeader 不声称任何单件能力首创（每件都有更早的先例，见上表出处）。它换掉的是
+**范式**：从「排行榜」到「反事实实验」——
+**真实编译器 `-H` 取依赖树 → 独占闭包算出每条 include 的边际收益、筛出候选 →
+对候选做 A/B 交替实测（会话内噪声线 + min-of-3 + improved 强制复测）→
+用实测 Δ时间/Δ内存/Δ体积给出 `建议删除 / 保留 / 需人工判断` 三态结论 →
+按实测净收益门禁。**
+「组合」与「创新」的界线是可消融的：拿掉其中任何一层，都有实测记录在案的错误结论
+在等着（排序失效、2% 漂移变收益、4 条 improved 复测 0/4……）——消融表见
+[`docs/innovation.md`](docs/innovation.md) §4。
 
-> **定位已按竞品尽调修订（2026-10-18）**：发现成本（谁最贵）**不是**我们的优势——
-> ClangBuildAnalyzer 与微软 C++ Build Insights 都已覆盖，且数据来自编译器内省。
-> 候选差异化在「验证、治理、低接入」三维，但**全部尚未完成同任务对照**。
-> 能力矩阵与逐格证据等级见 [`docs/competitor-matrix.md`](docs/competitor-matrix.md)，
-> 对照实验的预注册协议与三个门槛见 [`docs/benchmark-plan.md`](docs/benchmark-plan.md)。
-> 在这两项完成前，项目不声称任何「首创 / 唯一」。
+> **诚实定位（2026-10-19 复核）**：发现成本（谁最贵）**不是**我们的优势——
+> ClangBuildAnalyzer 与微软 C++ Build Insights 都已覆盖，且数据来自编译器内省；
+> 同任务对照（G1）实测 7/10 重合、ρ 0.68，**不支持「我们更准」**。
+> 独创宣示只讲「反事实实验协议 + 三态可审计决策」，逐条证据见
+> [`docs/innovation.md`](docs/innovation.md)；能力矩阵与逐格证据等级见
+> [`docs/competitor-matrix.md`](docs/competitor-matrix.md)，同任务对照的
+> 预注册协议与 G1–G4 数据见 [`docs/benchmark-report.md`](docs/benchmark-report.md)。
+> 仍不声称任何「首创 / 唯一」，负面对照样例全部主动公开。
 
 ## 核心能力
 
@@ -164,19 +176,16 @@ $ heavyheader gate ./src --baseline baseline.json --max-regression 5
 
 ## 安装
 
-无第三方运行时依赖，Python 3.10+ 即可：
-
-```bash
-pip install heavyheader
-```
-
-或从源码：
+无第三方运行时依赖（Python 3.10+ 标准库），当前从源码安装：
 
 ```bash
 git clone https://github.com/wzzrambler/heavyheader.git
 cd heavyheader
 pip install -e .
 ```
+
+PyPI 上架列入 [ROADMAP](ROADMAP.md) v0.4；发布纪律（tag → `release.yml`）见
+[GOVERNANCE.md](GOVERNANCE.md)。
 
 ## 快速开始
 
@@ -193,27 +202,27 @@ heavyheader verify ./my-project --top 5 --runs 3
 # 4. 附带估算预编译头收益与前向声明机会
 heavyheader scan ./my-project --pch --forward-decl
 
-# 4. 接入 CI：保存基线，之后每次 PR 对比
+# 5. 接入 CI：保存基线，之后每次 PR 对比
 heavyheader scan ./my-project --save baseline.json
 heavyheader gate ./my-project --baseline baseline.json --max-regression 5
 
-# 5. 增量扫描：第二次起只重编受改动影响的编译单元
+# 6. 增量扫描：第二次起只重编受改动影响的编译单元
 heavyheader scan ./my-project --cache .heavyheader-cache.json
 
-# 6. 历史趋势：每次扫描追加一行，随时回看成本怎么变
+# 7. 历史趋势：每次扫描追加一行，随时回看成本怎么变
 heavyheader scan ./my-project --history cost.jsonl
 heavyheader history cost.jsonl                      # 终端摘要（可直接进 CI 日志）
 heavyheader history cost.jsonl --html board.html    # 导出一份自包含网页
 heavyheader history cost.jsonl --serve              # 本地看板（http://127.0.0.1:8080）
 
-# 7. PR 评论：把两次扫描对比渲染成评论，可选经 gh 发布到 PR
+# 8. PR 评论：把两次扫描对比渲染成评论，可选经 gh 发布到 PR
 heavyheader scan ./my-project --save base.json
 heavyheader scan ./my-project --save pr.json
 heavyheader pr-comment base.json pr.json                       # 只看渲染正文
 heavyheader pr-comment base.json pr.json --post                # 经 gh 发布（需 Actions 环境）
 heavyheader pr-comment base.json pr.json --post --fail-on-regression
 
-# 8. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
+# 9. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
 heavyheader toolchains ./my-project --compilers g++,clang++
 ```
 

@@ -7,9 +7,13 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 186 文件 / 86 commit | `src/heavyheader/` |
-| 测试 | ✅ 482 个全绿 | `tests/` |
-| 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
+| 代码 | ✅ 186 文件 | `src/heavyheader/` |
+| 测试 | ✅ 508 个全绿 + ruff 0 违规（2026-10-19 修复 CI lint：原 91 处） | `tests/` |
+| 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/**GOVERNANCE**/CODEOWNERS/Issue·PR 模板/CI | 仓库根 |
+| 独创性说明 | ✅ `docs/innovation.md`：反事实构建实验范式、三项创新点、消融表、不声称清单 | `docs/innovation.md` |
+| 场景落地说明 | ✅ `docs/scenario.md`：四步全链路 + 真实工程数据卡 + 部署/运行/测试证据 | `docs/scenario.md` |
+| 上游落地战役 | ✅ 2 个 PR 级补丁（doctest −3.01% / zlib −2.125%）+ 英文 PR 正文，dry-run 验证可套用 | `contrib/upstream/` |
+| 零依赖守护 | ✅ `tests/test_no_deps.py`：CI 强制零运行时依赖（架构约束） | `tests/` |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
 | 完整构建实验 | ✅ 真实工程 63 TU，完整构建 −7.1% 墙上 / −11.4% CPU，断言逐个一致 | `experiments/` + `experiments/results/` |
@@ -26,22 +30,27 @@
 | 作品介绍文档 | ✅ 15 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 14 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 86 commit / 186 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 186 文件，CI 三工作流（首发展示为压缩提交，2026-10-19 起按逻辑分别提交） |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，86 commit，186 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public）
 
-- 远程为空仓库，直接推送成功，无需 merge
+- 远程初始为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）
+- **提交历史的诚实说明**：首发内容以单个压缩提交推送（86 次本地提交的最终状态）；
+  2026-10-19 起改为**按逻辑变更分别提交**（治理、文档、修复各自成 commit），
+  公开历史从第二个提交起反映持续维护。CHANGELOG 的 `[0.1.0]` 条目即首发状态。
 
 **推送前检查（均已完成）**：
 - [x] `.gitignore` 已排除 `video_build/`（3012 帧 PNG，约 1.5 GB）
 - [x] PDF 与 MP4 均已一并推送；视频另传 B 站/网盘，报名表填链接即可
 - [x] README / pyproject / SECURITY / CONTRIBUTING 里的仓库地址均为真实地址
       （`docs/finalize.py` 已统一替换）
+- [x] 2026-10-19 复核：README 不再声称 `pip install heavyheader`（PyPI 实际 404），
+      改为源码安装 + PyPI 上架列入 ROADMAP v0.4
 
 ## 第 2 步：填写报名表（需要你）
 

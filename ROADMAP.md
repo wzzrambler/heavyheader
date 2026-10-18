@@ -105,6 +105,9 @@
 - [ ] Bazel / Meson 适配
 - [ ] VSCode 插件：在编辑器里直接看到「这个 include 让你多等几秒」
 - [ ] 与 include-what-you-use 的输出互转（互补而非竞争：IWYU 管正确性，我们管成本）
+- [ ] 发布到 PyPI（发布纪律见 [GOVERNANCE.md](GOVERNANCE.md) §3；零运行时依赖是
+      [tests/test_no_deps.py](../tests/test_no_deps.py) 守护的架构约束，上架后
+      `pip install heavyheader` 一句话可装）
 
 ## 明确不做的事
 

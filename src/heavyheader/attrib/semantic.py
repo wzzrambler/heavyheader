@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -123,7 +124,22 @@ class SemanticBackend:
             candidates.append(env)
         candidates.extend(_DEFAULT_PATHS)
         for candidate in candidates:
-            if candidate and Path(candidate).exists():
+            if not candidate:
+                continue
+            looks_like_path = os.sep in candidate or (
+                os.altsep is not None and os.altsep in candidate
+            )
+            if not looks_like_path:
+                # A bare command name must be resolved through PATH.
+                # ``Path("clang-include-cleaner").exists()`` would check the
+                # current directory instead -- a dead entry that silently
+                # hid the tool from every macOS/Linux install that has it
+                # on PATH.
+                found = shutil.which(candidate)
+                if found:
+                    return Path(found)
+                continue
+            if Path(candidate).exists():
                 return Path(candidate)
         return None
 

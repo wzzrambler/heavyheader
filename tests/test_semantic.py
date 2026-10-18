@@ -38,8 +38,23 @@ def test_detect_finds_explicit_existing_path(tmp_path):
     assert backend.tool == fake
 
 
-def test_analyse_parses_removals(monkeypatch):
-    backend = SemanticBackend(tool_path="C:/fake/clang-include-cleaner.exe")
+def _fake_tool(tmp_path) -> Path:
+    """A real on-disk dummy executable.
+
+    Must be an *existing* path: passing a Windows-style literal made these
+    tests depend on whatever LLVM install the runner happens to have
+    (Windows CI has C:/Program Files/LLVM, ubuntu has one of the default
+    paths) -- on macOS none exists, ``_detect`` returns None and the
+    ``analyse`` guard fires.  The file never executes: subprocess.run is
+    monkeypatched below.
+    """
+    tool = tmp_path / "clang-include-cleaner"
+    tool.write_bytes(b"#!/bin/sh\nexit 0\n")
+    return tool
+
+
+def test_analyse_parses_removals(monkeypatch, tmp_path):
+    backend = SemanticBackend(tool_path=_fake_tool(tmp_path))
 
     class _R:
         returncode = 0
@@ -56,8 +71,8 @@ def test_analyse_parses_removals(monkeypatch):
     assert "missing.h" not in verdict.removals
 
 
-def test_analyse_subprocess_error_is_reported_not_raised(monkeypatch):
-    backend = SemanticBackend(tool_path="C:/fake/clang-include-cleaner.exe")
+def test_analyse_subprocess_error_is_reported_not_raised(monkeypatch, tmp_path):
+    backend = SemanticBackend(tool_path=_fake_tool(tmp_path))
     monkeypatch.setattr(
         "heavyheader.attrib.semantic.subprocess.run",
         lambda *a, **k: (_ for _ in ()).throw(OSError("boom")),
@@ -67,8 +82,8 @@ def test_analyse_subprocess_error_is_reported_not_raised(monkeypatch):
     assert "boom" in verdict.note
 
 
-def test_analyse_nonzero_without_removals_is_failure(monkeypatch):
-    backend = SemanticBackend(tool_path="C:/fake/clang-include-cleaner.exe")
+def test_analyse_nonzero_without_removals_is_failure(monkeypatch, tmp_path):
+    backend = SemanticBackend(tool_path=_fake_tool(tmp_path))
 
     class _R:
         returncode = 1

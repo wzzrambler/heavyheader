@@ -2,6 +2,33 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 修复
+
+- **CI 全绿**：修复 7 个跨平台测试失败（此前本地 Windows 全绿、CI 12 矩阵 +
+  Coverage 全红，慢性问题）与 macOS 矩阵腿的 3 个 semantic 测试失败。根因均为
+  Windows 路径解析的平台依赖：
+  - `attrib/cost.py _key`：显式 `lower()`（`os.path.normcase` 在 POSIX 是
+    no-op，trace 键查找在 Linux/macOS 全部落空）；
+  - `parse/depfile.py` 与 `parse/includetree.py` 的 `_normalise`：
+    `PureWindowsPath` 必须先 `as_posix()` 再包平台 `Path`——
+    `Path(PureWindowsPath(...))` 的渲染在 Python 3.11/3.12/3.13 上行为
+    不一致（单组件 / 混合分隔符 / 分部件）；
+  - `scanner._strip_source_token`：改为分隔符/大小写不敏感比较
+    （compile_commands 的 `file` 字段与命令行分隔符风格不一致，POSIX 上
+    漏剥源文件 token——「编译两遍」计量污染的另一半）；
+  - `tests/test_parsers.py`：6 处期望值改为规范形式（平台中性）；
+  - `tests/test_no_deps.py`：去掉 3.10 不存在的 `tomllib`（改为 tomllib
+    优先 + 3.10 文本回退）——此前 CI 3.10 矩阵腿收集即失败（exit 2）；
+  - `tests/test_semantic.py`：三个 `analyse` 测试改用 tmp_path 造真实假
+    文件，不再依赖 CI 机器碰巧装有的 LLVM 安装（macOS 两条默认路径都
+    没有，是最后一处红腿的根因）；
+  - `attrib/semantic.py _detect`：默认路径里的裸命令名改为 `shutil.which()`
+    解析（此前 `Path(...).exists()` 查的是 CWD 不是 PATH，是死条目）。
+- 这些同时是产品 bug：工具在 Linux/macOS 上解析 MSVC `/showIncludes` 输出
+  或 Windows `compile_commands.json` 时会得到畸形成路径。
+
 ## [0.1.0] - 2026-10-19
 
 ### 新增（首发）

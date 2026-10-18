@@ -139,11 +139,35 @@ def _read(path: Path) -> str | None:
         return None
 
 
+_INCLUDE_DIRECTIVE = re.compile(r"\s*#\s*include\b")
+
+
 def _strip_noise(text: str) -> str:
-    """Blank out comments and string/char literals, preserving line count."""
+    """Blank out comments, string/char literals and ``#include`` lines.
+
+    Preserving the line count matters because callers match verdicts and
+    reports back to line numbers.
+
+    Why ``#include`` lines are blanked and not just their quotes: the file
+    name in an angle-bracket include is a bare word, and the header it points
+    at very often declares an identifier with that same name -- ``<regex>``
+    declares ``std::regex``, so the text of ``#include <regex>`` contributes
+    the identifier ``regex`` to the *including* file.  The usage test then
+    finds a match it created itself and reports "in use" for a header nobody
+    uses.  That is not a theoretical concern: it is why the injected-include
+    recall experiment (``experiments/g2_recall.py``) scored 0/1 on header
+    sites until this was fixed.
+
+    Other preprocessor lines are deliberately **kept**: a header pulled in
+    only for a macro that guards an ``#ifdef`` is a real dependency, and
+    blanking those lines would turn it into a confident "unused".
+    """
     out: list[str] = []
     in_block = False
     for line in text.splitlines():
+        if not in_block and _INCLUDE_DIRECTIVE.match(line):
+            out.append(" " * len(line))
+            continue
         result: list[str] = []
         index = 0
         while index < len(line):

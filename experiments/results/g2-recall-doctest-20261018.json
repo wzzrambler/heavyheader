@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "injected": "<regex>",
+  "runs_per_side": 3,
+  "recall": {
+    "tu_level_rank": null,
+    "tu_level_pool": 60,
+    "header_level_rank": null,
+    "header_level_pool": 3
+  },
+  "noise_floors_percent": {
+    "single_unit": 2.0,
+    "aggregate": 1.0
+  },
+  "verification": []
+}

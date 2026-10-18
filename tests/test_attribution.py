@@ -341,6 +341,44 @@ def test_usage_follows_the_header_into_its_closure(tmp_path):
     assert with_closure.provided_by == root / "deep.h"
 
 
+def test_include_directive_does_not_count_as_a_use(tmp_path):
+    """``#include <regex>`` must not be read as "this file uses regex".
+
+    The file name in an angle-bracket include is a bare word, and the header
+    it points at usually declares something with that same name.  Without
+    blanking the directive, the usage test finds a match that it created
+    itself: every injected include looked "in use", which is how the
+    header-level recall experiment scored 0/1 before the fix.
+    """
+    root = tmp_path
+    header = root / "regex"
+    header.write_text("namespace std { class regex {}; }\n", encoding="utf-8")
+    source = root / "main.cpp"
+    source.write_text("#include <regex>\nint main() { return 0; }\n", encoding="utf-8")
+
+    signal = analyse_usage(source, header, closure=[header])
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+
+
+def test_macro_guards_still_count_as_a_use(tmp_path):
+    """The flip side: ``#ifdef`` really is a dependency, keep it.
+
+    Blanking *every* preprocessor line would be the easy fix and the wrong
+    one -- a header included only for a macro that guards an ``#ifdef`` is
+    load-bearing, and calling it unused produces edits that break the build.
+    """
+    root = tmp_path
+    header = root / "config.h"
+    header.write_text("#define HAVE_FEATURE 1\n", encoding="utf-8")
+    source = root / "main.cpp"
+    source.write_text(
+        '#include "config.h"\n#ifdef HAVE_FEATURE\nint enabled;\n#endif\n',
+        encoding="utf-8",
+    )
+    signal = analyse_usage(source, header, closure=[header])
+    assert signal.verdict is UsageVerdict.IN_USE
+
+
 # --------------------------------------------------------------------------
 # header statistics
 # --------------------------------------------------------------------------

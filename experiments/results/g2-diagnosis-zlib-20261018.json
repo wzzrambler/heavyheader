@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-18",
+  "project": "zlib",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "tus": 15,
+  "header_site_candidates": 0,
+  "candidate_count": 0,
+  "blocked_count": 58,
+  "total_attributed_lines": 132685,
+  "project_share_percent": 41.1,
+  "top_share_percent": 73.4,
+  "concentration": [
+    {
+      "path": "zlib.h",
+      "kind": "project",
+      "attributed_lines": 30885,
+      "share_percent": 23.28
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\_mingw.h",
+      "kind": "system",
+      "attributed_lines": 10110,
+      "share_percent": 7.62
+    },
+    {
+      "path": "crc32.h",
+      "kind": "project",
+      "attributed_lines": 9446,
+      "share_percent": 7.12
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\stdlib.h",
+      "kind": "system",
+      "attributed_lines": 9438,
+      "share_percent": 7.11
+    },
+    {
+      "path": "zconf.h",
+      "kind": "project",
+      "attributed_lines": 8265,
+      "share_percent": 6.23
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\corecrt.h",
+      "kind": "system",
+      "attributed_lines": 7665,
+      "share_percent": 5.78
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\stdio.h",
+      "kind": "system",
+      "attributed_lines": 6700,
+      "share_percent": 5.05
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\_mingw_mac.h",
+      "kind": "system",
+      "attributed_lines": 6210,
+      "share_percent": 4.68
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\sec_api\\stdio_s.h",
+      "kind": "system",
+      "attributed_lines": 4590,
+      "share_percent": 3.46
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\string.h",
+      "kind": "system",
+      "attributed_lines": 4069,
+      "share_percent": 3.07
+    }
+  ],
+  "blocked": [
+    {
+      "site": "zlib.h",
+      "line": null,
+      "header": "zconf.h",
+      "amplified_lines": 48645,
+      "reach": 15,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 Bytef、FAR、STDC、ZEXPORT、ZEXPORTVA（由 zconf.h 提供）"
+    },
+    {
+      "site": "zutil.h",
+      "line": null,
+      "header": "zlib.h",
+      "amplified_lines": 46341,
+      "reach": 9,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 FAR、MAX_MEM_LEVEL、MAX_WBITS、MSDOS、OS2（由 zlib.h 提供）"
+    },
+    {
+      "site": "zconf.h",
+      "line": null,
+      "header": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\limits.h",
+      "amplified_lines": 31410,
+      "reach": 15,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 UINT_MAX、ULONG_MAX、USHRT_MAX、_WIN32、__MINGW32__（由 limits.h 提供）"
+    },
+    {
+      "site": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\limits.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\limits.h",
+      "amplified_lines": 29415,
+      "reach": 15,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\limits.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\crtdefs.h",
+      "amplified_lines": 27630,
+      "reach": 15,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\crtdefs.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\corecrt.h",
+      "amplified_lines": 27450,
+      "reach": 15,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\sec_api\\stdio_s.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\stdio.h",
+      "amplified_lines": 20950,
+      "reach": 5,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\corecrt.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\_mingw.h",
+      "amplified_lines": 19785,
+      "reach": 15,
+      "reason": "system_site",
+      "detail": ""
+    }
+  ],
+  "reason_counts": {
+    "owner_uses": 16,
+    "system_site": 40,
+    "shadowed": 2
+  },
+  "advice": [
+    "可行性闸门放行了 0 条改动（共审视 58 条收益非零的 include 行）。这是结论不是故障：本轮没有一条「删掉仍能编译」的候选，工具不会为了给出建议而降低这道门槛。",
+    "归因行数里只有 41.1% 落在项目自有头文件上，其余来自系统/第三方头。删除 include 行对这部分没有用——能做的是减少**包含**它们的项目头数量（拆分伞头、改前向声明），或用 `--pch` 把它们预编译掉。这两项本工具都只给估算，收益仍需实测。",
+    "16 条被拦下的原因是「拥有该行的文件自己就在用这些符号」。这是真实依赖：删掉它编译不过，工具判对了。要动这类成本得换手段——把大头文件拆小（`--forward-decl` 找可改前向声明的位置）、把不常用的实现挪到 .cpp，而不是删这一行。",
+    "2 条即使删掉也不省钱：同一批头文件已从其它 include 到达，属于「看起来冗余、实际由别处承担」。治理这类成本要从那个真正的入口下手。",
+    "40 条位于系统/第三方头文件内部。改别人的头文件不是本项目能承担的决策，故不列入候选（可加 `--include-system-sites` 强制列出，仅供查看）。",
+    "本诊断不构成删除建议：任何删除都必须先过 `verify` 重新编译全部受影响单元的实测，估算省下的行数或秒数都不能作为安全性依据。"
+  ]
+}

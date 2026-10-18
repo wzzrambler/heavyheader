@@ -144,6 +144,49 @@ def scan_to_dict(scan: ProjectScan) -> dict:
         "reproduce_command": scan.reproduce_command,
         "warnings": list(scan.warnings),
         "template_profile": _template_profile_to_dict(scan),
+        "site_diagnosis": _diagnosis_to_dict(scan.site_diagnosis),
+    }
+
+
+def _diagnosis_to_dict(diagnosis) -> dict | None:
+    """「没有可删的了」那份诊断的序列化形式。
+
+    只导出、不还原：门禁与看板读的是候选与头文件统计，诊断是给人看的那一
+    层。做成单向的是刻意的——还原出一半的诊断对象比没有更危险，下游会以为
+    自己拿到了完整结论。
+    """
+    if diagnosis is None:
+        return None
+    return {
+        "candidate_count": diagnosis.candidate_count,
+        "blocked_count": sum(diagnosis.counts.values()),
+        "total_attributed_lines": diagnosis.total_attributed_lines,
+        "project_share": round(diagnosis.project_share, 6),
+        "top_share": round(diagnosis.top_share, 6),
+        "concentration": [
+            {
+                "path": str(row.path),
+                "kind": row.kind.value,
+                "attributed_lines": row.attributed_lines,
+                "share": round(row.share, 6),
+            }
+            for row in diagnosis.concentration
+        ],
+        "blocked": [
+            {
+                "site_file": str(item.site_file),
+                "header": str(item.header),
+                "line": item.line,
+                "amplified_lines": item.amplified_lines,
+                "reach": item.reach,
+                "reason": item.reason,
+                "reason_label": item.reason_label,
+                "detail": item.detail,
+            }
+            for item in diagnosis.blocked_top
+        ],
+        "reason_counts": dict(diagnosis.counts),
+        "advice": list(diagnosis.advice),
     }
 
 

@@ -537,6 +537,11 @@ class ProjectScan:
     #: 它的一个用途——报告要能回答「这个头到底花了多少微秒」，而不只是
     #: 「它排第几」。未采集时为 None。
     cost_profile: object | None = None
+    #: 「没有可删的了」时的诊断：成本集中在哪、每条收益非零的 include 行为什么
+    #: 没进候选表。仅 ``--header-sites`` 时计算；None = 未计算（不是「没有问题」）。
+    #: 它存在的理由见 :mod:`heavyheader.attrib.diagnosis`：三个工程里有两个是
+    #: 0 条候选，空表会被读成「构建没问题」，而真实情况是每条都被判了「删了编不过」。
+    site_diagnosis: object | None = None
     #: 探针/测量阶段的结果，``--probe`` 时才有内容。None = 这一轮没跑实测，
     #: 报告必须把这种情况说明白，不能让读者以为「没测」等于「没问题」。
     probe_results: list | None = None

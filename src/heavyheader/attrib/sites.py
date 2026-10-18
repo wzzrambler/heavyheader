@@ -56,6 +56,7 @@ from ..models import (  # noqa: E402
     RemovalCandidate,
     tu_compile_seconds,
 )
+from .diagnosis import BlockedSite  # noqa: E402
 from .graph import HeaderSizes, classify_headers  # noqa: E402
 from .usage import IdentifierIndex, UsageVerdict, analyse_usage  # noqa: E402
 
@@ -131,14 +132,8 @@ def find_header_candidates(
     require_plausibly_unused: bool = True,
     usage_index=None,
     costs=None,
+    blocked: list | None = None,
 ) -> list[RemovalCandidate]:
-    """...
-
-    ``require_plausibly_unused`` 是**可行性闸门**本身的开关，留着它是为了
-    做消融实验：闸门开 = 只推荐「拥有这一行的文件自己不用它」的改动；
-    闸门关 = 按收益排前 K 条，不管删了编不编得过。G2 要报的是这两者的
-    编译通过率之差——它才说明闸门是不是真的有用，而不是听起来有用。
-    """
     """Removal candidates whose ``#include`` line lives in a header.
 
     Returns candidates with :attr:`RemovalCandidate.site_file` set to the file
@@ -146,6 +141,18 @@ def find_header_candidates(
     that parses it.  ``tu`` is the *representative* unit (the slowest one) --
     it anchors reports and the baseline cache, and it is never the file being
     patched.
+
+    ``require_plausibly_unused`` 是**可行性闸门**本身的开关，留着它是为了
+    做消融实验：闸门开 = 只推荐「拥有这一行的文件自己不用它」的改动；
+    闸门关 = 按收益排前 K 条，不管删了编不编得过。G2 要报的是这两者的
+    编译通过率之差——它才说明闸门是不是真的有用，而不是听起来有用。
+
+    ``blocked`` 是一个可选的**收集器**：传一个 list，所有「看起来贵、但没进
+    候选表」的 include 行会连同被拦下的原因追加进去，交给
+    :func:`heavyheader.attrib.diagnosis.build_diagnosis` 汇总。它的存在是
+    因为 G2 在三个工程里有两个是 0 条候选——空表会被读成「构建没问题」，而
+    真实情况是每条都被判了「删了编不过」。**不传它时不做任何额外计算**，
+    所以默认扫描的开销与加这个功能之前完全一样。
     """
     if kinds is None:
         kinds = classify_headers(
@@ -174,37 +181,90 @@ def find_header_candidates(
             if key not in lines_by_edge or (lines_by_edge[key] is None and event.line):
                 lines_by_edge[key] = event.line
 
+    def exclusive_of(header: Path, directs: list[Path]) -> set[Path]:
+        # 其它 direct include 已经拉进来的东西，删掉这一行也还在，
+        # 所以不算在这条的收益里。
+        shared: set[Path] = set()
+        for other in directs:
+            if other == header:
+                continue
+            shared |= closures.get(other, frozenset())
+        shared.discard(site_file)
+        exclusive = set(closures.get(header, frozenset()))
+        if header not in shared:
+            exclusive.add(header)
+        exclusive -= shared
+        return exclusive
+
+    def reject(
+        reason: str,
+        *,
+        header: Path,
+        saved: int = 0,
+        detail: str = "",
+    ) -> None:
+        """记录一条被拦下的 include 行；``blocked`` 为 None 时什么都不做。"""
+        if blocked is None:
+            return
+        blocked.append(
+            BlockedSite(
+                site_file=site_file,
+                header=header,
+                line=lines_by_edge.get((site_file, header)),
+                amplified_lines=saved * len(affected),
+                reach=len(affected),
+                reason=reason,
+                detail=detail,
+            )
+        )
+
     candidates: list[RemovalCandidate] = []
     for site_file, directs in children.items():
         if site_file in tu_sources:
             continue  # TU 级候选由 graph.find_removal_candidates 负责
-        if not include_system_sites and kinds.get(site_file) == HeaderKind.SYSTEM:
-            continue
 
         affected = sorted(
             source for source, files in parsed.items() if site_file in files
         )
         if len(affected) < min_reach:
+            # 只被 1 个单元解析：改公共头不划算，TU 级候选已经覆盖它。
+            if blocked is not None:
+                for header in directs:
+                    reject(
+                        "low_reach",
+                        header=header,
+                        saved=sizes.total(exclusive_of(header, directs)),
+                    )
+            continue
+        if not include_system_sites and kinds.get(site_file) == HeaderKind.SYSTEM:
+            if blocked is not None:
+                for header in directs:
+                    reject(
+                        "system_site",
+                        header=header,
+                        saved=sizes.total(exclusive_of(header, directs)),
+                        # detail 留空：原因标签已经说了同一件事，再重复一遍
+                        # 会挤掉真正需要核对的信息（具体标识符）。
+                        detail="",
+                    )
             continue
 
         for header in directs:
-            # 其它 direct include 已经拉进来的东西，删掉这一行也还在，
-            # 所以不算在这条的收益里。
-            shared: set[Path] = set()
-            for other in directs:
-                if other == header:
-                    continue
-                shared |= closures.get(other, frozenset())
-            shared.discard(site_file)
-
-            exclusive = set(closures.get(header, frozenset()))
-            if header not in shared:
-                exclusive.add(header)
-            exclusive -= shared
+            exclusive = exclusive_of(header, directs)
             if not exclusive:
+                reject(
+                    "shadowed",
+                    header=header,
+                    detail="同一批头文件已经从别的 include 到达，删掉这一行不省钱",
+                )
                 continue
             saved = sizes.total(exclusive)
             if saved <= 0:
+                reject(
+                    "unmeasured",
+                    header=header,
+                    detail="取不到这些头文件的行数（文件不可读或为空），无法估算收益",
+                )
                 continue
 
             # 可行性闸门：拥有这一行的文件自己不用它，才值得推荐。
@@ -215,10 +275,19 @@ def find_header_candidates(
                 require_plausibly_unused
                 and signal.verdict is not UsageVerdict.PLAUSIBLY_UNUSED
             ):
+                reject(
+                    "owner_uses"
+                    if signal.verdict is UsageVerdict.IN_USE
+                    else "owner_unknown",
+                    header=header,
+                    saved=saved,
+                    detail=_block_detail(signal),
+                )
                 continue
 
             amplified = saved * len(affected)
             if amplified < min_amplified_lines:
+                reject("tiny", header=header, saved=saved)
                 continue
 
             # 成本口径优先：有 -ftime-trace 实测就用它，没有才回退行数换算。
@@ -289,6 +358,26 @@ def find_header_candidates(
             key=lambda c: (-c.amplified_lines_saved, str(c.site), str(c.header))
         )
     return candidates
+
+
+def _block_detail(signal) -> str:
+    """把「为什么拦下」写成一句话，尽量带具体标识符。
+
+    没有可引用的证据时明说没有，而不是补一句听起来合理的解释——诊断的
+    价值就在于它给的每条理由都能被读者自己核对。
+    """
+    if signal.verdict is UsageVerdict.IN_USE:
+        names = "、".join(signal.shared_identifiers[:5])
+        if not names:
+            return "判定为在用，但没有可引用的具体标识符"
+        provider = f"（由 {signal.provided_by.name} 提供）" if signal.provided_by else ""
+        return f"该文件使用了 {names}{provider}"
+    if signal.ambient_identifiers:
+        names = "、".join(sorted(signal.ambient_identifiers)[:5])
+        return f"只命中环境噪音（{names}）：不足以判定在用，也不足以判定没在用"
+    if signal.header_identifier_count == 0:
+        return "读不到即将消失的头文件正文，判定无法进行"
+    return "文本判定给不出结论，工具选择不猜"
 
 
 def _confidence(saved: int, reach: int, signal) -> str:

@@ -1,0 +1,161 @@
+{
+  "date": "2026-10-18",
+  "project": "json",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 25,
+  "header_site_candidates": 0,
+  "candidate_count": 0,
+  "blocked_count": 369,
+  "total_attributed_lines": 4240012,
+  "project_share_percent": 18.7,
+  "top_share_percent": 26.2,
+  "concentration": [
+    {
+      "path": "tests\\thirdparty\\doctest\\doctest.h",
+      "kind": "project",
+      "attributed_lines": 177650,
+      "share_percent": 4.19
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\stl_algo.h",
+      "kind": "system",
+      "attributed_lines": 147400,
+      "share_percent": 3.48
+    },
+    {
+      "path": "include\\nlohmann\\json.hpp",
+      "kind": "project",
+      "attributed_lines": 131450,
+      "share_percent": 3.1
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\basic_string.h",
+      "kind": "system",
+      "attributed_lines": 127400,
+      "share_percent": 3.0
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\type_traits",
+      "kind": "system",
+      "attributed_lines": 109975,
+      "share_percent": 2.59
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\cmath",
+      "kind": "system",
+      "attributed_lines": 97950,
+      "share_percent": 2.31
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\stl_tree.h",
+      "kind": "system",
+      "attributed_lines": 86625,
+      "share_percent": 2.04
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\stl_iterator.h",
+      "kind": "system",
+      "attributed_lines": 78400,
+      "share_percent": 1.85
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\tuple",
+      "kind": "system",
+      "attributed_lines": 77800,
+      "share_percent": 1.83
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\hashtable.h",
+      "kind": "system",
+      "attributed_lines": 76400,
+      "share_percent": 1.8
+    }
+  ],
+  "blocked": [
+    {
+      "site": "include\\nlohmann\\adl_serializer.hpp",
+      "line": null,
+      "header": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "amplified_lines": 1582925,
+      "reach": 25,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 BasicJsonType、adl_serializer、from_json、identity_tag、nlohmann（由 from_json.hpp 提供）"
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "line": null,
+      "header": "include\\nlohmann\\detail\\input\\input_adapters.hpp",
+      "amplified_lines": 1139275,
+      "reach": 25,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 JSON_ASSERT、JSON_HEDLEY_NON_NULL、JSON_HEDLEY_UNLIKELY、NLOHMANN_JSON_NAMESPACE_BEGIN、NLOHMANN_JSON_NAMESPACE_END（由 input_adapters.hpp 提供）"
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\input_adapters.hpp",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\istream",
+      "amplified_lines": 1030200,
+      "reach": 25,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 advance、base、empty、enable_if、enable_if_t（由 stl_construct.h 提供）"
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "line": null,
+      "header": "include\\nlohmann\\adl_serializer.hpp",
+      "amplified_lines": 972850,
+      "reach": 25,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 AllocatorType、ArrayType、BinaryType、BooleanType、CompatibleType（由 macro_scope.hpp 提供）"
+    },
+    {
+      "site": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\istream",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\ios",
+      "amplified_lines": 931775,
+      "reach": 25,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\basic_ios.h",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\locale_facets.h",
+      "amplified_lines": 803100,
+      "reach": 25,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\locale_facets.h",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\streambuf_iterator.h",
+      "amplified_lines": 692400,
+      "reach": 25,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\iterator",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\streambuf_iterator.h",
+      "amplified_lines": 692400,
+      "reach": 25,
+      "reason": "system_site",
+      "detail": ""
+    }
+  ],
+  "reason_counts": {
+    "owner_uses": 68,
+    "system_site": 299,
+    "owner_unknown": 2
+  },
+  "advice": [
+    "可行性闸门放行了 0 条改动（共审视 369 条收益非零的 include 行）。这是结论不是故障：本轮没有一条「删掉仍能编译」的候选，工具不会为了给出建议而降低这道门槛。",
+    "归因行数里只有 18.7% 落在项目自有头文件上，其余来自系统/第三方头。删除 include 行对这部分没有用——能做的是减少**包含**它们的项目头数量（拆分伞头、改前向声明），或用 `--pch` 把它们预编译掉。这两项本工具都只给估算，收益仍需实测。",
+    "68 条被拦下的原因是「拥有该行的文件自己就在用这些符号」。这是真实依赖：删掉它编译不过，工具判对了。要动这类成本得换手段——把大头文件拆小（`--forward-decl` 找可改前向声明的位置）、把不常用的实现挪到 .cpp，而不是删这一行。",
+    "2 条文本判定给不出结论：命中的标识符（`config`、`value` 这类）在几十个头里都出现，不能当作依赖证据，也不能当作没在用。这些需要人工看一眼，或用语义工具（本工具不假装替你判）。",
+    "299 条位于系统/第三方头文件内部。改别人的头文件不是本项目能承担的决策，故不列入候选（可加 `--include-system-sites` 强制列出，仅供查看）。",
+    "本诊断不构成删除建议：任何删除都必须先过 `verify` 重新编译全部受影响单元的实测，估算省下的行数或秒数都不能作为安全性依据。"
+  ]
+}

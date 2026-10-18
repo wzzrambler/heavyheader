@@ -1,0 +1,162 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 24,
+  "header_site_candidates": 16,
+  "candidate_count": 16,
+  "blocked_count": 557,
+  "total_attributed_lines": 6562385,
+  "project_share_percent": 1.6,
+  "top_share_percent": 24.2,
+  "concentration": [
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\winnt.h",
+      "kind": "system",
+      "attributed_lines": 258960,
+      "share_percent": 3.95
+    },
+    {
+      "path": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\avx512fintrin.h",
+      "kind": "system",
+      "attributed_lines": 224424,
+      "share_percent": 3.42
+    },
+    {
+      "path": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\avx512vlintrin.h",
+      "kind": "system",
+      "attributed_lines": 193608,
+      "share_percent": 2.95
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\winuser.h",
+      "kind": "system",
+      "attributed_lines": 163272,
+      "share_percent": 2.49
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\stl_algo.h",
+      "kind": "system",
+      "attributed_lines": 141504,
+      "share_percent": 2.16
+    },
+    {
+      "path": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\avx2intrin.h",
+      "kind": "system",
+      "attributed_lines": 124560,
+      "share_percent": 1.9
+    },
+    {
+      "path": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\bits\\basic_string.h",
+      "kind": "system",
+      "attributed_lines": 122304,
+      "share_percent": 1.86
+    },
+    {
+      "path": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\avxintrin.h",
+      "kind": "system",
+      "attributed_lines": 121536,
+      "share_percent": 1.85
+    },
+    {
+      "path": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\emmintrin.h",
+      "kind": "system",
+      "attributed_lines": 118560,
+      "share_percent": 1.81
+    },
+    {
+      "path": "C:\\mingw64\\x86_64-w64-mingw32\\include\\winerror.h",
+      "kind": "system",
+      "attributed_lines": 118224,
+      "share_percent": 1.8
+    }
+  ],
+  "blocked": [
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\windows.h",
+      "amplified_lines": 2944992,
+      "reach": 24,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 NOMINMAX、WIN32_LEAN_AND_MEAN、WINAPI_FAMILY、WINAPI_FAMILY_APP、__cdecl（由 windows.h 提供）"
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\windef.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\minwindef.h",
+      "amplified_lines": 2248752,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\minwindef.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\winnt.h",
+      "amplified_lines": 2217912,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\windows.h",
+      "line": null,
+      "header": "C:\\mingw64\\x86_64-w64-mingw32\\include\\windef.h",
+      "amplified_lines": 2192928,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\x86_64-w64-mingw32\\include\\winnt.h",
+      "line": null,
+      "header": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\x86intrin.h",
+      "amplified_lines": 1886160,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\x86intrin.h",
+      "line": null,
+      "header": "C:\\Program Files\\LLVM\\lib\\clang\\23\\include\\immintrin.h",
+      "amplified_lines": 1824744,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\fstream",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\istream",
+      "amplified_lines": 1009752,
+      "reach": 24,
+      "reason": "system_site",
+      "detail": ""
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "line": null,
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\fstream",
+      "amplified_lines": 997056,
+      "reach": 24,
+      "reason": "owner_uses",
+      "detail": "该文件使用了 WIN32_LEAN_AND_MEAN、mutex、stdout（由 gthr-default.h 提供）"
+    }
+  ],
+  "reason_counts": {
+    "owner_uses": 47,
+    "system_site": 505,
+    "owner_unknown": 3,
+    "low_reach": 2
+  },
+  "advice": [
+    "可行性闸门放行 16 条；以下成本分布说明其余 557 条为什么没进候选表。",
+    "归因行数里只有 1.6% 落在项目自有头文件上，其余来自系统/第三方头。删除 include 行对这部分没有用——能做的是减少**包含**它们的项目头数量（拆分伞头、改前向声明），或用 `--pch` 把它们预编译掉。这两项本工具都只给估算，收益仍需实测。",
+    "47 条被拦下的原因是「拥有该行的文件自己就在用这些符号」。这是真实依赖：删掉它编译不过，工具判对了。要动这类成本得换手段——把大头文件拆小（`--forward-decl` 找可改前向声明的位置）、把不常用的实现挪到 .cpp，而不是删这一行。",
+    "3 条文本判定给不出结论：命中的标识符（`config`、`value` 这类）在几十个头里都出现，不能当作依赖证据，也不能当作没在用。这些需要人工看一眼，或用语义工具（本工具不假装替你判）。",
+    "505 条位于系统/第三方头文件内部。改别人的头文件不是本项目能承担的决策，故不列入候选（可加 `--include-system-sites` 强制列出，仅供查看）。",
+    "本诊断不构成删除建议：任何删除都必须先过 `verify` 重新编译全部受影响单元的实测，估算省下的行数或秒数都不能作为安全性依据。"
+  ]
+}

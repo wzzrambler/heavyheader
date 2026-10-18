@@ -42,6 +42,7 @@ from .attrib.graph import (
     redundant_reparse_warnings,
 )
 from .attrib.cost import collect_trace_costs
+from .attrib.diagnosis import build_diagnosis
 from .attrib.sites import find_header_candidates
 from .attrib.forward import find_forward_declaration_candidates
 from .attrib.pch import estimate_pch
@@ -108,6 +109,12 @@ class ScanOptions:
     #: 候选里只有 3 条删得掉）。代价是候选池变大、验证要重编一批单元，
     #: 因此默认关闭，由显式开关或实验脚本启用。
     header_sites: bool = False
+    #: 把系统/第三方头文件内部的 ``#include`` 行也列出来（仅供查看）。
+    #:
+    #: 默认不开的原因不是「删不掉」，而是「删了也轮不到我们决定」——改
+    #: ``<vector>`` 内部的一行不是本项目能承担的决策。诊断里会统计这类行有
+    #: 多少，开着它可以看到具体是哪几行。
+    include_system_sites: bool = False
     #: Rank by *measured* header cost instead of attributed lines.
     #:
     #: Lines are a structural proxy; the injection experiment showed how bad
@@ -544,8 +551,19 @@ def scan_project(
                 )
         scan.cost_model = costs.basis if costs is not None else "lines"
         scan.cost_profile = costs
-        scan.candidates = scan.candidates + find_header_candidates(
-            scan, sizes, kinds, costs=costs
+        # 同时收集被闸门拦下的行：0 条候选时报告不能只剩一张空表。
+        blocked: list = []
+        header_site_candidates = find_header_candidates(
+            scan,
+            sizes,
+            kinds,
+            costs=costs,
+            blocked=blocked,
+            include_system_sites=options.include_system_sites,
+        )
+        scan.candidates = scan.candidates + header_site_candidates
+        scan.site_diagnosis = build_diagnosis(
+            scan, blocked, candidate_count=len(header_site_candidates)
         )
     # 「累计编译耗时」对外呈现的是**墙钟**，所以这里优先用驱动实测的
     # wall_seconds。-ftime-report 的 TOTAL 是 CPU 时间，Windows 上两者可差

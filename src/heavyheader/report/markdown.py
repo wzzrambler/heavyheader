@@ -15,6 +15,7 @@ from ..attrib.advice import (
     MAINTENANCE_LEAN_SHARE,
     TIME_NOISE_FLOOR,
 )
+from ..attrib.diagnosis import BLOCK_REASONS
 from ..models import AdviceVerdict, HeaderKind, ProjectScan
 
 __all__ = ["render_markdown", "markdown_summary_line"]
@@ -60,6 +61,148 @@ _ADVICE_ORDER = {
     AdviceVerdict.HUMAN: 1,
     AdviceVerdict.KEEP: 2,
 }
+
+_KIND_LABEL = {
+    HeaderKind.PROJECT: "项目",
+    HeaderKind.SYSTEM: "系统/第三方",
+    HeaderKind.EXTERNAL: "外部",
+}
+
+
+def _diagnosis_section(scan: ProjectScan, root: Path) -> list[str]:
+    """「没有可删的了」时的那一节：成本在哪、每条为什么被拦下、下一步看什么。
+
+    三个工程里有两个（nlohmann/json、zlib）产出 0 条可行候选。只渲染一张空
+    的候选表会让人以为「构建没问题」，而真实情况是每条都被判了「删了编不
+    过」——所以这一节把**被拦下的原因**当作结论来报。
+    """
+    diagnosis = getattr(scan, "site_diagnosis", None)
+    if diagnosis is None:
+        return []
+    lines: list[str] = []
+    empty = diagnosis.is_empty_handed
+    lines.append(
+        "## "
+        + (
+            "没有可删的了：成本在哪、为什么删不掉"
+            if empty
+            else "成本去向：其余 include 行为什么没进候选表"
+        )
+    )
+    lines.append("")
+    if empty:
+        lines.append(
+            "> 这一轮**没有产出任何删除建议**。空表不等于构建没问题：下面先列出"
+            "成本集中在哪，再列出收益最高的那几条分别因为什么被拦下。"
+            "工具不会因为给不出建议而降低可行性门槛——宁可交白卷。"
+        )
+        lines.append("")
+    labels = _unique_tails(
+        [row.path for row in diagnosis.concentration]
+        + [item.site_file for item in diagnosis.blocked_top]
+        + [item.header for item in diagnosis.blocked_top],
+        root,
+    )
+    considered = sum(diagnosis.counts.values())
+    lines.append(
+        f"可行性闸门：放行 **{diagnosis.candidate_count}** 条，"
+        f"拦下 **{considered}** 条（均为收益非零、被判定「删了编不过」或"
+        "不属于本项目可改的范围）。"
+    )
+    lines.append("")
+
+    if diagnosis.concentration:
+        lines.append("### 成本集中在哪")
+        lines.append("")
+        lines.append("| 头文件 | 归属 | 归因行数 | 占全项目解析量 |")
+        lines.append("|---|---|---:|---:|")
+        for row in diagnosis.concentration:
+            lines.append(
+                f"| `{labels.get(row.path, _rel(row.path, root))}` "
+                f"| {_KIND_LABEL.get(row.kind, row.kind.value)} "
+                f"| {_fmt_int(row.attributed_lines)} | {row.share * 100:.1f}% |"
+            )
+        lines.append("")
+        lines.append(
+            f"前 {len(diagnosis.concentration)} 个头文件占全项目解析量的 "
+            f"**{diagnosis.top_share_percent}%**；其中项目自有头文件占 "
+            f"**{diagnosis.project_share_percent}%**"
+            "（其余来自系统/第三方头，删 include 行对这部分无能为力）。"
+        )
+        lines.append("")
+
+    if diagnosis.blocked_top:
+        lines.append("### 收益最高、但被拦下的几条")
+        lines.append("")
+        lines.append("| 位置 | include | 放大后行数 | 影响 TU | 拦下原因 | 证据 |")
+        lines.append("|---|---|---:|---:|---|---|")
+        for item in diagnosis.blocked_top:
+            where = labels.get(item.site_file, _rel(item.site_file, root))
+            if item.line:
+                where = f"{where}:{item.line}"
+            detail = item.detail or "—"
+            lines.append(
+                f"| `{where}` | `{labels.get(item.header, _rel(item.header, root))}` "
+                f"| {_fmt_int(item.amplified_lines)} | {item.reach} "
+                f"| {item.reason_label} | {detail} |"
+            )
+        lines.append("")
+        counts = ", ".join(
+            f"{label} {diagnosis.counts[reason]} 条"
+            for reason, label in BLOCK_REASONS.items()
+            if diagnosis.counts.get(reason)
+        )
+        if counts:
+            lines.append(f"拦下原因分布：{counts}。")
+            lines.append("")
+
+    if diagnosis.advice:
+        lines.append("### 下一步能做什么")
+        lines.append("")
+        for item in diagnosis.advice:
+            lines.append(f"- {item}")
+        lines.append("")
+    return lines
+
+
+def _unique_tails(paths, root: Path) -> dict[Path, str]:
+    """项目内相对路径；项目外路径保留**足够长的尾部**以保证彼此不重名。
+
+    为什么不复用 :func:`_rel`：它对项目外路径固定保留最后两段，注释里写着
+    「makes each row unique」——但实测并不成立：clang 的
+    ``lib/clang/23/include/limits.h`` 与 mingw 的
+    ``x86_64-w64-mingw32/include/limits.h`` 最后两段都是 ``include/limits.h``，
+    在诊断表里变成两行一模一样的路径。同名不同 SDK 的头必须能分辨，否则
+    「谁被拦下了」这件事没法核对。
+    """
+    labels: dict[Path, str] = {}
+    foreign: list[Path] = []
+    seen: set[Path] = set()
+    for path in paths:
+        if path in seen:
+            # 同一个路径可能同时出现在成本榜和被拦下榜里。不去重的话，
+            # 下面数「有多少个路径共用这个尾部」会把它自己数两次，于是
+            # 永远「不唯一」，一路退化成打印绝对路径。
+            continue
+        seen.add(path)
+        try:
+            labels[path] = str(path.relative_to(root))
+        except ValueError:
+            foreign.append(path)
+    for path in foreign:
+        for depth in range(2, len(path.parts) + 1):
+            candidate = str(Path(*path.parts[-depth:]))
+            clashes = sum(
+                1
+                for other in foreign
+                if str(Path(*other.parts[-depth:])) == candidate
+            )
+            if clashes == 1:
+                labels[path] = candidate
+                break
+        else:  # pragma: no cover - 同路径不可能不同，兜底而已
+            labels[path] = str(path)
+    return labels
 
 
 def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
@@ -420,6 +563,9 @@ def render_markdown(scan: ProjectScan) -> str:
                 f"| {_verdict_cell(candidate)} |"
             )
         lines.append("")
+
+    # -- when the gate hands back nothing --------------------------------
+    lines += _diagnosis_section(scan, root)
 
     # -- the decision: worth removing or not ------------------------------
     lines += _advice_section(scan, root)

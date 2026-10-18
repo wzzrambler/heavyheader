@@ -315,6 +315,41 @@ class RemovalCandidate:
     #: 工具把同一个头列为「可删」时作为佐证写进理由；工具沉默（没列为可删）
     #: 不等于「在用」，因此绝不据此降级我们的 REMOVE。详见 attrib/semantic.py。
     semantic: "SemanticVerdict | None" = None
+    #: 这一行 ``#include`` 所在的**文件**，它可能不是编译单元自己。
+    #: 头文件里的 include 会被几十个 TU 反复解析，删它一行影响的是那一批
+    #: TU；只盯着 TU 自己的 include（旧行为）看不到这块空间——实测
+    #: nlohmann/json 全项目 83 条 TU 级候选里只有 3 条删得掉，而把 include
+    #: 图摊到所有文件后有 432 对。``None`` = 就在 ``tu`` 里，与旧数据兼容。
+    site_file: Path | None = None
+    #: 删掉这一行后必须重新编译的编译单元（头文件级候选才有多个）。
+    #: 空 = 只有 ``tu`` 一个，即旧的 TU 级候选。
+    affected_tus: list[Path] = field(default_factory=list)
+
+    @property
+    def site(self) -> Path:
+        """实际要被改动的那个文件。"""
+        return self.site_file if self.site_file is not None else self.tu
+
+    @property
+    def is_header_site(self) -> bool:
+        """这一行在头文件里（而不是在编译单元的源里）。"""
+        return self.site_file is not None and self.site_file != self.tu
+
+    @property
+    def reach(self) -> int:
+        """有多少个编译单元会因为删掉这一行而重新解析。"""
+        return max(1, len(self.affected_tus))
+
+    @property
+    def amplified_lines_saved(self) -> int:
+        """全项目口径的预估收益：独占行数 × 受影响的编译单元数。
+
+        单 TU 的 ``estimated_lines_saved`` 会系统性低估头文件级改动——
+        ``prelude.h`` 里一行 288 行的 include 看着不起眼，但 24 个 TU 每个
+        都要少解析这 288 行。同一个数在两种口径下差一个数量级，报告里必须
+        标明用的是哪一种。
+        """
+        return self.estimated_lines_saved * self.reach
 
 
 # --------------------------------------------------------------------------
@@ -460,6 +495,10 @@ def candidate_rank_key(candidate: RemovalCandidate) -> tuple[int, float]:
         # lands in a sensible place, but subtracting a tiny epsilon keeps
         # measured candidates ahead of unmeasured ones with the same share.
         estimate = candidate.estimated_percent * 1e-6
+    # ``estimated_seconds_saved`` 的口径是**全项目**：TU 级候选只影响一个
+    # 单元，两者相等；头文件级候选在生成时就已经把各受影响单元的预估相加
+    # （见 attrib.sites），所以这里不能再乘一次 reach，否则同一个放大器
+    # 会被算两遍。
     return (tier, -estimate)
 
 

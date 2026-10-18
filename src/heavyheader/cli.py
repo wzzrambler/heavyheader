@@ -106,6 +106,11 @@ def build_parser() -> argparse.ArgumentParser:
         sub.add_argument("--pch", action="store_true", help="附带估算预编译头（PCH）收益")
         sub.add_argument("--pch-top", type=int, default=5, help="PCH 考虑纳入的头文件数（默认 5）")
         sub.add_argument("--forward-decl", action="store_true", help="寻找可改为前向声明的 include")
+        sub.add_argument(
+            "--header-sites",
+            action="store_true",
+            help="实验性：也把头文件里的 #include 当作候选（改动会影响所有解析它的编译单元）",
+        )
         sub.add_argument("--timeout", type=float, default=300.0, help="单个编译单元超时秒数")
 
     scan = subparsers.add_parser("scan", help="分析源码树并生成报告")
@@ -297,6 +302,7 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         pch=getattr(args, "pch", False),
         pch_top=getattr(args, "pch_top", 5),
         forward_decl=getattr(args, "forward_decl", False),
+        header_sites=getattr(args, "header_sites", False),
         probe=getattr(args, "probe", False),
         probe_top=getattr(args, "probe_top", 0),
         probe_budget=getattr(args, "probe_budget", 0.0),

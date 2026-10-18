@@ -1,0 +1,326 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "protocol": "interleaved min-of-N, both sides identical (A/A)",
+  "tus": 24,
+  "runs_per_side": 3,
+  "pairs": 2,
+  "rounds": [
+    {
+      "pair": 1,
+      "base_ms": 20339.1,
+      "patched_ms": 20470.1,
+      "aggregate_delta_percent": 0.644,
+      "max_unit_delta_percent": 8.207,
+      "units": [
+        {
+          "tu": "data.cpp",
+          "base_ms": 832.0,
+          "patched_ms": 848.2,
+          "delta_percent": 1.953
+        },
+        {
+          "tu": "expression.cpp",
+          "base_ms": 844.6,
+          "patched_ms": 834.4,
+          "delta_percent": 1.228
+        },
+        {
+          "tu": "handler.cpp",
+          "base_ms": 833.8,
+          "patched_ms": 846.4,
+          "delta_percent": 1.51
+        },
+        {
+          "tu": "message.cpp",
+          "base_ms": 833.0,
+          "patched_ms": 835.2,
+          "delta_percent": 0.264
+        },
+        {
+          "tu": "result.cpp",
+          "base_ms": 840.3,
+          "patched_ms": 838.9,
+          "delta_percent": 0.159
+        },
+        {
+          "tu": "type.cpp",
+          "base_ms": 817.8,
+          "patched_ms": 846.9,
+          "delta_percent": 3.557
+        },
+        {
+          "tu": "color.cpp",
+          "base_ms": 842.2,
+          "patched_ms": 839.0,
+          "delta_percent": 0.373
+        },
+        {
+          "tu": "context.cpp",
+          "base_ms": 892.2,
+          "patched_ms": 925.0,
+          "delta_percent": 3.677
+        },
+        {
+          "tu": "options.cpp",
+          "base_ms": 847.3,
+          "patched_ms": 842.0,
+          "delta_percent": 0.625
+        },
+        {
+          "tu": "context_scope.cpp",
+          "base_ms": 868.0,
+          "patched_ms": 894.4,
+          "delta_percent": 3.038
+        },
+        {
+          "tu": "context_state.cpp",
+          "base_ms": 864.8,
+          "patched_ms": 862.5,
+          "delta_percent": 0.264
+        },
+        {
+          "tu": "debugger.cpp",
+          "base_ms": 861.9,
+          "patched_ms": 846.5,
+          "delta_percent": 1.811
+        },
+        {
+          "tu": "exception_translator.cpp",
+          "base_ms": 847.5,
+          "patched_ms": 853.4,
+          "delta_percent": 0.694
+        },
+        {
+          "tu": "exceptions.cpp",
+          "base_ms": 910.1,
+          "patched_ms": 841.1,
+          "delta_percent": 8.207
+        },
+        {
+          "tu": "filters.cpp",
+          "base_ms": 823.6,
+          "patched_ms": 848.3,
+          "delta_percent": 2.999
+        },
+        {
+          "tu": "main.cpp",
+          "base_ms": 831.9,
+          "patched_ms": 842.6,
+          "delta_percent": 1.291
+        },
+        {
+          "tu": "approx.cpp",
+          "base_ms": 827.4,
+          "patched_ms": 841.4,
+          "delta_percent": 1.692
+        },
+        {
+          "tu": "contains.cpp",
+          "base_ms": 839.9,
+          "patched_ms": 838.1,
+          "delta_percent": 0.226
+        },
+        {
+          "tu": "is_nan.cpp",
+          "base_ms": 828.7,
+          "patched_ms": 837.0,
+          "delta_percent": 1.01
+        },
+        {
+          "tu": "path.cpp",
+          "base_ms": 841.8,
+          "patched_ms": 828.3,
+          "delta_percent": 1.625
+        },
+        {
+          "tu": "reporter.cpp",
+          "base_ms": 862.2,
+          "patched_ms": 861.4,
+          "delta_percent": 0.085
+        },
+        {
+          "tu": "common.cpp",
+          "base_ms": 840.1,
+          "patched_ms": 838.9,
+          "delta_percent": 0.139
+        },
+        {
+          "tu": "console.cpp",
+          "base_ms": 862.1,
+          "patched_ms": 882.8,
+          "delta_percent": 2.408
+        },
+        {
+          "tu": "debug_output_window.cpp",
+          "base_ms": 846.3,
+          "patched_ms": 897.3,
+          "delta_percent": 6.033
+        }
+      ]
+    },
+    {
+      "pair": 2,
+      "base_ms": 20329.9,
+      "patched_ms": 20379.8,
+      "aggregate_delta_percent": 0.245,
+      "max_unit_delta_percent": 4.565,
+      "units": [
+        {
+          "tu": "data.cpp",
+          "base_ms": 836.4,
+          "patched_ms": 845.2,
+          "delta_percent": 1.052
+        },
+        {
+          "tu": "expression.cpp",
+          "base_ms": 835.6,
+          "patched_ms": 838.5,
+          "delta_percent": 0.341
+        },
+        {
+          "tu": "handler.cpp",
+          "base_ms": 843.7,
+          "patched_ms": 844.4,
+          "delta_percent": 0.079
+        },
+        {
+          "tu": "message.cpp",
+          "base_ms": 845.4,
+          "patched_ms": 850.2,
+          "delta_percent": 0.563
+        },
+        {
+          "tu": "result.cpp",
+          "base_ms": 850.7,
+          "patched_ms": 847.9,
+          "delta_percent": 0.331
+        },
+        {
+          "tu": "type.cpp",
+          "base_ms": 832.0,
+          "patched_ms": 839.4,
+          "delta_percent": 0.895
+        },
+        {
+          "tu": "color.cpp",
+          "base_ms": 848.9,
+          "patched_ms": 849.0,
+          "delta_percent": 0.014
+        },
+        {
+          "tu": "context.cpp",
+          "base_ms": 921.5,
+          "patched_ms": 921.9,
+          "delta_percent": 0.045
+        },
+        {
+          "tu": "options.cpp",
+          "base_ms": 851.6,
+          "patched_ms": 857.2,
+          "delta_percent": 0.659
+        },
+        {
+          "tu": "context_scope.cpp",
+          "base_ms": 867.9,
+          "patched_ms": 871.5,
+          "delta_percent": 0.419
+        },
+        {
+          "tu": "context_state.cpp",
+          "base_ms": 857.1,
+          "patched_ms": 867.1,
+          "delta_percent": 1.171
+        },
+        {
+          "tu": "debugger.cpp",
+          "base_ms": 877.4,
+          "patched_ms": 839.1,
+          "delta_percent": 4.565
+        },
+        {
+          "tu": "exception_translator.cpp",
+          "base_ms": 832.1,
+          "patched_ms": 834.8,
+          "delta_percent": 0.327
+        },
+        {
+          "tu": "exceptions.cpp",
+          "base_ms": 836.1,
+          "patched_ms": 838.6,
+          "delta_percent": 0.296
+        },
+        {
+          "tu": "filters.cpp",
+          "base_ms": 833.5,
+          "patched_ms": 837.6,
+          "delta_percent": 0.496
+        },
+        {
+          "tu": "main.cpp",
+          "base_ms": 828.3,
+          "patched_ms": 842.4,
+          "delta_percent": 1.693
+        },
+        {
+          "tu": "approx.cpp",
+          "base_ms": 826.7,
+          "patched_ms": 831.0,
+          "delta_percent": 0.518
+        },
+        {
+          "tu": "contains.cpp",
+          "base_ms": 834.4,
+          "patched_ms": 842.1,
+          "delta_percent": 0.927
+        },
+        {
+          "tu": "is_nan.cpp",
+          "base_ms": 845.1,
+          "patched_ms": 838.2,
+          "delta_percent": 0.818
+        },
+        {
+          "tu": "path.cpp",
+          "base_ms": 840.7,
+          "patched_ms": 840.6,
+          "delta_percent": 0.009
+        },
+        {
+          "tu": "reporter.cpp",
+          "base_ms": 853.0,
+          "patched_ms": 857.7,
+          "delta_percent": 0.543
+        },
+        {
+          "tu": "common.cpp",
+          "base_ms": 818.3,
+          "patched_ms": 833.3,
+          "delta_percent": 1.832
+        },
+        {
+          "tu": "console.cpp",
+          "base_ms": 861.5,
+          "patched_ms": 863.3,
+          "delta_percent": 0.21
+        },
+        {
+          "tu": "debug_output_window.cpp",
+          "base_ms": 851.9,
+          "patched_ms": 848.7,
+          "delta_percent": 0.385
+        }
+      ]
+    }
+  ],
+  "aggregate_delta_percent": [
+    0.644,
+    0.245
+  ],
+  "max_aggregate_delta_percent": 0.644,
+  "unit_delta_percent": {
+    "p50": 0.694,
+    "p90": 3.557,
+    "max": 8.207
+  }
+}

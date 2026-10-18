@@ -28,6 +28,7 @@ The measurement protocol is deliberately simple and deliberately honest:
 
 from __future__ import annotations
 
+import contextlib
 import re
 import shutil
 import tempfile
@@ -37,7 +38,7 @@ from pathlib import Path
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .attrib.advice import TIME_NOISE_FLOOR, build_advice
+from .attrib.advice import AGGREGATE_NOISE_FLOOR, TIME_NOISE_FLOOR, build_advice
 from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import (
@@ -426,6 +427,27 @@ def _object_size(
             return None
 
 
+def _unit_options_for_path(
+    scan: ProjectScan,
+    unit_source: Path,
+    fallback: DriverOptions,
+    effective_includes: list[Path],
+) -> DriverOptions:
+    """The options one specific unit was *actually* compiled with.
+
+    Split out from :func:`_unit_options` because a header-level candidate has
+    **many** units to rebuild, and looking them up through the candidate would
+    silently give every one of them the representative unit's flags.
+    """
+    for tu in scan.ok_tus:
+        if tu.source == unit_source:
+            recorded = getattr(tu, "compile_options", None)
+            if recorded is not None:
+                return recorded
+            break
+    return replace(fallback, include_dirs=list(effective_includes))
+
+
 def _unit_options(
     scan: ProjectScan,
     candidate: RemovalCandidate,
@@ -453,13 +475,37 @@ def _unit_options(
     behaviour, preserved for the case where it is the only information there
     is.
     """
-    for tu in scan.ok_tus:
-        if tu.source == candidate.tu:
-            recorded = getattr(tu, "compile_options", None)
-            if recorded is not None:
-                return recorded
-            break
-    return replace(fallback, include_dirs=list(effective_includes))
+    return _unit_options_for_path(scan, candidate.tu, fallback, effective_includes)
+
+
+@contextlib.contextmanager
+def _patched_in_place(path: Path, line_number: int):
+    """Comment out one line of ``path``, then put it back. Guaranteed.
+
+    Header-level edits cannot use the temp-copy trick the TU-level path uses:
+    a header is found by include-path resolution, so a copy in a temp
+    directory would simply never be opened.  The real file has to change, and
+    that makes the restore the most important line in this function -- an
+    exception halfway through a measurement that leaves a project header with
+    a commented-out ``#include`` is worse than no answer at all.
+
+    Hence ``try/finally`` plus an explicit re-read check: if the restore did
+    not take, the file is written again from the in-memory original, and only
+    a failure of *that* is reported as an error.  deheader has always worked
+    this way (edit, ``make``, restore); the difference here is that we restore
+    unconditionally rather than on success.
+    """
+    original = path.read_text(encoding="utf-8", errors="replace")
+    try:
+        path.write_text(_comment_out(original, line_number), encoding="utf-8")
+        yield
+    finally:
+        try:
+            path.write_text(original, encoding="utf-8")
+        except OSError:
+            pass
+        if path.read_text(encoding="utf-8", errors="replace") != original:
+            path.write_text(original, encoding="utf-8")
 
 
 def _patched_options(
@@ -526,6 +572,196 @@ class _BaselineCache:
 
     def discarded(self, source_path: Path) -> tuple[str, ...]:
         return self._discarded.get(source_path, ())
+
+
+def _verify_header_site(
+    scan: ProjectScan,
+    driver: CompilerDriver,
+    options: DriverOptions,
+    effective_includes: list[Path],
+    verify: VerifyOptions,
+    entries: list[tuple[RemovalCandidate, Path, int]],
+    baselines: _BaselineCache,
+) -> list[VerificationResult]:
+    """Verify candidates whose ``#include`` lives in a header.
+
+    One edit, many units.  The unit of measurement is therefore the **sum**
+    over every unit that parses the file: a line that saves 0.2% in each of
+    24 units is invisible one unit at a time and worth 0.2% of the whole
+    build in aggregate.  Reporting it per unit would be reporting noise;
+    reporting it per edit is what the developer actually did.
+
+    Sequential by construction.  The edit is made in place (see
+    :func:`_patched_in_place`), so two candidates in the same header running
+    concurrently would patch and restore each other's source.  That is a
+    correctness constraint, not a preference: no amount of parallelism is
+    worth a measured result built on the wrong file.
+
+    Every affected unit must compile.  Passing 23 of 24 is a failure: the
+    one that broke is a unit that was silently relying on symbols arriving
+    through this header, which is exactly the regression this stage exists to
+    catch.
+    """
+    results: list[VerificationResult] = []
+
+    def unit_options(unit_source: Path) -> DriverOptions:
+        return _unit_options_for_path(scan, unit_source, options, effective_includes)
+
+    def compile_all(units: list[Path], runs: int) -> tuple[float | None, str | None]:
+        """Compile every unit, return the total; ``None`` if any one fails."""
+        total = 0.0
+        for unit in units:
+            seconds, _memory, error, _discarded = _measure(
+                driver,
+                unit,
+                _patched_options(unit_options(unit), effective_includes, unit),
+                None,
+                runs,
+                verify.timeout,
+            )
+            if seconds is None:
+                return None, f"{unit.name}: {error}"
+            total += seconds
+        return total, None
+
+    def compile_one(unit: Path) -> tuple[float | None, str | None]:
+        seconds, _memory, error, _discarded = _measure(
+            driver,
+            unit,
+            _patched_options(unit_options(unit), effective_includes, unit),
+            None,
+            1,
+            verify.timeout,
+        )
+        return seconds, error
+
+    def measure_interleaved(
+        units: list[Path], site_path: Path, line_number: int, runs: int
+    ) -> tuple[float | None, float | None, str | None]:
+        """交替测一批单元的两侧，各取最小，再分别求和。
+
+        为什么不「先测完所有基线、再打补丁测所有单元」：那样两次测量相隔
+        几分钟，机器漂移会整块落到差值上。实测同一批 24 个单元用老协议
+        差 2.005%，改成交替后 0.644% / 0.245%（见
+        ``experiments/g2_interleaved.py``）。这一条决定了 1% 量级收益能不能
+        被判定，也就决定了 G2 能不能成立。
+
+        代价是每个单元要来回改头文件 2×runs 次。文件写入比编译便宜两个数
+        量级，这个交换是划算的。
+        """
+        base_total = 0.0
+        patched_total = 0.0
+        for unit in units:
+            best_base: float | None = None
+            best_patched: float | None = None
+            for _ in range(runs):
+                base, error = compile_one(unit)
+                if base is None:
+                    return None, None, f"{unit.name}: {error}"
+                with _patched_in_place(site_path, line_number):
+                    patched, error = compile_one(unit)
+                if patched is None:
+                    return None, None, f"{unit.name}: {error}"
+                best_base = base if best_base is None else min(best_base, base)
+                best_patched = (
+                    patched if best_patched is None else min(best_patched, patched)
+                )
+            base_total += best_base or 0.0
+            patched_total += best_patched or 0.0
+        return base_total, patched_total, None
+
+    for candidate, site_path, line_number in entries:
+        units = list(candidate.affected_tus) or [candidate.tu]
+
+        # 先花一遍编译问「能不能编过」。24 个单元里第 20 个挂掉时，前面 19
+        # 个已经各跑了 runs 次——先探一遍能把这种浪费压到 1 次编译。
+        probe_error: str | None = None
+        with _patched_in_place(site_path, line_number):
+            _probe_total, probe_error = compile_all(units, 1)
+        if probe_error:
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="compile-error",
+                    message=f"移除后编译失败（{len(units)} 个单元之一）：{probe_error}",
+                )
+            )
+            continue
+        if verify.probe_only:
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="compiles",
+                    message=f"移除后 {len(units)} 个编译单元全部通过（未做耗时测量）",
+                )
+            )
+            continue
+
+        baseline_total, patched_total, measure_error = measure_interleaved(
+            units, site_path, line_number, verify.runs
+        )
+        if baseline_total is None or patched_total is None:
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="error",
+                    message=f"测量阶段编译失败：{measure_error}",
+                )
+            )
+            continue
+
+        saved = baseline_total - patched_total
+        meaningful = (
+            baseline_total > 0
+            and abs(saved) / baseline_total >= AGGREGATE_NOISE_FLOOR
+        )
+        status = "improved" if saved > 0 and meaningful else "no-change"
+        result = VerificationResult(
+            candidate=candidate,
+            status=status,
+            baseline_seconds=baseline_total,
+            patched_seconds=patched_total,
+            message=(
+                f"{len(units)} 个单元合计 {baseline_total * 1000:.0f} ms → "
+                f"{patched_total * 1000:.0f} ms"
+                if meaningful
+                else f"差异在噪声范围内（{saved * 1000:+.0f} ms / {len(units)} 个单元）"
+            ),
+        )
+
+        # 与 TU 级同一条纪律：判为 improved 之后必须复测。这里复测的是
+        # 「整批单元」，成本是 runs × 单元数，所以只对已经 improved 的做。
+        if status == "improved" and verify.confirm_passes > 1:
+            percents = [result.percent_saved or 0.0]
+            confirmed = True
+            for _ in range(verify.confirm_passes - 1):
+                fresh_base, base_error = compile_all(units, verify.runs)
+                if fresh_base is None:
+                    confirmed = False
+                    result.message += f"；复测基线编译失败（{base_error}）"
+                    break
+                with _patched_in_place(site_path, line_number):
+                    fresh_patched, patched_error = compile_all(units, verify.runs)
+                if fresh_patched is None:
+                    confirmed = False
+                    result.message += f"；复测补丁编译失败（{patched_error}）"
+                    break
+                percent = (fresh_base - fresh_patched) / fresh_base * 100 if fresh_base else 0.0
+                percents.append(percent)
+                if percent < AGGREGATE_NOISE_FLOOR * 100:
+                    confirmed = False
+            if not confirmed:
+                result.status = "no-change"
+                result.message += (
+                    "；复测未通过，各遍 percent_saved = "
+                    + " / ".join(f"{value:.2f}%" for value in percents)
+                    + f"（阈值 {AGGREGATE_NOISE_FLOOR * 100:.0f}%）"
+                )
+        results.append(result)
+        candidate.measured_seconds_saved = max(0.0, saved)
+        candidate.verified = True
+
+    return results
 
 
 def verify_candidates(
@@ -600,7 +836,8 @@ def verify_candidates(
     pending: list[tuple[RemovalCandidate, Path, int]] = []
     results: list[VerificationResult] = []
     for candidate in ranked:
-        source_path = candidate.tu
+        # 要被改动的那个文件：TU 级就是源自己，头文件级是那个头文件。
+        source_path = candidate.site
         try:
             original_text = source_path.read_text(encoding="utf-8", errors="replace")
         except OSError as exc:
@@ -638,6 +875,11 @@ def verify_candidates(
                 )
             continue
         pending.append((candidate, source_path, location.line))
+
+    # 头文件级候选走另一条路径：改的是公共头、测的是一批单元，不能和 TU 级
+    # 的并行流程混在一起（同一个头文件被两个候选并发改会互相覆盖源码）。
+    multi_pending = [entry for entry in pending if entry[0].is_header_site]
+    pending = [entry for entry in pending if not entry[0].is_header_site]
 
     # ---------------------------------------------------------------- stage 2
     # 探针：并行编译「去掉这一行」的版本。这一阶段只回答「能不能编过」，
@@ -965,6 +1207,15 @@ def verify_candidates(
                 0.0, measured[index][0] - measured[index][1]
             )
             candidate.verified = True
+
+    # ------------------------------------------------- header-level sites
+    # 放在最后：它要改公共头文件，期间不能有任何并发编译在用它。
+    if multi_pending:
+        results.extend(
+            _verify_header_site(
+                scan, driver, options, effective_includes, verify, multi_pending, baselines
+            )
+        )
 
     # 失败也要留下痕迹。以前只有成功的候选被写回 scan，失败的候选在列表里
     # 看起来跟没探过一模一样——于是报告会把一个「已经实测编译不过」的候选

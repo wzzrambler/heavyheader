@@ -67,6 +67,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "TIME_NOISE_FLOOR",
+    "AGGREGATE_NOISE_FLOOR",
     "MEMORY_NOISE_FLOOR",
     "MAINTENANCE_LEAN_LINES",
     "MAINTENANCE_LEAN_SHARE",
@@ -86,6 +87,22 @@ TIME_NOISE_FLOOR = 0.02
 #: bookkeeping still wobbles a little, so the bar is the same 2% rather
 #: than zero.
 MEMORY_NOISE_FLOOR = 0.02
+
+#: 聚合口径的噪声线：**一批编译单元耗时之和** + **交替测量**（B/P/B/P…）。
+#:
+#: 两个数字不能混用。单单元口径是 2%（上面那个），但把 24 个单元的耗时
+#: 加起来测两次，差也会到 2%——因为误差是**同一批测量期间的机器漂移**，
+#: 不是每个单元各自抖动，聚合并不能把它平均掉（实测 20299/20269/20675 ms，
+#: 第三次整体高 2%）。先测完基线再测补丁的协议，会把这 2% 的漂移整块算成
+#: 收益，这正是 G2 里 1.0–1.9% 的候选无法判定的根源。
+#:
+#: 改成交替后（``experiments/g2_interleaved.py``，doctest 24 TU、A/A 两侧
+#: 同一份代码）：聚合差异 **0.644% / 0.245%**，比单单元口径低一个数量级的
+#: 一半。1% 是在观测到的最大值上留了余量，不是把观测值当上界。
+#:
+#: 只用于头文件级候选（一次改动影响多个单元）。TU 级候选仍是单单元口径 +
+#: 2%——那里的分母是一次编译，漂移结构不同，套用这个数会放松标准。
+AGGREGATE_NOISE_FLOOR = 0.01
 
 #: How many lines of avoided parsing justify a deletion whose only benefit
 #: is maintenance (no measurable build-time win).  Policy, not physics:

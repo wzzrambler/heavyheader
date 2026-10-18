@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "runs_per_unit": 3,
+  "pairs": 2,
+  "totals_ms": [
+    20299.4,
+    20269.0,
+    20675.3
+  ],
+  "delta_percent": [
+    0.15,
+    2.005
+  ],
+  "max_delta_percent": 2.005,
+  "mean_delta_percent": 1.077
+}

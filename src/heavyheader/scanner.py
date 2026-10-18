@@ -40,6 +40,7 @@ from .attrib.graph import (
     find_removal_candidates,
     redundant_reparse_warnings,
 )
+from .attrib.sites import find_header_candidates
 from .attrib.forward import find_forward_declaration_candidates
 from .attrib.pch import estimate_pch
 from .attrib.templates import profile_project
@@ -98,6 +99,13 @@ class ScanOptions:
     pch_top: int = 5
     #: Look for includes that could become forward declarations.
     forward_decl: bool = False
+    #: 也把**头文件里**的 ``#include`` 当作候选来源（默认关）。
+    #:
+    #: 打开它才会出现「删掉 prelude.h 里一行、24 个编译单元一起受益」这类
+    #: 候选——那是 TU 级候选天生看不见的空间（实测 json 全项目 83 条 TU 级
+    #: 候选里只有 3 条删得掉）。代价是候选池变大、验证要重编一批单元，
+    #: 因此默认关闭，由显式开关或实验脚本启用。
+    header_sites: bool = False
     #: Run the probe/measure stage inside the scan.
     #:
     #: This is the framework change the controlled experiment forced.  ``scan``
@@ -503,6 +511,11 @@ def scan_project(
         root, {h for tu in scan.ok_tus for h in tu.dependencies}
     )
     scan.candidates = find_removal_candidates(scan, sizes, kinds)
+    # 头文件里的 include（默认关）。放在 TU 级之后，是为了让「改自己源文件的
+    # 一行」永远排在「改公共头文件的一行」前面：前者风险低得多，收益相同时
+    # 没有理由推荐动公共头。
+    if options.header_sites:
+        scan.candidates = scan.candidates + find_header_candidates(scan, sizes, kinds)
     # 「累计编译耗时」对外呈现的是**墙钟**，所以这里优先用驱动实测的
     # wall_seconds。-ftime-report 的 TOTAL 是 CPU 时间，Windows 上两者可差
     # 30 倍（0.02s vs 0.60s，实测），用 CPU 时间会让报告里的「累计耗时」

@@ -71,6 +71,18 @@ def _spread(values: list[float]) -> float:
     return (max(values) - min(values)) / med * 100 if med else 0.0
 
 
+def _pct(values: list[float], q: float) -> float:
+    """线性插值分位数；样本少时也给出可比较的尾部估计。"""
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    pos = (len(ordered) - 1) * q
+    lo, hi = int(pos), min(int(pos) + 1, len(ordered) - 1)
+    return ordered[lo] + (ordered[hi] - ordered[lo]) * (pos - lo)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=int, default=3)
@@ -99,6 +111,8 @@ def main() -> int:
         _spread(v) for v in per_tu.values() if len(v) == len(runs) and statistics.median(v) > 0
     ]
     tu_spread_median = statistics.median(tu_spreads) if tu_spreads else 0.0
+    tu_spread_p90 = _pct(tu_spreads, 0.90)
+    tu_spread_max = max(tu_spreads) if tu_spreads else 0.0
 
     identical_attr = len(set(attributed)) == 1
     identical_top = all(t == tops[0] for t in tops)
@@ -118,6 +132,9 @@ def main() -> int:
         "compiled_wall_median": round(statistics.median(compiled), 4),
         "compiled_wall_spread_percent": round(_spread(compiled), 2),
         "per_tu_wall_spread_median_percent": round(tu_spread_median, 2),
+        "per_tu_wall_spread_p90_percent": round(tu_spread_p90, 2),
+        "per_tu_wall_spread_max_percent": round(tu_spread_max, 2),
+        "per_tu_spread_samples": [round(v, 2) for v in sorted(tu_spreads)],
         "tus_without_timing": no_timing,
         "scan_overhead_ratio": round(
             statistics.median(scans) / statistics.median(compiled), 3
@@ -149,13 +166,17 @@ def main() -> int:
         f"| 扫描墙钟中位数 | {payload['scan_wall_median']:.2f} s |",
         f"| 扫描墙钟极差 | {payload['scan_wall_spread_percent']:.1f}% |",
         f"| 单 TU 墙钟极差（中位） | {payload['per_tu_wall_spread_median_percent']:.1f}% |",
+        f"| 单 TU 墙钟极差（p90） | {payload['per_tu_wall_spread_p90_percent']:.1f}% |",
+        f"| 单 TU 墙钟极差（最大） | {payload['per_tu_wall_spread_max_percent']:.1f}% |",
         f"| 扫描 / 编译 | {payload['scan_overhead_ratio']}× |",
         "",
         "## 三、这组数字意味着什么",
         "",
         f"1. 结构指标 {args.runs}/{args.runs} 完全一致——归因行数可以当确定性指标用于门禁。",
-        f"2. 单 TU 计时抖动中位数 {payload['per_tu_wall_spread_median_percent']:.1f}%，"
-        f"因此任何低于该幅度的「省时」都不能算收益。",
+        f"2. 单 TU 计时抖动：中位 {payload['per_tu_wall_spread_median_percent']:.1f}%，"
+        f"p90 {payload['per_tu_wall_spread_p90_percent']:.1f}%，"
+        f"最大 {payload['per_tu_wall_spread_max_percent']:.1f}%。"
+        "判定阈值必须高于 p90，否则会把尾部噪声当成收益。",
         "3. 这是本机（Windows + MinGW，无其他负载）的噪声；换机器必须重测。",
         "",
         "## 口径与限制",

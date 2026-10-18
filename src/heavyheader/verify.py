@@ -40,7 +40,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .attrib.advice import TIME_NOISE_FLOOR, build_advice
 from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
-from .models import ProjectScan, RemovalCandidate, TranslationUnit
+from .models import (
+    ProjectScan,
+    RemovalCandidate,
+    TranslationUnit,
+    tu_compile_seconds,
+)
 from .scanner import default_include_dirs
 
 __all__ = [
@@ -348,6 +353,11 @@ def _measure(
 
     Returns ``(min_seconds, memory, error, discarded_timings)``.
 
+    ``min_seconds`` is the fastest run's **wall clock** (driver-measured),
+    falling back to the compiler's TOTAL only when the wall reading is
+    missing -- the same rule as :func:`heavyheader.models.tu_compile_seconds`,
+    so verify's savings and the scan headline cannot drift apart.
+
     ``memory`` is the compiler-reported GGC allocation peak of the best run
     (bytes), or ``None`` when the toolchain does not report one.  It is kept
     beside the timing rather than folded into it: a candidate can save wall
@@ -370,7 +380,10 @@ def _measure(
             return None, None, str(exc), ()
         if not tu.ok:
             return None, None, tu.error or "compile failed", ()
-        seconds = tu.total_wall_seconds()
+        # 与 scan.baseline_seconds 同一口径：用户等待的是墙钟。取多次运行的
+        # 最小值是为了压噪声（最小值对偶发卡顿不敏感），但量纲必须是墙钟，
+        # 否则报告里的「节省 30 ms」与用户实际等待对不上。
+        seconds = tu_compile_seconds(tu)
         if best is None or seconds < best:
             best = seconds
             best_memory = tu.total_memory_bytes()

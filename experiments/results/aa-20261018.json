@@ -25,20 +25,49 @@
     "type_traits.hpp"
   ],
   "scan_wall_seconds": [
-    41.9383,
-    41.5681,
-    41.6351
+    42.0204,
+    40.7702,
+    41.1403
   ],
-  "scan_wall_median": 41.6351,
-  "scan_wall_spread_percent": 0.89,
+  "scan_wall_median": 41.1403,
+  "scan_wall_spread_percent": 3.04,
   "compiled_wall_seconds": [
-    35.8484,
-    35.4661,
-    35.3168
+    36.593,
+    35.432,
+    35.771
   ],
-  "compiled_wall_median": 35.4661,
-  "compiled_wall_spread_percent": 1.5,
-  "per_tu_wall_spread_median_percent": 1.58,
+  "compiled_wall_median": 35.771,
+  "compiled_wall_spread_percent": 3.25,
+  "per_tu_wall_spread_median_percent": 3.68,
+  "per_tu_wall_spread_p90_percent": 12.9,
+  "per_tu_wall_spread_max_percent": 24.81,
+  "per_tu_spread_samples": [
+    0.77,
+    1.04,
+    1.35,
+    1.64,
+    1.67,
+    1.76,
+    1.89,
+    2.15,
+    2.52,
+    2.68,
+    2.77,
+    3.42,
+    3.68,
+    3.71,
+    3.86,
+    3.87,
+    3.97,
+    4.08,
+    4.96,
+    6.95,
+    7.19,
+    10.92,
+    14.23,
+    16.53,
+    24.81
+  ],
   "tus_without_timing": 0,
-  "scan_overhead_ratio": 1.174
+  "scan_overhead_ratio": 1.15
 }

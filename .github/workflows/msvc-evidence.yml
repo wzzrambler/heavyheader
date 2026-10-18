@@ -106,7 +106,7 @@ jobs:
           Write-Host "gate exit=$code"
 
           if ($code -ne 0) {
-            $shown = @($lines | Where-Object { $_ -match '\S' } | Select-Object -First 5)
+            $shown = @($lines | Where-Object { $_ -match '\S' } | Select-Object -Last 8)
             foreach ($line in $shown) { Write-Host "::error::gate: $line" }
             exit $code
           }

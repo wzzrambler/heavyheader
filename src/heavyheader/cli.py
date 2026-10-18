@@ -34,6 +34,8 @@ from .baseline import (
     load_baseline,
     save_baseline,
 )
+from .blame import BlameError, blame_baselines
+from .blame import render_markdown as render_blame
 from .drivers.base import CompilationError, detect_driver
 from .models import ProjectScan
 from .report.html import TrendPoint, render_html
@@ -275,6 +277,32 @@ def build_parser() -> argparse.ArgumentParser:
     compare.add_argument("after", type=Path, help="新扫描 JSON")
     compare.add_argument("--format", choices=["md", "json"], default="md")
 
+    bl = subparsers.add_parser(
+        "blame",
+        help="成本考古：把头文件成本回归归因到 commit、文件与 include 行",
+    )
+    bl.add_argument("before", type=Path, help="回归前的基线 JSON")
+    bl.add_argument("after", type=Path, help="回归后的基线 JSON")
+    bl.add_argument(
+        "--repo",
+        type=Path,
+        default=None,
+        help="git 仓库路径（默认取 before 基线记录的扫描根目录）",
+    )
+    bl.add_argument(
+        "--from",
+        dest="from_rev",
+        default=None,
+        help="起始 revision（默认取 before 基线扫描时记录的 commit）",
+    )
+    bl.add_argument(
+        "--to",
+        dest="to_rev",
+        default=None,
+        help="结束 revision（默认取 after 基线扫描时记录的 commit）",
+    )
+    bl.add_argument("--format", choices=["md", "json"], default="md")
+
     history = subparsers.add_parser(
         "history", help="查看构建成本历史趋势（来自 scan --history 记录）"
     )
@@ -449,9 +477,32 @@ def _run_scan(args) -> ProjectScan:
     # 复现命令：报告里每条实测结论都要能让读者在自己机器上重跑。
     # 没有它，「实测」就只是我们机器上的一串数字。
     scan.reproduce_command = _reproduce_command(args)
+    # ``blame`` 的原料之一：这份基线对应哪个 commit。非 git 树或 git 不可用
+    # 时留 None——静默跳过，不让一个可选的归因功能把扫描本身搞失败。
+    scan.git_commit = _detect_git_commit(options.root)
     if cache_path is not None:
         _report_cache_stats(scan)
     return scan
+
+
+def _detect_git_commit(root: Path) -> str | None:
+    """Best-effort ``git rev-parse HEAD`` inside the scan root."""
+    import subprocess
+
+    try:
+        proc = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    sha = proc.stdout.strip()
+    return sha or None
 
 
 def _reproduce_command(args) -> str:
@@ -786,6 +837,54 @@ def _cmd_compare(args) -> int:
     return 0
 
 
+def _cmd_blame(args) -> int:
+    try:
+        report = blame_baselines(
+            args.before,
+            args.after,
+            repo=args.repo,
+            from_rev=args.from_rev,
+            to_rev=args.to_rev,
+        )
+    except (BaselineError, BlameError) as exc:
+        print(f"错误：{exc}", file=sys.stderr)
+        return 2
+
+    if args.format == "json":
+        payload = {
+            "attributed_lines_before": report.total_before,
+            "attributed_lines_after": report.total_after,
+            "net_delta": report.net_delta,
+            "from_rev": report.from_rev,
+            "to_rev": report.to_rev,
+            "explained_delta": report.explained_delta,
+            "unexplained": report.unexplained,
+            "entries": [
+                {
+                    "commit": e.commit.sha,
+                    "author": e.commit.author,
+                    "date": e.commit.date,
+                    "subject": e.commit.subject,
+                    "file": str(e.file),
+                    "change": e.change,
+                    "target": e.target,
+                    "predicted_delta": e.predicted_delta,
+                    "observed_delta": e.observed_delta,
+                    "confidence": e.confidence,
+                    "note": e.note,
+                }
+                for e in report.entries
+            ],
+        }
+        print(_json_pretty(payload))
+        return 0
+
+    print(render_blame(report))
+    if report.unexplained:
+        print(f"注意：{report.unexplained:+,} 行未能归因到具体改动。", file=sys.stderr)
+    return 0
+
+
 def _cmd_history(args) -> int:
     from .dashboard import load_trend, render_dashboard, serve, summarize
 
@@ -879,6 +978,7 @@ _COMMANDS = {
     "verify": _cmd_verify,
     "gate": _cmd_gate,
     "compare": _cmd_compare,
+    "blame": _cmd_blame,
     "history": _cmd_history,
     "pr-comment": _cmd_pr_comment,
     "toolchains": _cmd_toolchains,

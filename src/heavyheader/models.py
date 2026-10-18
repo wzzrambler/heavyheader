@@ -515,6 +515,11 @@ class ProjectScan:
     compiler: str
     compiler_family: CompilerFamily
     standard: str | None
+    #: git commit this scan was taken at (best-effort, ``git rev-parse HEAD``
+    #: in the scan root).  ``None`` when the tree is not a git repository or
+    #: git is unavailable.  ``blame`` uses it to attribute cost regressions
+    #: to commits without the user having to remember revisions.
+    git_commit: str | None = None
     tus: list[TranslationUnit] = field(default_factory=list)
     header_stats: dict[Path, HeaderStats] = field(default_factory=dict)
     candidates: list[RemovalCandidate] = field(default_factory=list)

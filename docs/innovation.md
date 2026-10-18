@@ -115,8 +115,27 @@ clang-build-profiler、include-what-costs、Include-Wrangler、ReSharper 包含�
   门禁通过——构建坏得越彻底越容易过。已修：可用单元少于基线直接失败
   （[`benchmark-report.md`](benchmark-report.md) §10.3）。
 
-## 4. 为什么这不是「堆叠现成工具」
+### 3.4 commit 级成本归因（成本考古）：第一个单件首创
 
+上面三项都是「组合层面」的创新——每块拼图都有先例。2026-10-19 的专项搜查
+（GitHub repo search + 官网 + 学术，见 [`competitor-matrix.md`](competitor-matrix.md)
+§2.3）找到一个**单件层面空白的 capability 并已实现**：把头文件成本回归归因到
+具体 commit、文件与 include 行（`blame` 子命令）。相邻工具全部停在不同的问题上
+（Jenkins build-time-blame-plugin 分析控制台历史、build-blame 剖析单次构建、
+Bencher / cpp-compile-overhead 只做耗时趋势），没有一家做「成本变化 → 谁改的」。
+
+做法：`scan` 在 git 仓库里运行时自动记录 commit；`blame` 对两份基线算逐头文件
+成本差，用 `git diff` 解析 include 行变化，再用**「可达该目标且新增/失去它的 TU
+集合完全一致」**的模式匹配确定影响半径，预测值 = `Σ行数 × |TU 集|`。预测与实测
+在报告里分行列出、不相加；解释不了的部分进「未解释」，不硬分派。
+
+端到端验证（真实 git 仓库 + 真实扫描基线，非构造数据）：一次跨 TU 的新增包含边
+导致总量 +56,487 行（+27.4%），`blame` 精确指名 commit、文件与 include 行，
+**预测 +56,485 = 实测 +56,485（high）**；剩余 +2 行是被改文件自身的行数增长，
+如实留在未解释里。复现与构造记录见
+[`experiments/blame_probe.md`](../experiments/blame_probe.md)。
+
+## 4. 为什么这不是「堆叠现成工具」
 评判「组合」与「创新」的标准有一条可操作：**拿掉组合中的任一层，结论会不会错。**
 本项目对每一层都做过或记录过消融视角的证伪条件：
 

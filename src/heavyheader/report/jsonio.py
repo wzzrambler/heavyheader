@@ -62,6 +62,9 @@ def scan_to_dict(scan: ProjectScan) -> dict:
         "compiler": scan.compiler,
         "compiler_family": scan.compiler_family.value,
         "standard": scan.standard,
+        # ``blame`` 需要知道这份基线对应哪个 commit；缺省 None（非 git 树或
+        # 旧版本基线）时 charge 归因退回 --from/--to 参数。
+        "git_commit": scan.git_commit,
         "baseline_seconds": round(scan.baseline_seconds, 6),
         "totals": {
             "translation_units": len(scan.ok_tus),
@@ -361,6 +364,8 @@ def scan_from_dict(data: dict) -> ProjectScan:
         compiler=data.get("compiler", ""),
         compiler_family=family,
         standard=data.get("standard"),
+        # 旧版基线没有这个字段；缺失即 None，blame 退回 --from/--to。
+        git_commit=data.get("git_commit"),
         tus=tus,
         header_stats=headers,
         candidates=candidates,

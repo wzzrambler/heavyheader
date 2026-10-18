@@ -4,6 +4,20 @@
 
 ## [未发布]
 
+### 新增
+
+- **`blame` 子命令：commit 级成本归因（成本考古）**——把头文件成本回归归因到
+  具体 commit、文件与 include 行。`scan` 在 git 仓库里运行时自动记录 commit；
+  `blame` 对两份基线算逐头文件成本差，用 `git diff` 解析 include 行变化，
+  以「可达目标且新增/失去它的 TU 集合完全一致」确定影响半径，预测
+  `Σ行数 × |TU 集|`。预测与实测分行列出、不相加；解释不了的进「未解释」。
+  全网搜查未见同能力工具（GitHub repo search + 官网 + 学术，2026-10-19）。
+  端到端验证（真实仓库 + 真实基线）：+56,487 行的回归被精确指名 commit/文件/
+  include 行，预测 +56,485 = 实测 +56,485（high），剩余 +2 行如实留未解释。
+  记录见 experiments/blame_probe.md；源码 src/heavyheader/blame.py；8 个测试
+  （含真实 git 仓库端到端）。基线 JSON 新增 `git_commit` 字段（旧基线缺省
+  None，blame 退回 --from/--to）。
+
 ### 修复
 
 - **CI 全绿**：修复 7 个跨平台测试失败（此前本地 Windows 全绿、CI 12 矩阵 +

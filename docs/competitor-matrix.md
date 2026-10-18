@@ -81,7 +81,7 @@
 
 | 候选单件能力 | 搜查结论 | 判定 |
 |---|---|---|
-| commit 级成本归因（把成本回归归因到具体 commit + include 行，「成本考古」） | 未见同能力工具；相邻：jenkinsci/build-time-blame-plugin（Jenkins 控制台历史）、build-blame（单次构建剖析）、Bencher / cpp-compile-overhead（耗时趋势） | **空白，已本地验证可行**（experiments/blame_probe.md） |
+| commit 级成本归因（把成本回归归因到具体 commit + include 行，「成本考古」） | 未见同能力工具；相邻：jenkinsci/build-time-blame-plugin（Jenkins 控制台历史）、build-blame（单次构建剖析）、Bencher / cpp-compile-overhead（耗时趋势） | **空白，已实现（v0.4 `blame`）并端到端验证**（experiments/blame_probe.md） |
 | 成本最小充分 include 集（多 provider 按成本选子集） | IWYU 覆盖正确性最小集；成本维度联合优化未见 | 空白但实用价值中等 |
 | 单条 include 改动对并行 CI 墙钟的预测 | build-blame 做 ninja trace 近似；单改动预测无人做；需构建 DAG | 半空白，采集成本高 |
 

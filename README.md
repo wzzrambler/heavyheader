@@ -69,6 +69,7 @@ $ heavyheader scan ./src --format html -o report.html
 | `verify` | 对候选 include 真的删掉、重新编译、实测耗时差异 |
 | `gate` | CI 门禁：头文件成本相对基线回归超阈值则流水线失败 |
 | `compare` | 对比两份扫描结果，定位成本上升的具体头文件 |
+| `blame` | 成本考古：把头文件成本回归归因到 commit、文件与 include 行 |
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 
 `scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
@@ -223,7 +224,11 @@ heavyheader pr-comment base.json pr.json                       # 只看渲染正
 heavyheader pr-comment base.json pr.json --post                # 经 gh 发布（需 Actions 环境）
 heavyheader pr-comment base.json pr.json --post --fail-on-regression
 
-# 9. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
+# 9. 成本考古：门禁挂了？自动定位是哪个 commit、哪个文件、哪条 include
+#    （scan 在 git 仓库里运行时会自动记录 commit，blame 无需手记 revision）
+heavyheader blame base.json pr.json --repo . --format md
+
+# 10. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
 heavyheader toolchains ./my-project --compilers g++,clang++
 ```
 

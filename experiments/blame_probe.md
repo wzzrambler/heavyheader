@@ -2,7 +2,8 @@
 
 为回答「还有没有新的单件首创能力可做」，对四个候选做了全网搜查（GitHub repo
 search API / 项目官网 / 网页搜索 / 学术检索）与本地可行性验证。结论先行：
-**「commit 级头文件成本归因（成本考古）」全网空白，且本地验证通过。**
+**「commit 级头文件成本归因（成本考古）」全网空白，本地验证通过，并已实现为
+`blame` 子命令。**
 
 ## 1. 候选与撞车检查
 
@@ -37,7 +38,29 @@ diff 解析出新增边 `core.h → bloated.h`；bloated.h 闭包 size × 新增
 预测影响哪些 TU、实测 +N 行」。与现有资产的关系：scan 出基线（已有）、
 git 历史（标准）、独占闭包（已有）——**不需要新数据源**。
 
-## 4. 复现
+## 4. 已实现（2026-10-19）
+
+`blame` 子命令已交付（`src/heavyheader/blame.py`，8 个测试含真实 git 仓库
+端到端）。上文 demo 仓库上的最终运行结果：
+
+```text
+$ heavyheader blame c2.json c3.json --repo . --from 9511139 --to d37bcca
+# 成本考古（blame）
+- 归因行数：206,106 → 262,593（+56,487，+27.4%）
+- 版本范围：9511139..d37bcca
+- 已解释：+56,485；未解释：+2
+
+| commit | 文件 | 改动 | 预测 Δ | 实测 Δ | 置信度 |
+|---|---|---|---:|---:|---|
+| `d37bcca4` c3: core.h pulls bloated.h | `include\core.h` | `+#include "bloated.h"` | +56,485 | +56,485 | high |
+```
+
+预测与实测在同一量级且方向一致：预测值来自「Σ行数 × 新增可达 TU 数」的图
+运算，实测值来自两份基线的归因行数差；未解释的 +2 行是被改文件自身的行数
+增长（core.h 2 → 3 行 × 2 个 TU），如实保留而未硬分派。设计取舍（影响半径的
+TU 集匹配、贪婪认领、未解释不强制派发）见模块 docstring。
+
+## 5. 复现
 
 ```bash
 cp -r benchmarks/cases/demo /tmp/blame-demo && cd /tmp/blame-demo

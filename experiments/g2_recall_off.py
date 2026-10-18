@@ -88,6 +88,20 @@ def main() -> int:
     parser.add_argument("--tus", type=int, default=24)
     parser.add_argument("--compiler", default=CLANG)
     parser.add_argument(
+        "--probe-limit",
+        type=int,
+        default=0,
+        help="只对「收益上限」最高的前 N 条做编译探测（0 = 全部）。"
+        "探测是固定成本的大头；采样会如实报覆盖率",
+    )
+    parser.add_argument(
+        "--screen-limit",
+        type=int,
+        default=0,
+        help="初筛只测「收益上限」最高的前 N 条（0 = 全部）。"
+        "目标只是回答「有没有漏掉值得采纳的」，不必给每条排序",
+    )
+    parser.add_argument(
         "--screen-threshold",
         type=float,
         default=2.0,
@@ -124,18 +138,45 @@ def main() -> int:
     strict_keys = {_key(c) for c in strict}
     print(f"闸门放行 {len(strict)} 条 / 闸门关 {len(off)} 条")
 
-    print("阶段 1：闸门关的全部候选只验编译……")
+    # 探测是固定成本的大头（每条要把受影响单元各编一次）。按收益上限采样，
+    # 并如实报覆盖率——「漏掉的收益」几乎只可能出现在上限高的那一头。
+    off.sort(key=lambda c: -c.amplified_lines_saved)
+    pool_total = len(off)
+    pool = off[: args.probe_limit] if args.probe_limit else off
+    if len(pool) < pool_total:
+        covered = sum(c.amplified_lines_saved for c in pool)
+        overall = sum(c.amplified_lines_saved for c in off) or 1
+        print(
+            f"探测采样：前 {len(pool)} / {pool_total} 条，"
+            f"覆盖收益上限的 {covered / overall:.0%}（--probe-limit）",
+            flush=True,
+        )
+    print("阶段 1：闸门关的候选只验编译……", flush=True)
     probed, probe_seconds = _run(
-        scan, driver, driver_options, off, probe_only=True
+        scan, driver, driver_options, pool, probe_only=True
     )
     compiles = [r.candidate for r in probed if r.status == "compiles"]
-    print(f"  能编过 {len(compiles)} / {len(off)}（{probe_seconds:.0f}s）")
+    print(
+        f"  能编过 {len(compiles)} / {len(pool)}（{probe_seconds:.0f}s）", flush=True
+    )
 
     outside = [c for c in compiles if _key(c) not in strict_keys]
     inside = [c for c in compiles if _key(c) in strict_keys]
-    print(f"  其中闸门没放行的 {len(outside)} 条 —— 这些正是可能被漏掉的")
+    print(f"  其中闸门没放行的 {len(outside)} 条 —— 这些正是可能被漏掉的", flush=True)
 
-    print("阶段 2：对闸门没放行但能编过的候选做单遍初筛……")
+    # 采样而不是全量：初筛的目的只是「有没有漏掉值得采纳的」，不是给每条排序。
+    # 按放大收益（独占行数 × 受影响单元数）从高到低取前 N 条，并如实报覆盖率。
+    outside.sort(key=lambda c: -c.amplified_lines_saved)
+    total_outside = len(outside)
+    if args.screen_limit and args.screen_limit < len(outside):
+        outside = outside[: args.screen_limit]
+        print(
+            f"  初筛采样：按收益上限取前 {len(outside)} / {total_outside} 条"
+            f"（--screen-limit）",
+            flush=True,
+        )
+
+    print("阶段 2：对闸门没放行但能编过的候选做单遍初筛……", flush=True)
     screened, screen_seconds = _run(
         scan, driver, driver_options, outside, probe_only=False, runs=1, confirm=1
     )
@@ -166,7 +207,8 @@ def main() -> int:
     ]
     print(
         f"  初筛 {len(screened)} 条（{screen_seconds:.0f}s），"
-        f"单遍读数 ≥{args.screen_threshold:.1f}% 的 {len(candidates_for_confirm)} 条进入复测"
+        f"单遍读数 ≥{args.screen_threshold:.1f}% 的 {len(candidates_for_confirm)} 条进入复测",
+        flush=True,
     )
 
     confirmed = []
@@ -204,12 +246,14 @@ def main() -> int:
         "noise_floor_percent": AGGREGATE_NOISE_FLOOR * 100,
         "pools": {"strict": len(strict), "off": len(off)},
         "probe": {
-            "candidates": len(off),
+            "candidates": len(pool),
+            "available": pool_total,
             "compiles": len(compiles),
             "seconds": round(probe_seconds, 1),
         },
         "outside_strict": {
             "count": len(outside),
+            "available": total_outside,
             "screen_seconds": round(screen_seconds, 1),
             "rows": rows,
         },

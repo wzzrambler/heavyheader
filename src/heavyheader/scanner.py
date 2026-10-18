@@ -151,6 +151,14 @@ class ScanOptions:
     #: （zlib 的 ``zconf.h -> <limits.h>`` 被判在用，实测却编得过），所以留了
     #: 这个开关让人自己选择用编译去买召回。
     allow_unknown_sites: bool = False
+    #: 完全关掉可行性闸门（``--ungated-sites``）：所有收益非零的站点都进候选，
+    #: 由 ``verify`` 一条条用编译裁决。
+    #:
+    #: 这是一个**有意的取舍**，不是「更宽松」：zlib 上闸门因 ``size`` 这个词
+    #: 把 ``zutil.h -> <stdlib.h>`` 判成「在用」，而那条删掉后 9 个单元全通过、
+    #: 实测省 2.125%（复测通过）。小工程验证便宜（zlib 全量探测 29 s），
+    #: 关掉闸门换召回是划算的；大工程则应留着闸门控制成本。
+    ungated_sites: bool = False
     #: How many candidates to probe.  ``0`` = all of them.
     probe_top: int = 0
     #: Wall-clock budget for the probe/measure stage, seconds.  ``0`` = unlimited.
@@ -576,6 +584,7 @@ def scan_project(
             blocked=blocked,
             include_system_sites=options.include_system_sites,
             include_unknown=options.allow_unknown_sites,
+            require_plausibly_unused=not options.ungated_sites,
         )
         scan.candidates = scan.candidates + header_site_candidates
         scan.site_diagnosis = build_diagnosis(

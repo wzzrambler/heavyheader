@@ -144,6 +144,51 @@ class UnknownSitesTests(unittest.TestCase):
         self.assertIn("给不出结论", joined)
 
 
+class UngatedSitesTests(unittest.TestCase):
+    """完全关闸门：用编译去裁决「看起来在用」的站点。
+
+    存在的理由是一条实测：zlib 的 ``zutil.h -> <stdlib.h>`` 被闸门以 ``size``
+    这个词判成「在用」，而它删掉后 9 个单元全通过、复测省 2.125%。
+    """
+
+    def test_turning_the_gate_off_admits_a_used_site(self) -> None:
+        tree = _AmbientTree()
+        # 让 site.h 只依赖 h1 独有的标识符：这时闸门判「正在使用」。
+        tree.site.write_text(
+            '#pragma once\n#include "proj/h1.h"\nint use() { return config; }\n',
+            encoding="utf-8",
+        )
+        (tree.dir / "proj" / "a.h").write_text(
+            "#pragma once\nint config;\n", encoding="utf-8"
+        )
+        (tree.dir / "proj" / "b.h").write_text(
+            "#pragma once\nint other_b;\n", encoding="utf-8"
+        )
+        (tree.dir / "proj" / "c.h").write_text(
+            "#pragma once\nint other_c;\n", encoding="utf-8"
+        )
+        scan = tree.scan()
+        sizes = HeaderSizes()
+        build_header_stats(scan, sizes)
+        kinds = classify_headers(
+            scan.root, {h for tu in scan.ok_tus for h in tu.dependencies}
+        )
+
+        blocked: list = []
+        gated = find_header_candidates(scan, sizes, kinds, blocked=blocked)
+        self.assertFalse(
+            any(c.site_file == tree.site and c.header == tree.h1 for c in gated)
+        )
+        self.assertIn("owner_uses", {b.reason for b in blocked})
+
+        ungated = find_header_candidates(
+            scan, sizes, kinds, require_plausibly_unused=False
+        )
+        self.assertTrue(
+            any(c.site_file == tree.site and c.header == tree.h1 for c in ungated)
+        )
+
+
 class ProbeCompileModeTests(unittest.TestCase):
     def _scan_with(self, status: str) -> ProjectScan:
         tree = _AmbientTree()
@@ -194,10 +239,12 @@ class CliFlagTests(unittest.TestCase):
                 ".",
                 "--header-sites",
                 "--allow-unknown-sites",
+                "--ungated-sites",
                 "--probe-compile",
             ]
         )
         self.assertTrue(args.allow_unknown_sites)
+        self.assertTrue(args.ungated_sites)
         self.assertTrue(args.probe_compile)
 
 

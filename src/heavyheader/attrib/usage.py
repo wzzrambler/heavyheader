@@ -118,13 +118,34 @@ _IGNORED = frozenset(
     """.split()
 )
 
+# 编译器内建：这些标识符**永远不由某个头文件提供**，而是编译器自己预定义，
+# 或者是语言扩展关键字。把它们算作「使用证据」会造成系统性假阴性。
+#
+# 实测来源：zlib 的 ``zutil.h -> <stdlib.h>`` 被判「正在使用」，证据是
+# ``_MSC_VER``、``__STDC_VERSION__``、``__attribute__``（由 ``malloc.h``
+# 提供）——这三个都不可能由 ``<stdlib.h>`` 被删除而消失：前两个是编译器
+# 预定义宏，第三个是 GCC 扩展关键字。闸门因此拦下了一条**经复测确认省时
+# 2.125%** 的改动（`experiments/results/g2-confirm-picks-zlib-20261018.json`）。
+#
+# 判据是「删掉包含它的头之后，这个标识符还会不会存在」。编译器预定义的一定
+# 还在，所以不能算依赖。
+_BUILTIN = frozenset(
+    """
+    __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ __clang__ __clang_major__
+    _MSC_VER _MSC_FULL_VER __STDC__ __STDC_VERSION__ __STDC_HOSTED__
+    __cplusplus __OBJC__ __ASSEMBLER__
+    __attribute__ __attribute __declspec __extension__ __inline __restrict
+    __asm__ __volatile__ __forceinline __thread __typeof__ typeof
+    """.split()
+)
+
 
 def identifiers_in(text: str) -> set[str]:
     """Extract meaningful identifiers from C++ source text."""
     found: set[str] = set()
     for match in _IDENTIFIER.finditer(text):
         word = match.group(0)
-        if word in _IGNORED or len(word) < 2:
+        if word in _IGNORED or word in _BUILTIN or len(word) < 2:
             continue
         # ALL_CAPS tokens are almost always macros; keep them but they are
         # noisy, so cap how many we collect.

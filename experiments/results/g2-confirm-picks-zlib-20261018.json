@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-18",
+  "project": "zlib",
+  "protocol": {
+    "runs": 3,
+    "confirm_passes": 2
+  },
+  "seconds": 44.1,
+  "rows": [
+    {
+      "site": "zutil.h",
+      "header": "stdlib.h",
+      "reach": 9,
+      "status": "improved",
+      "percent_saved": 2.125,
+      "baseline_ms": 3314.0,
+      "patched_ms": 3243.6,
+      "message": "9 个单元合计 3314 ms → 3244 ms"
+    }
+  ]
+}

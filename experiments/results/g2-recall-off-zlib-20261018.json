@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-18",
+  "project": "zlib",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "tus": 15,
+  "noise_floor_percent": 1.0,
+  "pools": {
+    "strict": 0,
+    "off": 16
+  },
+  "probe": {
+    "candidates": 16,
+    "available": 16,
+    "compiles": 6,
+    "seconds": 29.2
+  },
+  "outside_strict": {
+    "count": 6,
+    "available": 6,
+    "screen_seconds": 72.0,
+    "rows": [
+      {
+        "site": "zconf.h",
+        "header": "types.h",
+        "reach": 15,
+        "status": "improved",
+        "percent_saved": 2.449,
+        "baseline_ms": 5744.8,
+        "patched_ms": 5604.1
+      },
+      {
+        "site": "gzguts.h",
+        "header": "errno.h",
+        "reach": 5,
+        "status": "improved",
+        "percent_saved": 2.152,
+        "baseline_ms": 1940.0,
+        "patched_ms": 1898.3
+      },
+      {
+        "site": "zutil.h",
+        "header": "stdlib.h",
+        "reach": 9,
+        "status": "improved",
+        "percent_saved": 1.552,
+        "baseline_ms": 3308.6,
+        "patched_ms": 3257.3
+      },
+      {
+        "site": "gzguts.h",
+        "header": "string.h",
+        "reach": 5,
+        "status": "no-change",
+        "percent_saved": 0.757,
+        "baseline_ms": 1928.2,
+        "patched_ms": 1913.6
+      },
+      {
+        "site": "zconf.h",
+        "header": "stdarg.h",
+        "reach": 15,
+        "status": "no-change",
+        "percent_saved": 0.115,
+        "baseline_ms": 5492.4,
+        "patched_ms": 5486.1
+      },
+      {
+        "site": "zconf.h",
+        "header": "limits.h",
+        "reach": 15,
+        "status": "no-change",
+        "percent_saved": -0.634,
+        "baseline_ms": 5529.6,
+        "patched_ms": 5564.6
+      }
+    ]
+  },
+  "confirm": {
+    "count": 2,
+    "seconds": 52.6,
+    "rows": [
+      {
+        "site": "zconf.h",
+        "header": "types.h",
+        "status": "no-change",
+        "percent_saved": -1.104,
+        "message": "15 个单元合计 5400 ms → 5460 ms"
+      },
+      {
+        "site": "gzguts.h",
+        "header": "errno.h",
+        "status": "no-change",
+        "percent_saved": 0.772,
+        "message": "差异在噪声范围内（+14 ms / 5 个单元）"
+      }
+    ]
+  },
+  "strict_compiles": 0
+}

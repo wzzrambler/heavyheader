@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-18",
+  "project": "json",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 25,
+  "noise_floor_percent": 1.0,
+  "pools": {
+    "strict": 0,
+    "off": 70
+  },
+  "probe": {
+    "candidates": 20,
+    "available": 70,
+    "compiles": 9,
+    "seconds": 233.8
+  },
+  "outside_strict": {
+    "count": 9,
+    "available": 9,
+    "screen_seconds": 709.0,
+    "rows": [
+      {
+        "site": "serializer.hpp",
+        "header": "iomanip",
+        "reach": 25,
+        "status": "improved",
+        "percent_saved": 1.246,
+        "baseline_ms": 27604.4,
+        "patched_ms": 27260.4
+      },
+      {
+        "site": "json.hpp",
+        "header": "binary_reader.hpp",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": 0.593,
+        "baseline_ms": 24877.0,
+        "patched_ms": 24729.3
+      },
+      {
+        "site": "json.hpp",
+        "header": "memory",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.096,
+        "baseline_ms": 24887.7,
+        "patched_ms": 24911.5
+      },
+      {
+        "site": "doctest_compatibility.h",
+        "header": "iosfwd",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.198,
+        "baseline_ms": 27158.8,
+        "patched_ms": 27212.4
+      },
+      {
+        "site": "binary_reader.hpp",
+        "header": "input_adapters.hpp",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.256,
+        "baseline_ms": 24854.1,
+        "patched_ms": 24917.7
+      },
+      {
+        "site": "json.hpp",
+        "header": "vector",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.266,
+        "baseline_ms": 27281.3,
+        "patched_ms": 27353.8
+      },
+      {
+        "site": "from_json.hpp",
+        "header": "map",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.316,
+        "baseline_ms": 24994.5,
+        "patched_ms": 25073.4
+      },
+      {
+        "site": "json.hpp",
+        "header": "algorithm",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.465,
+        "baseline_ms": 27230.9,
+        "patched_ms": 27357.4
+      },
+      {
+        "site": "json.hpp",
+        "header": "functional",
+        "reach": 25,
+        "status": "no-change",
+        "percent_saved": -0.489,
+        "baseline_ms": 27470.7,
+        "patched_ms": 27605.0
+      }
+    ]
+  },
+  "confirm": {
+    "count": 0,
+    "seconds": 0.0,
+    "rows": []
+  },
+  "strict_compiles": 0
+}

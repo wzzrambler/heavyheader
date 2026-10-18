@@ -112,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
             help="实验性：也把头文件里的 #include 当作候选（改动会影响所有解析它的编译单元）",
         )
         sub.add_argument(
+            "--ungated-sites",
+            action="store_true",
+            help="实验性：完全关掉可行性闸门，所有收益非零的站点都进候选，"
+            "由 verify 逐条用编译裁决（小工程验证便宜时换召回用）",
+        )
+        sub.add_argument(
             "--allow-unknown-sites",
             action="store_true",
             help="实验性：--header-sites 下，把「文本判定给不出结论」的站点也放进候选"
@@ -333,6 +339,7 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         header_sites=getattr(args, "header_sites", False),
         include_system_sites=getattr(args, "include_system_sites", False),
         allow_unknown_sites=getattr(args, "allow_unknown_sites", False),
+        ungated_sites=getattr(args, "ungated_sites", False),
         cost_model=getattr(args, "cost_model", "lines"),
         probe=getattr(args, "probe", False),
         probe_compile=getattr(args, "probe_compile", False),

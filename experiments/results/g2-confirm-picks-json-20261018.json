@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-18",
+  "project": "json",
+  "protocol": {
+    "runs": 3,
+    "confirm_passes": 2
+  },
+  "seconds": 362.1,
+  "rows": [
+    {
+      "site": "serializer.hpp",
+      "header": "iomanip",
+      "reach": 25,
+      "status": "no-change",
+      "percent_saved": 1.979,
+      "baseline_ms": 27357.6,
+      "patched_ms": 26816.2,
+      "message": "25 个单元合计 27358 ms → 26816 ms；复测未通过，各遍 percent_saved = 1.98% / -0.18%（阈值 1%）"
+    }
+  ]
+}

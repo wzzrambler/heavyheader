@@ -18,7 +18,7 @@
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
-| G2 优化闭环 | ⚠️ **成立（有限）**：doctest 16 条闸门候选全部测完：8 条能编过、**1 条**经复测确认省时（删公共头的 `<unordered_set>`，24 单元全通过、聚合 −3.01%），即 1/16；**json 与 zlib 都是 0/5**；注入-召回 2/2。据此仍不宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-sites-*.{md,json}`、`g2-recall-*.{md,json}` |
+| G2 优化闭环 | ⚠️ **成立（有限）**：doctest 16 条闸门候选全部测完：8 条能编过、**1 条**经复测确认省时（删公共头的 `<unordered_set>`，24 单元全通过、聚合 −3.01%），即 1/16；**zlib 关掉闸门后 1/16**（`zutil.h` 删 `<stdlib.h>`，9 单元、−2.125%、复测通过），**json 0/16**；注入-召回 2/2。三档全量探测还证明可行性闸门只降低验证成本（候选砍到 1/4），对「能否编译」无预测力（50% vs 47%），且未漏掉值得采纳的改动。据此仍不宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-sites-*.{md,json}`、`g2-recall-*.{md,json}` |
 | 白卷诊断 | ✅ 0 条候选时逐条给出拦下原因：json 369 条 / zlib 58 条被逐条判过，含标识符证据与成本集中度 | `attrib/diagnosis.py` + `experiments/results/g2-diagnosis-*.{md,json}` |
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |

@@ -19,7 +19,7 @@
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
 | G2 优化闭环 | ❌ **不成立**：真实工程可采纳率 0/10；阳性对照 1/6 证明管线本身有效。据此不再宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-loop-*.{md,json}`、`g2-control-*.{md,json}` |
-| G3 CI 门禁 | ✅ 成立（限归因行数型回归）：注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截、单次 3.38 s | `docs/benchmark-report.md` §10 + `experiments/results/g3-gate-*.{md,json}` |
+| G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
 | 作品介绍文档 | ✅ 15 页 PDF | `HeavyHeader-作品介绍文档.pdf` |

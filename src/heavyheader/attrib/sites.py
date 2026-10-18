@@ -130,6 +130,7 @@ def find_header_candidates(
     min_amplified_lines: int = 1,
     include_system_sites: bool = False,
     require_plausibly_unused: bool = True,
+    include_unknown: bool = False,
     usage_index=None,
     costs=None,
     blocked: list | None = None,
@@ -270,20 +271,31 @@ def find_header_candidates(
             # 可行性闸门：拥有这一行的文件自己不用它，才值得推荐。
             # 没有这道闸门，几百条「删了就编译不过」的建议会把真正可删的
             # 那几条埋掉——G2 的 0/10 里有一半就是这个原因。
+            #
+            # 「无法判定」与「明确在用」不是一回事：前者是命中的标识符全是
+            # 环境噪音（几十个头都声明它），文本判定没有结论。默认仍然拦下
+            # ——放行它等于用一次编译去赌——但 ``include_unknown`` 可以让它
+            # 进候选，代价由 verify 付，结论也只由 verify 给。这条开关存在
+            # 的理由是闸门有假阴性：zlib 的 ``zconf.h -> <limits.h>`` 被判在用，
+            # 实测却编得过（见 docs/benchmark-report.md §9.7）。
             signal = analyse_usage(site_file, header, closure=exclusive, index=index)
-            if (
-                require_plausibly_unused
-                and signal.verdict is not UsageVerdict.PLAUSIBLY_UNUSED
-            ):
-                reject(
-                    "owner_uses"
-                    if signal.verdict is UsageVerdict.IN_USE
-                    else "owner_unknown",
-                    header=header,
-                    saved=saved,
-                    detail=_block_detail(signal),
-                )
-                continue
+            if require_plausibly_unused:
+                if signal.verdict is UsageVerdict.IN_USE:
+                    reject(
+                        "owner_uses",
+                        header=header,
+                        saved=saved,
+                        detail=_block_detail(signal),
+                    )
+                    continue
+                if signal.verdict is UsageVerdict.UNKNOWN and not include_unknown:
+                    reject(
+                        "owner_unknown",
+                        header=header,
+                        saved=saved,
+                        detail=_block_detail(signal),
+                    )
+                    continue
 
             amplified = saved * len(affected)
             if amplified < min_amplified_lines:
@@ -337,7 +349,15 @@ def find_header_candidates(
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
                     confidence=_confidence(saved, len(affected), signal),
-                    notes=_notes(site_file, header, saved, len(affected), basis, covered),
+                    notes=_notes(
+                        site_file,
+                        header,
+                        saved,
+                        len(affected),
+                        basis,
+                        covered,
+                        signal,
+                    ),
                     site_file=site_file,
                     affected_tus=list(affected),
                 )
@@ -403,6 +423,7 @@ def _notes(
     reach: int,
     basis: str = "lines",
     covered: tuple[int, int] | None = None,
+    signal=None,
 ) -> list[str]:
     notes = [
         f"这一行在头文件 {site_file.name} 里，被 {reach} 个编译单元解析",
@@ -422,6 +443,13 @@ def _notes(
     else:
         notes.append(
             "排序依据：归因行数估算（未采集 -ftime-trace，或该头没有实测数据）"
+        )
+    if signal is not None and signal.verdict is UsageVerdict.UNKNOWN:
+        # 这条能进候选，说明调用方显式放行了「无法判定」。报告必须标明，
+        # 否则读者会把它当作「闸门认为可删」——那两件事的可信度差一个数量级。
+        notes.append(
+            "⚠ 文本判定给不出结论（命中的标识符在几十个头里都出现，属环境噪音）；"
+            "本条因 `--allow-unknown-sites` 才被列出，可信度低于其他候选"
         )
     notes.append(
         "可行性判定基于「该文件自身正文不使用即将消失的标识符」；"

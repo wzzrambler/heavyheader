@@ -318,18 +318,32 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
             "**本轮没有做实测。** 上表全部是估算——按行数折算的预计收益，"
             "不是秒数，也不代表这些 include 删掉之后还能编译。",
             "",
-            "要拿到可引用的结论，加 `--probe`：工具会逐个真的编译「去掉这行 include」"
-            "的版本，只对编译通过的候选做耗时测量。",
+            "两个档位可选：`--probe-compile` 只验「删了还能不能编」（每候选一次编译）；"
+            "`--probe` 在它之上再测耗时（两侧各 N 次取最小，判 improved 后还要复测）。",
             "",
         ]
 
+    mode = getattr(scan, "probe_mode", "") or "probe"
     counts: dict[str, int] = {}
     for result in results:
         counts[result.status] = counts.get(result.status, 0) + 1
-    summary = "、".join(f"{k} {v} 个" for k, v in sorted(counts.items()))
+    labels = {
+        "compiles": "编译通过（未计时）",
+        "compile-error": "编译失败",
+        "improved": "省时（过噪声线）",
+        "no-change": "无显著变化",
+        "ambiguous": "定位歧义",
+        "not-found": "找不到该行",
+        "error": "出错",
+    }
+    summary = "、".join(
+        f"{labels.get(k, k)} {v} 个" for k, v in sorted(counts.items())
+    )
 
     lines = [
-        "## 实测结论（`--probe`）",
+        "## 实测结论（`--probe-compile`：只验编译）"
+        if mode == "probe-compile"
+        else "## 实测结论（`--probe`）",
         "",
         f"本轮实测 {len(results)} 个候选：{summary}。",
         "",
@@ -338,6 +352,12 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
         "`ambiguous` / `not-found` = 定位不到该注释哪一行，工具不猜。",
         "",
     ]
+    if mode == "probe-compile":
+        lines += [
+            "> 本轮只做了编译探测：**「能编译」不等于「省时」**。要拿到秒数，"
+            "对下面列出的 `compiles` 候选跑 `heavyheader verify` 或 `scan --probe`。",
+            "",
+        ]
 
     improved = [r for r in results if r.status == "improved"]
     if improved:
@@ -419,6 +439,27 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
                 "但不可与编译器内部阶段计时混谈。",
                 "",
             ]
+
+    compiles = [r for r in results if r.status == "compiles"]
+    if compiles:
+        lines += [
+            "### 编译探测通过（这些还能编，但省不省时未知）",
+            "",
+            "| 位置 | include | 受影响 TU |",
+            "|---|---|---:|",
+        ]
+        for result in compiles[:30]:
+            candidate = result.candidate
+            lines.append(
+                f"| `{_rel(candidate.site, root)}` "
+                f"| `{_rel(candidate.header, root)}` "
+                f"| {len(candidate.affected_tus) or 1} |"
+            )
+        lines += [
+            "",
+            "> 这一列只证明「删掉这行还能编」。省不省时需要计时，本表**不提供**该结论。",
+            "",
+        ]
 
     rejected = [
         r

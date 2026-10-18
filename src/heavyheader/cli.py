@@ -112,6 +112,12 @@ def build_parser() -> argparse.ArgumentParser:
             help="实验性：也把头文件里的 #include 当作候选（改动会影响所有解析它的编译单元）",
         )
         sub.add_argument(
+            "--allow-unknown-sites",
+            action="store_true",
+            help="实验性：--header-sites 下，把「文本判定给不出结论」的站点也放进候选"
+            "（用一次编译去换召回；这类候选会被标为低可信度）",
+        )
+        sub.add_argument(
             "--include-system-sites",
             action="store_true",
             help="实验性：--header-sites 下也列出系统/第三方头文件内部的 include 行（仅供查看，不建议改）",
@@ -145,6 +151,14 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "扫描后直接实测候选：逐个真的编译「去掉这行 include」的版本，"
             "只对编译通过的候选做耗时测量。不加这个开关时报告里只有估算"
+        ),
+    )
+    scan.add_argument(
+        "--probe-compile",
+        action="store_true",
+        help=(
+            "轻量版实测：每条候选删一次、编译一次，只回答「删了还能编吗」，"
+            "不测时间、不跑复测。成本约为 --probe 的 1/6"
         ),
     )
     scan.add_argument(
@@ -318,8 +332,10 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         forward_decl=getattr(args, "forward_decl", False),
         header_sites=getattr(args, "header_sites", False),
         include_system_sites=getattr(args, "include_system_sites", False),
+        allow_unknown_sites=getattr(args, "allow_unknown_sites", False),
         cost_model=getattr(args, "cost_model", "lines"),
         probe=getattr(args, "probe", False),
+        probe_compile=getattr(args, "probe_compile", False),
         probe_top=getattr(args, "probe_top", 0),
         probe_budget=getattr(args, "probe_budget", 0.0),
         probe_jobs=getattr(args, "probe_jobs", 4),

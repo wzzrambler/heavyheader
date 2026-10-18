@@ -542,6 +542,10 @@ class ProjectScan:
     #: 它存在的理由见 :mod:`heavyheader.attrib.diagnosis`：三个工程里有两个是
     #: 0 条候选，空表会被读成「构建没问题」，而真实情况是每条都被判了「删了编不过」。
     site_diagnosis: object | None = None
+    #: 实测跑到哪一档：``"probe"``（探测 + 计时）、``"probe-compile"``（只验能否
+    #: 编译）、``""``（没跑）。报表据它决定标题——把「只验了编译」写成「实测」，
+    #: 等于把一次编译冒充成耗时结论。
+    probe_mode: str = ""
     #: 探针/测量阶段的结果，``--probe`` 时才有内容。None = 这一轮没跑实测，
     #: 报告必须把这种情况说明白，不能让读者以为「没测」等于「没问题」。
     probe_results: list | None = None

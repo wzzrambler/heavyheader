@@ -136,6 +136,21 @@ class ScanOptions:
     #: parallel), then fully measure only the survivors.  Estimates stay in
     #: the report as estimates; anything that matters is measured.
     probe: bool = False
+    #: 只做编译可行性探测：把每条候选删一次、编译一次，回答「这条删了还能编
+    #: 吗」，不测时间、不跑复测。成本约为 ``probe`` 的 1/6（每候选一次编译，
+    #: 而不是两侧各 runs 次）。
+    #:
+    #: 存在的理由：闸门（``attrib.sites``）是文本启发式，实测放行的 16 条里
+    #: 有 8 条编译失败。报告若把这 16 条并列成「候选」，读者会以为都能删。
+    #: 加上这一步，候选表就能分成「已探测可编译 / 删了编不过」两类——
+    #: 而这两类的证据等级相差一次真实编译。
+    probe_compile: bool = False
+    #: 把「文本判定给不出结论」的站点也放进候选（``--allow-unknown-sites``）。
+    #:
+    #: 默认不放：命中全是环境噪音时，放行等于用一次编译去赌。但闸门有假阴性
+    #: （zlib 的 ``zconf.h -> <limits.h>`` 被判在用，实测却编得过），所以留了
+    #: 这个开关让人自己选择用编译去买召回。
+    allow_unknown_sites: bool = False
     #: How many candidates to probe.  ``0`` = all of them.
     probe_top: int = 0
     #: Wall-clock budget for the probe/measure stage, seconds.  ``0`` = unlimited.
@@ -560,6 +575,7 @@ def scan_project(
             costs=costs,
             blocked=blocked,
             include_system_sites=options.include_system_sites,
+            include_unknown=options.allow_unknown_sites,
         )
         scan.candidates = scan.candidates + header_site_candidates
         scan.site_diagnosis = build_diagnosis(
@@ -581,10 +597,22 @@ def scan_project(
 
     # 探针/测量阶段：把「这一行能不能删」从估算变成实测。
     # 放在候选生成之后、报表之前——报表里「实测」一栏要有东西可写。
+    #
+    # 两个档位，成本差一个量级：
+    #   --probe-compile  每条候选删一次、编一次，只回答「还能不能编」
+    #   --probe          再加上「省不省时」（两侧各 runs 次取最小 + 复测）
+    # 前者是给「候选表里一半其实编不过」准备的：不测时间，但把两类分开。
+    if options.probe_compile and options.probe:
+        # 两个开关同给时以 --probe 为准（它包含探测阶段），但仍要说出来，
+        # 否则用户会以为白花了 --probe-compile 的那次编译。
+        scan.warnings.append(
+            "--probe-compile 与 --probe 同时给出，前者被后者覆盖（--probe 已含探测阶段）"
+        )
     if options.probe:
         from .verify import VerifyOptions, verify_candidates
 
-        results = verify_candidates(
+        scan.probe_mode = "probe"
+        scan.probe_results = verify_candidates(
             scan,
             driver,
             options.driver_options(),
@@ -597,7 +625,23 @@ def scan_project(
             semantic=options.semantic,
             build_path=options.semantic_build_path,
         )
-        scan.probe_results = results
+    elif options.probe_compile:
+        from .verify import VerifyOptions, verify_candidates
+
+        scan.probe_mode = "probe-compile"
+        scan.probe_results = verify_candidates(
+            scan,
+            driver,
+            options.driver_options(),
+            verify=VerifyOptions(
+                top=options.probe_top,
+                probe_only=True,
+                budget_seconds=options.probe_budget,
+                jobs=options.probe_jobs,
+            ),
+            semantic=None,
+            build_path=options.semantic_build_path,
+        )
 
     # Surface the redundant-reparse findings as warnings too, so a plain
     # `scan` run never hides a guaranteed win.

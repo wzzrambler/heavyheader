@@ -12,6 +12,10 @@ name: MSVC 证据
 #   2. `gate` 在树未变时通过；
 #   3. 产物（JSON/Markdown）作为 artifact 上传，任何人可下载复核。
 # 任一条不满足，工作流失败——不许用「跑过了」代替「跑对了」。
+#
+# 诊断为什么写进 job summary：失败时公开页面只说「exit code 1」，日志需要
+# 登录才能看。把每条命令的输出尾部写进 $GITHUB_STEP_SUMMARY，失败原因就能
+# 被任何人（包括没有仓库权限的评审）直接读到。
 
 on:
   push:
@@ -52,11 +56,12 @@ jobs:
       - name: 确认编译器
         shell: pwsh
         # `cl` 无参数时打印横幅并以非零码退出；把它直接当步骤命令会让这一步
-        # 因退出码非零而失败，看起来像 MSVC 没装好。这里只取前几行并显式以
-        # 成功收尾，把判断留给后面的「编译单元数」校验——那个才是真判据。
+        # 因退出码非零而失败，看起来像 MSVC 没装好。只取前几行并显式成功收尾，
+        # 把判断留给后面的「编译单元数」校验——那个才是真判据。
         run: |
           cl 2>&1 | Select-Object -First 3
           Write-Host "MSVC 环境已注入"
+          "cl 版本：$(cl 2>&1 | Select-Object -First 1)" | Out-File -Append $env:GITHUB_STEP_SUMMARY
 
       - name: 扫描（MSVC）
         shell: pwsh
@@ -64,11 +69,15 @@ jobs:
           python -m heavyheader scan benchmarks/cases/demo `
             -I benchmarks/cases/demo/include `
             --compiler cl --jobs 1 --format json `
-            -o msvc-scan.json
-          python -m heavyheader scan benchmarks/cases/demo `
-            -I benchmarks/cases/demo/include `
-            --compiler cl --jobs 1 --format md `
-            -o msvc-scan.md
+            -o msvc-scan.json 2>&1 | Tee-Object -FilePath scan.log
+          $code = $LASTEXITCODE
+
+          "## scan exit=$code" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          Get-Content scan.log -Tail 60 | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+          if ($code -ne 0) { exit $code }
 
       - name: 校验收到的编译单元
         shell: pwsh
@@ -78,6 +87,7 @@ jobs:
           $data = Get-Content msvc-scan.json -Raw | ConvertFrom-Json
           $ok = $data.totals.translation_units
           $failed = $data.totals.failed_translation_units
+          "编译单元 $ok，失败 $failed" | Out-File -Append $env:GITHUB_STEP_SUMMARY
           Write-Host "编译单元: $ok, 失败: $failed"
           if ($ok -lt 1) { Write-Error "MSVC 扫描没有成功单元，R6 仍未关闭"; exit 1 }
           if ($failed -ne 0) { Write-Error "有 $failed 个单元编译失败"; exit 1 }
@@ -87,7 +97,16 @@ jobs:
         run: |
           python -m heavyheader gate benchmarks/cases/demo `
             -I benchmarks/cases/demo/include `
-            --compiler cl --jobs 1 --baseline msvc-scan.json
+            --compiler cl --jobs 1 --baseline msvc-scan.json 2>&1 |
+            Tee-Object -FilePath gate.log
+          $code = $LASTEXITCODE
+
+          "## gate exit=$code" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          Get-Content gate.log -Tail 40 | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+          if ($code -ne 0) { exit $code }
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
@@ -95,5 +114,6 @@ jobs:
           name: msvc-evidence
           path: |
             msvc-scan.json
-            msvc-scan.md
+            scan.log
+            gate.log
           retention-days: 90

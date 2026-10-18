@@ -1,0 +1,603 @@
+{
+  "date": "2026-10-18",
+  "tus": 24,
+  "compiler": "C:\\Program Files\\LLVM\\bin\\clang++.exe",
+  "target_flags": [
+    "--target=x86_64-w64-windows-gnu",
+    "--gcc-toolchain=C:/mingw64"
+  ],
+  "failed_compiles": [],
+  "hh_failed_units": 0,
+  "cba_header_rows": 264,
+  "cba_project_header_rows": 22,
+  "cba_top10_project": [
+    {
+      "ms": 17761,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/private/prelude.h",
+      "count": 24,
+      "avg_ms": 740
+    },
+    {
+      "ms": 713,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/doctest_fwd.h",
+      "count": 24,
+      "avg_ms": 29
+    },
+    {
+      "ms": 103,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/public/config.h",
+      "count": 24,
+      "avg_ms": 4
+    },
+    {
+      "ms": 99,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/private/context_state.h",
+      "count": 13,
+      "avg_ms": 7
+    },
+    {
+      "ms": 49,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/public/string.h",
+      "count": 24,
+      "avg_ms": 2
+    },
+    {
+      "ms": 37,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/private/traversal.h",
+      "count": 13,
+      "avg_ms": 2
+    },
+    {
+      "ms": 22,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/public/assert/expression.h",
+      "count": 24,
+      "avg_ms": 0
+    },
+    {
+      "ms": 16,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/private/reporter.h",
+      "count": 2,
+      "avg_ms": 8
+    },
+    {
+      "ms": 15,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/public/assert/result.h",
+      "count": 24,
+      "avg_ms": 0
+    },
+    {
+      "ms": 13,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/public/test_case.h",
+      "count": 24,
+      "avg_ms": 0
+    }
+  ],
+  "cba_top10_all": [
+    {
+      "ms": 17761,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/doctest/doctest/parts/private/prelude.h",
+      "count": 24,
+      "avg_ms": 740
+    },
+    {
+      "ms": 7581,
+      "path": "C:/mingw64/x86_64-w64-mingw32/include/windows.h",
+      "count": 24,
+      "avg_ms": 315
+    },
+    {
+      "ms": 5560,
+      "path": "C:/mingw64/x86_64-w64-mingw32/include/windef.h",
+      "count": 24,
+      "avg_ms": 231
+    },
+    {
+      "ms": 5321,
+      "path": "C:/mingw64/x86_64-w64-mingw32/include/minwindef.h",
+      "count": 24,
+      "avg_ms": 221
+    },
+    {
+      "ms": 5254,
+      "path": "C:/mingw64/x86_64-w64-mingw32/include/winnt.h",
+      "count": 24,
+      "avg_ms": 218
+    },
+    {
+      "ms": 4699,
+      "path": "C:/Program Files/LLVM/lib/clang/23/include/x86intrin.h",
+      "count": 24,
+      "avg_ms": 195
+    },
+    {
+      "ms": 4464,
+      "path": "C:/Program Files/LLVM/lib/clang/23/include/immintrin.h",
+      "count": 24,
+      "avg_ms": 186
+    },
+    {
+      "ms": 3277,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/fstream",
+      "count": 24,
+      "avg_ms": 136
+    },
+    {
+      "ms": 2951,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/istream",
+      "count": 24,
+      "avg_ms": 122
+    },
+    {
+      "ms": 2628,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/ios",
+      "count": 24,
+      "avg_ms": 109
+    }
+  ],
+  "hh_top10_project": [
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\macros.h",
+      "name": "macros.h",
+      "attributed_lines": 24480,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\string.h",
+      "name": "string.h",
+      "attributed_lines": 10896,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\config.h",
+      "name": "config.h",
+      "attributed_lines": 4944,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\warnings.h",
+      "name": "warnings.h",
+      "attributed_lines": 4632,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\assert\\expression.h",
+      "name": "expression.h",
+      "attributed_lines": 4200,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "name": "prelude.h",
+      "attributed_lines": 3408,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\reporter.h",
+      "name": "reporter.h",
+      "attributed_lines": 3144,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\assert\\result.h",
+      "name": "result.h",
+      "attributed_lines": 2832,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\std\\type_traits.h",
+      "name": "type_traits.h",
+      "attributed_lines": 2616,
+      "tu_reach": 24
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\assert\\type.h",
+      "name": "type.h",
+      "attributed_lines": 2544,
+      "tu_reach": 24
+    }
+  ],
+  "set_overlap_project": [
+    "prelude.h",
+    "config.h",
+    "string.h",
+    "expression.h",
+    "reporter.h",
+    "result.h"
+  ],
+  "set_overlap_count": 6,
+  "jaccard_project": 0.429,
+  "kendall_tau_common": 0.467,
+  "spearman_all_common": 0.48,
+  "common_header_count": 20,
+  "paired_table": [
+    {
+      "name": "prelude.h",
+      "cba_ms": 17761,
+      "cba_count": 24,
+      "hh_lines": 3408,
+      "cba_rank": 1,
+      "hh_rank": 6
+    },
+    {
+      "name": "doctest_fwd.h",
+      "cba_ms": 713,
+      "cba_count": 24,
+      "hh_lines": 1992,
+      "cba_rank": 2,
+      "hh_rank": 14
+    },
+    {
+      "name": "config.h",
+      "cba_ms": 103,
+      "cba_count": 24,
+      "hh_lines": 4944,
+      "cba_rank": 3,
+      "hh_rank": 3
+    },
+    {
+      "name": "context_state.h",
+      "cba_ms": 99,
+      "cba_count": 13,
+      "hh_lines": 702,
+      "cba_rank": 4,
+      "hh_rank": 35
+    },
+    {
+      "name": "string.h",
+      "cba_ms": 49,
+      "cba_count": 24,
+      "hh_lines": 10896,
+      "cba_rank": 5,
+      "hh_rank": 2
+    },
+    {
+      "name": "traversal.h",
+      "cba_ms": 37,
+      "cba_count": 13,
+      "hh_lines": 702,
+      "cba_rank": 6,
+      "hh_rank": 36
+    },
+    {
+      "name": "expression.h",
+      "cba_ms": 22,
+      "cba_count": 24,
+      "hh_lines": 4200,
+      "cba_rank": 7,
+      "hh_rank": 5
+    },
+    {
+      "name": "result.h",
+      "cba_ms": 15,
+      "cba_count": 24,
+      "hh_lines": 2832,
+      "cba_rank": 9,
+      "hh_rank": 8
+    },
+    {
+      "name": "test_case.h",
+      "cba_ms": 13,
+      "cba_count": 24,
+      "hh_lines": 23,
+      "cba_rank": 10,
+      "hh_rank": 55
+    },
+    {
+      "name": "debug_output_window.h",
+      "cba_ms": 11,
+      "cba_count": 2,
+      "hh_lines": 84,
+      "cba_rank": 11,
+      "hh_rank": 49
+    },
+    {
+      "name": "handler.h",
+      "cba_ms": 7,
+      "cba_count": 13,
+      "hh_lines": 112,
+      "cba_rank": 12,
+      "hh_rank": 45
+    },
+    {
+      "name": "atomic.h",
+      "cba_ms": 6,
+      "cba_count": 11,
+      "hh_lines": 1560,
+      "cba_rank": 13,
+      "hh_rank": 21
+    },
+    {
+      "name": "data.h",
+      "cba_ms": 5,
+      "cba_count": 11,
+      "hh_lines": 1728,
+      "cba_rank": 14,
+      "hh_rank": 17
+    },
+    {
+      "name": "junit.h",
+      "cba_ms": 4,
+      "cba_count": 1,
+      "hh_lines": 108,
+      "cba_rank": 15,
+      "hh_rank": 46
+    },
+    {
+      "name": "console.h",
+      "cba_ms": 3,
+      "cba_count": 3,
+      "hh_lines": 315,
+      "cba_rank": 16,
+      "hh_rank": 42
+    },
+    {
+      "name": "comparator.h",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 2280,
+      "cba_rank": 20,
+      "hh_rank": 11
+    },
+    {
+      "name": "reporter.h",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 186,
+      "cba_rank": 19,
+      "hh_rank": 43
+    },
+    {
+      "name": "signals.h",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 89,
+      "cba_rank": 18,
+      "hh_rank": 48
+    },
+    {
+      "name": "type_traits.h",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 2616,
+      "cba_rank": 22,
+      "hh_rank": 9
+    },
+    {
+      "name": "xml.h",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 67,
+      "cba_rank": 21,
+      "hh_rank": 51
+    }
+  ],
+  "cba_self_top10_project": [
+    "doctest_fwd.h",
+    "prelude.h",
+    "string.h",
+    "context_state.h",
+    "traversal.h",
+    "expression.h",
+    "config.h",
+    "result.h",
+    "test_case.h",
+    "handler.h"
+  ],
+  "cba_self_set_overlap": [
+    "prelude.h",
+    "string.h",
+    "expression.h",
+    "config.h",
+    "result.h"
+  ],
+  "cba_self_overlap_count": 5,
+  "cba_self_kendall_tau": 0.2,
+  "cba_self_spearman": 0.565,
+  "cba_self_project_header_count": 19,
+  "density_extremes": {
+    "min_lines_threshold": 5000,
+    "cheapest": null,
+    "priciest": null,
+    "spread": null
+  },
+  "cba_self_table": [
+    {
+      "name": "doctest_fwd.h",
+      "self_ms": 493.0,
+      "count": 24,
+      "hh_lines": 1992,
+      "ms_per_1k_lines": 247.5,
+      "self_rank": 1,
+      "hh_rank": 14
+    },
+    {
+      "name": "prelude.h",
+      "self_ms": 288.5,
+      "count": 24,
+      "hh_lines": 3408,
+      "ms_per_1k_lines": 84.7,
+      "self_rank": 2,
+      "hh_rank": 6
+    },
+    {
+      "name": "string.h",
+      "self_ms": 77.7,
+      "count": 48,
+      "hh_lines": 10896,
+      "ms_per_1k_lines": 7.1,
+      "self_rank": 3,
+      "hh_rank": 2
+    },
+    {
+      "name": "context_state.h",
+      "self_ms": 56.4,
+      "count": 13,
+      "hh_lines": 702,
+      "ms_per_1k_lines": 80.3,
+      "self_rank": 4,
+      "hh_rank": 35
+    },
+    {
+      "name": "traversal.h",
+      "self_ms": 37.4,
+      "count": 13,
+      "hh_lines": 702,
+      "ms_per_1k_lines": 53.3,
+      "self_rank": 5,
+      "hh_rank": 36
+    },
+    {
+      "name": "expression.h",
+      "self_ms": 22.9,
+      "count": 24,
+      "hh_lines": 4200,
+      "ms_per_1k_lines": 5.5,
+      "self_rank": 6,
+      "hh_rank": 5
+    },
+    {
+      "name": "config.h",
+      "self_ms": 20.1,
+      "count": 24,
+      "hh_lines": 4944,
+      "ms_per_1k_lines": 4.1,
+      "self_rank": 7,
+      "hh_rank": 3
+    },
+    {
+      "name": "result.h",
+      "self_ms": 15.9,
+      "count": 24,
+      "hh_lines": 2832,
+      "ms_per_1k_lines": 5.6,
+      "self_rank": 8,
+      "hh_rank": 8
+    },
+    {
+      "name": "test_case.h",
+      "self_ms": 14.0,
+      "count": 24,
+      "hh_lines": 23,
+      "ms_per_1k_lines": 608.7,
+      "self_rank": 9,
+      "hh_rank": 55
+    },
+    {
+      "name": "handler.h",
+      "self_ms": 7.2,
+      "count": 13,
+      "hh_lines": 112,
+      "ms_per_1k_lines": 64.3,
+      "self_rank": 10,
+      "hh_rank": 45
+    },
+    {
+      "name": "atomic.h",
+      "self_ms": 6.2,
+      "count": 11,
+      "hh_lines": 1560,
+      "ms_per_1k_lines": 4.0,
+      "self_rank": 11,
+      "hh_rank": 21
+    },
+    {
+      "name": "data.h",
+      "self_ms": 5.9,
+      "count": 11,
+      "hh_lines": 1728,
+      "ms_per_1k_lines": 3.4,
+      "self_rank": 12,
+      "hh_rank": 17
+    },
+    {
+      "name": "console.h",
+      "self_ms": 3.9,
+      "count": 3,
+      "hh_lines": 315,
+      "ms_per_1k_lines": 12.4,
+      "self_rank": 13,
+      "hh_rank": 42
+    },
+    {
+      "name": "junit.h",
+      "self_ms": 3.1,
+      "count": 1,
+      "hh_lines": 108,
+      "ms_per_1k_lines": 28.7,
+      "self_rank": 14,
+      "hh_rank": 46
+    },
+    {
+      "name": "debug_output_window.h",
+      "self_ms": 2.1,
+      "count": 2,
+      "hh_lines": 84,
+      "ms_per_1k_lines": 25.0,
+      "self_rank": 15,
+      "hh_rank": 49
+    },
+    {
+      "name": "xml.h",
+      "self_ms": 2.1,
+      "count": 2,
+      "hh_lines": 67,
+      "ms_per_1k_lines": 31.3,
+      "self_rank": 16,
+      "hh_rank": 51
+    },
+    {
+      "name": "reporter.h",
+      "self_ms": 1.8,
+      "count": 3,
+      "hh_lines": 186,
+      "ms_per_1k_lines": 9.7,
+      "self_rank": 17,
+      "hh_rank": 43
+    },
+    {
+      "name": "signals.h",
+      "self_ms": 0.8,
+      "count": 1,
+      "hh_lines": 89,
+      "ms_per_1k_lines": 9.0,
+      "self_rank": 18,
+      "hh_rank": 48
+    },
+    {
+      "name": "comparator.h",
+      "self_ms": 0.6,
+      "count": 1,
+      "hh_lines": 2280,
+      "ms_per_1k_lines": 0.3,
+      "self_rank": 19,
+      "hh_rank": 11
+    }
+  ],
+  "hh_compiler": "C:\\Program Files\\LLVM\\bin\\clang++.exe",
+  "hh_reproduce_command": "heavyheader scan C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest --compiler C:\\Program Files\\LLVM\\bin\\clang++.exe --target=x86_64-w64-windows-gnu --gcc-toolchain=C:/mingw64 --compile-commands C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\compile_commands.json",
+  "includes_system_headers_in_cba": true,
+  "cba_ranks_of_hh_top": {
+    "macros.h": null,
+    "string.h": 5,
+    "config.h": 3,
+    "warnings.h": null,
+    "expression.h": 7,
+    "prelude.h": 1,
+    "reporter.h": 19,
+    "result.h": 9,
+    "type_traits.h": 22,
+    "type.h": null
+  },
+  "hh_ranks_of_cba_top": {
+    "prelude.h": 6,
+    "doctest_fwd.h": 14,
+    "config.h": 3,
+    "context_state.h": 35,
+    "string.h": 2,
+    "traversal.h": 36,
+    "expression.h": 5,
+    "reporter.h": 43,
+    "result.h": 8,
+    "test_case.h": 55
+  }
+}

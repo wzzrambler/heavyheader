@@ -317,7 +317,18 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--tus", type=int, default=25)
+    # 第二个工程必须能复用同一套协议：硬编码 PROJECT/DB 会让「换个工程再测一遍」
+    # 变成复制脚本，两份代码随后就会漂移——而 G1 要的正是「同一协议、不同工程」。
+    parser.add_argument("--project", type=Path, default=None)
+    parser.add_argument("--db", type=Path, default=None)
+    parser.add_argument("--tag", default="")
     args = parser.parse_args()
+
+    global PROJECT, DB
+    if args.project is not None:
+        PROJECT = args.project.resolve()
+    if args.db is not None:
+        DB = args.db.resolve()
 
     RUN.mkdir(parents=True, exist_ok=True)
     entries = json.loads(DB.read_text(encoding="utf-8"))[: args.tus]
@@ -472,7 +483,8 @@ def main() -> int:
 
     out_dir = ROOT / "experiments" / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = out_dir / f"cba-compare-{date.today():%Y%m%d}"
+    suffix = f"{args.tag}-" if args.tag else ""
+    stem = out_dir / f"cba-compare-{suffix}{date.today():%Y%m%d}"
     stem.with_suffix(".json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
     )

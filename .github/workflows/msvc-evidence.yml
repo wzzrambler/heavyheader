@@ -66,6 +66,8 @@ jobs:
       - name: 扫描（MSVC）
         shell: pwsh
         run: |
+          $env:PYTHONIOENCODING = "utf-8"
+          [Console]::OutputEncoding = [Text.Encoding]::UTF8
           python -m heavyheader scan benchmarks/cases/demo `
             -I benchmarks/cases/demo/include `
             --compiler cl --jobs 1 --format json `
@@ -98,6 +100,8 @@ jobs:
         # 区块，**不需要登录**就能读；而普通日志与 job summary 在公开页面上
         # 拿不到。远程排障时这是唯一可靠的通道。
         run: |
+          $env:PYTHONIOENCODING = "utf-8"
+          [Console]::OutputEncoding = [Text.Encoding]::UTF8
           $lines = python -m heavyheader gate benchmarks/cases/demo `
             -I benchmarks/cases/demo/include `
             --compiler cl --jobs 1 --baseline msvc-scan.json 2>&1 |

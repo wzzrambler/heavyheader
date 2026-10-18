@@ -768,7 +768,32 @@ _COMMANDS = {
 }
 
 
+def _make_redirected_output_utf8() -> None:
+    """把被重定向的 stdout/stderr 切成 UTF-8。
+
+    为什么必须做：Windows 在**管道**下不用宽字符 API，而是按 ANSI 代码页
+    （GitHub runner 上是 cp1252）编码。我们的输出是中文，于是
+    ``print("头文件解析量：…")`` 直接抛 ``UnicodeEncodeError``——CI 上表现为
+    exit 1 加一段 traceback，看起来像「门禁判定失败」，实际是**打印失败**。
+    任何人把输出接进 tee、日志文件或 CI 都会撞上，不只我们自己的流水线。
+
+    交互式控制台不动：那边由 WriteConsoleW 处理 Unicode，改成 UTF-8 反而可能
+    在 cp936 终端上显示乱码。只有「不是终端」时才切成 UTF-8——CI 日志与
+    重定向文件本来就按 UTF-8 解释。
+
+    ``errors="replace"`` 是最后一道保险：任何环境下都不允许因为打印而崩溃。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is None or stream.isatty():
+                continue
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError, OSError):  # pragma: no cover - 平台差异
+            continue
+
+
 def main(argv: list[str] | None = None) -> int:
+    _make_redirected_output_utf8()
     parser = build_parser()
     args = parser.parse_args(argv)
     handler = _COMMANDS.get(args.command)

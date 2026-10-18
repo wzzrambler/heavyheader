@@ -60,8 +60,18 @@ deheader 停在「还能编」，没有任何工具帮他回答后半句。我�
   收益非零的 include 行被逐条判过——68 条真依赖（带标识符）、299 条位于系统/第三方
   头内部、2 条无法判定（[`g2-diagnosis-*`](../experiments/results/)）。
 
-为什么这是空白：排序型工具到这里就结束了（它们答「谁贵」）；deheader 型工具
-不建图（它逐个试）。把「删除净收益」建成依赖图上的可计算量，本轮尽调未见先例（?）。
+**先例必须交代（2026-10-19 专项搜查后的校准）**：按 include 边计算删除收益，
+**Include-Wrangler（2012，lukedodd/include-wrangler）已经做过**——它的
+`include_costs` 输出就是「每条 include 指令省略后能少打开几个文件」，即文件数口径的
+边级边际收益；IncludeGuardian 按 token 估算最贵单条 include；clang-build-profiler 与
+MSVC Build Insights 的 Include Tree 呈现过逐边解析耗时（树形累计口径）。逐格出处见
+[`competitors.md`](competitors.md) §0 校准表。
+
+因此本项目的差异化声明收敛为两句话：**① 口径升级**——上述先例全部停在文件数 /
+token / 树形累计耗时；我们把「独占闭包 × trace 自耗时」相乘，得到每条边的
+**净收益毫秒预测**（2026-10-19 全网搜查未见先例，待 v0.4 spike 验证）；
+**② 数据来源**——我们的依赖树取自真实编译器 `-H`，不是自写扫描器（Include-Wrangler
+的正则方案会漏宏与条件编译，Header Hero 的作者自己写明了这个副作用）。
 证据等级：L（本机实测，三个工程）。
 
 ### 3.2 测量科学：编译耗时的 A/B 实验协议
@@ -81,7 +91,9 @@ deheader 停在「还能编」，没有任何工具帮他回答后半句。我�
 这套协议的价值用一个数字说明：**没有它，白卷诊断里 3.7% 的「收益」会被当成结论推荐出去。**
 在 C/C++ 构建工具的生态里，我们没有找到把 A/B 实验设计（校准、交替、复测、
 阴性结果公开）作为产品协议实现并公开全部负面结果的工具（?——本轮尽调范围：
-Header Hero、CBA、Build Insights、IWYU、IncludeGuardian、deheader）。
+Header Hero、CBA、Build Insights、IWYU、IncludeGuardian、deheader、CompileScore、
+clang-build-profiler、include-what-costs、Include-Wrangler、ReSharper 包含分析器，
+2026-10-19 补充搜查后仍未见）。
 
 ### 3.3 三态结论与审计形态
 
@@ -127,6 +139,9 @@ Header Hero、CBA、Build Insights、IWYU、IncludeGuardian、deheader）。
 - **归因行数与 Blowup Factor 的公式**：Header Hero（Bitsquid，2011）；
 - **「注释掉再编译」**：deheader（ESR，2010）；
 - **逐头文件累计耗时**：ClangBuildAnalyzer（`-ftime-trace`）；
+- **逐 include 成本着色/聚合**：CompileScore（VS 扩展）；
+- **按边计算删除收益（文件数口径）**：Include-Wrangler（2012）——本项目此前
+  「未见先例」的表述已据此撤回，改为「毫秒口径的边级净收益预测未见先例」；
 - **AST 级必需性判定**：IWYU / clang-include-cleaner；
 - 不声称「首个/唯一做头文件成本分析」「建议最全」（IncludeGuardian 更全）、
   「计时最准」（`-ftime-trace` 更细）、「自动优化」（三工程 1/16、1/16、0/16）、

@@ -9,7 +9,8 @@
 ## 0. 一句话结论
 
 **单项能力没有一项是我们首创的。** 归因行数来自 Header Hero（2011），逐头文件耗时来自
-ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来自 deheader（2010）。
+ClangBuildAnalyzer 与 CompileScore（同一个 `-ftime-trace` 数据源），建议清单来自
+IncludeGuardian，注释掉再编译来自 deheader（2010）。
 
 我们唯一站得住的东西是**把四件事串成一个闭环，并且只把「实测过」的结论写成结论**：
 
@@ -20,6 +21,21 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 前两格里每一格都有成熟工具；**第三格没有人做**；第四格有人做了一半（deheader 有退出码，
 但不含成本权重）。这就是我们的定位，不多说一个字。
 
+**2026-10-19 补充搜查后的校准（重要）**：为规划 v0.4「边级边际成本归因」做了一轮专项
+全网搜查（GitHub / 项目官网 / 学术检索），发现「按 include 边计算删除收益」这一想法
+**有先例**，原文声明已按下述口径改写：
+
+| 先前实现 | 口径 | 停在哪 |
+|---|---|---|
+| Include-Wrangler（2012，Haskell，已休眠） | **文件数**：省略一条 include 能少打开几个文件 | 只数文件；自写扫描器，不碰编译器；无计时、无验证 |
+| IncludeGuardian | token 口径估算「最贵的单条 include」 | 不编译、不实测 |
+| clang-build-profiler（MIT，C++） / MSVC Build Insights Include Tree / CBA 的 included-via | **树形累计耗时**：include 树上每条边实例的解析耗时 | 纯呈现；不算「删了省多少」；无验证、无决策 |
+| include-what-costs（BSD-3，LHCb） | 逐头文件**实测**耗时/RSS + consolidate 估计移除暴露的影响 | 节点级（头文件）而非逐条语句；无三态、无门禁 |
+
+因此本项目对「边级边际成本」的声明口径是：**上述三种边级/节点级口径均有先例；
+「独占闭包 × trace 自耗时 = 每条边的净收益毫秒预测，并接反事实实测闭环」这一组合，
+2026-10-19 搜查未发现先例**。这是组合层面的首创声明，且逐格出处见 §5 复核清单。
+
 ---
 
 ## 1. 对标总表
@@ -28,6 +44,7 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 |---|---|---|---|---|---|---|
 | **Header Hero**（Bitsquid 2011 / aras-p fork） | 归因行数 = 行数 × 包含次数；Blowup Factor | 正则扫 `#include`，**非**真实预处理器 | 否 | 否（只排序） | 否 | Windows/macOS/Linux（.NET 9 GUI） |
 | **ClangBuildAnalyzer**（aras-p） | 逐头文件累计 ms、包含次数、平均 ms | 真实 `-ftime-trace` | 是（编译器内省） | 否 | 否 | 仅 Clang 9+，需带 flag 重编 |
+| **CompileScore**（Viladoman） | 逐 include 成本、每 TU 时间线、includers 图 | 真实 `-ftime-trace` + MSVC Build Insights | 是（编译器内省） | 否 | 否 | VS 扩展 + 独立应用，Windows 为主 |
 | **IncludeGuardian**（v0.0.8） | 预处理 token 节省百分比 | 编译数据库 + 结构分析 | **否**（不编译） | 否（给清单） | 否 | Windows/Linux x64 二进制 |
 | **deheader**（ESR 1.13） | 二值：能否删除 | 真实编译 `rm foo.o; make foo.o` | 是（但不量化） | 否 | **半有**（退出码可做 Makefile 预检） | 任意有 make/ninja 的环境 |
 | **HeavyHeader** | 归因行数 + Blowup Factor + **实测 Δ时间/Δ内存/Δ体积** | 真实编译器 `-H` 依赖树 + 反事实重编 | **是（反事实对比）** | **是（三态 + 证据等级）** | **是（按实测净收益）** | GCC/Clang/MSVC，零第三方依赖 |
@@ -145,7 +162,27 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 我们做的是在同一个动作上**加测量与决策**：跑两次（基线/补丁）、取多次运行的
 中位数与离散度、同时记录时间/内存/体积、失败则降级为 HUMAN 而不是直接判死。
 
-### 2.5 微软 C++ Build Insights —— Windows 上最被低估的对手
+### 2.5 CompileScore —— 「成本发现」赛道的最新选手
+
+- **出处**：<https://github.com/Viladoman/CompileScore>（MIT）。组成：Visual Studio
+  2019/2022 扩展 + 独立 WPF 应用 + Data Extractor CLI。
+- **数据源**：clang `-ftime-trace`（clang 9+）与 MSVC C++ Build Insights
+  （MSVC 16.1+，经 `vcperf`）——与 ClangBuildAnalyzer 同一家族，但把 MSVC 侧
+  也覆盖了进去。
+- **README 原文能力**：编辑器内按 include 成本着色（"Text Highlight on include
+  costs"）；工具窗口给出全项目聚合数据；每个编译单元的详细时间线图；**includers 图**
+  （展示导致选中 include 的整条包含栈，直到编译单元）；把「为什么需要这个 include」
+  与「它花多少」合并在同一视图；Data Extractor 可在构建服务器上生成 score 文件、
+  供本地 VS 远程消费。
+- **它没有的**：不做注释掉再编译的反事实实验，不给三态决策，没有回归基线与门禁；
+  形态是 IDE 内的可视化消费（VS 扩展为主，独立应用需自行从 sln 构建）。
+- **对我们的意义**：它把「发现成本」这条赛道又填实了一块——连同 CBA 与
+  Build Insights，**「谁贵」已经有至少三种成熟答案，且都来自编译器内省**。
+  这反向印证了本项目不把排行榜当卖点的决定：我们能Claim的只剩
+  「反事实量化 + 三态可审计决策」这一段。它在 VS 内的集成体验（着色、时间线、
+  includers 图）也强于我们的纯文本输出，这一点如实记录。
+
+### 2.6 微软 C++ Build Insights —— Windows 上最被低估的对手
 
 - **出处**：<https://learn.microsoft.com/en-us/cpp/build-insights/get-started-with-cpp-build-insights>
   （VS2019+）。组成：`vcperf.exe` 采集、WPA 扩展查看、**开放 SDK** 供第三方消费数据。
@@ -157,7 +194,7 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 - **明确不提供**（据上述文档）：删除候选的重编译验证、删后 Δ时间/Δ内存/Δ体积、
   三态决策、按实测净收益的回归门禁。
 
-### 2.6 IWYU / Include Cleaner —— 正确性一侧的标准答案
+### 2.7 IWYU / Include Cleaner —— 正确性一侧的标准答案
 
 - **出处**：<https://github.com/include-what-you-use/include-what-you-use>（README 原文）。
 - **它做什么**：基于 Clang AST 判断每个符号的声明应由哪个头提供，给出「多余/缺失/
@@ -208,7 +245,12 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 - ❌ 不声称建议清单比 IncludeGuardian 全——**它更全，我们缺 `inline sources` 等类别**。
 - ❌ 不声称「注释掉再编译」是原创——**deheader 2010 年就在做，且有退出码门禁**。
 - ❌ 不声称比 `-ftime-trace` 的计时更精确——**编译器内省优于墙钟差分**。
-- ✅ 只声称：把上述能力**组合成闭环**，并给出**反事实的量化**与**可门禁的三态决策**。
+- ❌ 不声称「按 include 边归因成本」是原创——**Include-Wrangler（2012）按文件数做过每条
+  include 指令的边际成本**，IncludeGuardian 按 token 估算过最贵单条 include，
+  clang-build-profiler 与 MSVC Build Insights 呈现过 include 树上的逐边耗时。
+- ✅ 只声称：把上述能力**组合成闭环**，并给出**反事实的量化**与**可门禁的三态决策**；
+  v0.4 规划中的「边级边际成本（毫秒）」是在上述先例全部停下的地方继续——**净收益
+  毫秒预测 + 反事实实测闭环**，该组合经 2026-10-19 全网搜查未见先例。
 
 ---
 
@@ -220,6 +262,13 @@ ClangBuildAnalyzer，建议清单来自 IncludeGuardian，注释掉再编译来�
 | Header Hero fork 状态（58★、.NET 9、2025 重写） | github.com/aras-p/header_hero | 2026-10-18 |
 | ClangBuildAnalyzer 输出格式与限制 | aras-p.info/blog/2019/09/28/Clang-Build-Analyzer/ ；github.com/aras-p/ClangBuildAnalyzer | 2026-10-18 |
 | IncludeGuardian 七类建议、token 指标、v0.0.8、Win/Linux | includeguardian.io ；includeguardian.io/instructions | 2026-10-18 |
+| CompileScore 能力清单（include 成本着色、时间线、includers 图、Data Extractor、clang 9+/MSVC 16.1+、MIT） | github.com/Viladoman/CompileScore | 2026-10-19 |
 | deheader 核心动作、`-r`、退出码、1.13、发行渠道 | catb.org/~esr/deheader/deheader.html ；pkg.so/brew/deheader | 2026-10-18 |
+| Include-Wrangler 的 include 指令级边际成本（文件数口径）与 header/TU 成本 | github.com/lukedodd/include-wrangler（README「Interpreting results」节） | 2026-10-19 |
+| clang-build-profiler 的 include 树 + 解析计时、模板实例化树、无反事实 | github.com/DmitriBogdanov/clang-build-profiler ；dmitribogdanov.github.io/clang-build-profiler/ | 2026-10-19 |
+| include-what-costs 的逐头文件实测（prmon）与 consolidate 移除暴露估计 | github.com/chrisburr/include-what-costs ；pypi.org/project/include-what-costs/ | 2026-10-19 |
+| ReSharper 包含分析器的行数估算与其「不跑预处理」限制 | jetbrains.com/help/resharper/Analyzing_Includes.html（2026.2） | 2026-10-19 |
+| MSVC Build Insights Included Files / Include Tree 视图的逐节点解析耗时（WCTR） | learn.microsoft.com/cpp/build-insights/tutorials/build-insights-included-files-view | 2026-10-19 |
+| header hotspot 的学术先例（属性→热点预测，非逐边毫秒） | ASE《Identifying and Understanding Header File Hotspots in C/C++ Build Processes》 | 2026-10-19 |
 
 若上述任一页面更新导致结论变化，以页面为准，并同步修订本文与 README 的措辞。

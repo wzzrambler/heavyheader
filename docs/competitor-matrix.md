@@ -18,7 +18,7 @@
 
 | 层 | 工具 | 与本项目的关系 |
 |---|---|---|
-| 直接竞品 | ClangBuildAnalyzer、MSVC C++ Build Insights、IWYU、Include Cleaner | 用户会拿来直接替代或对照 |
+| 直接竞品 | ClangBuildAnalyzer、CompileScore、MSVC C++ Build Insights、IWYU、Include Cleaner | 用户会拿来直接替代或对照 |
 | 相邻工具 | cpp-dependencies、include-gardener、Header Hero、IncludeGuardian、deheader | 功能局部重叠，常被组合使用 |
 | 替代方案 | ccache/sccache、distcc/IncrediBuild、FASTBuild、Bazel | 争夺同一笔「构建慢」预算，未必同类 |
 | 隐性竞争者 | 用户自写脚本 + CI、什么都不做 | 最常见的「不采用」原因 |
@@ -27,31 +27,55 @@
 
 图例：`D` 文档已证实 / `C` 源码已核验 / `L` 本地实验已证实 / `?` 尚未验证 / `—` 明确不提供。
 
-| 能力 | ClangBuildAnalyzer | MSVC Build Insights | IWYU / Include Cleaner | IncludeGuardian | deheader | Header Hero | HeavyHeader |
-|---|---|---|---|---|---|---|---|
-| 逐头文件耗时 | D | D | — | —（仅 token 估算） | —（仅进度显示） | — | L |
-| 逐头文件成本排序（行×次数） | — | ?（Included Files 有次数/耗时） | — | D（token 口径） | — | D | L |
-| include 链 / 包含树 | D | D | — | ? | — | D | L |
-| 模板 / 代码生成细分 | D | D | — | — | — | — | L（GCC 阶段精确、按头为启发式） |
-| PCH 建议 | — | D | — | D | — | D（fork 支持排除 PCH 内容） | L（仅估算，未实测 PCH 收益） |
-| 判断 include 是否必需 | — | — | D | ? | —（只判是否编译得过） | — | L（启发式 + 实测兜底） |
-| 删除后重编译验证 | — | — | — | — | D | — | L |
-| 量化删后收益（时间/内存/体积） | — | — | — | — | — | — | L |
-| 三态决策 + 证据等级 | — | — | — | — | — | — | L（本工具独有，尚无竞品对照） |
-| 基线 / 回归门禁 | — | — | —（仅 `--error_always` 退出码） | — | D（退出码可做 Makefile 预检） | — | L |
-| 多编译器统一（GCC/Clang/MSVC） | —（仅 Clang） | —（仅 MSVC/Windows） | ?（Clang 为主，MSVC 需 driver-mode） | ?（读 compile_commands，二进制仅 Win/Linux） | D（任意 make/ninja） | D（正则，编译器无关） | L（GCC/Clang/MSVC 三套驱动） |
-| 零第三方依赖 / 低接入 | ?（需 CMake 构建 + 带 flag 重编） | D（VS2019+，Windows） | ?（需匹配 Clang 版本） | D（下载二进制） | D（单文件 Python 脚本） | D（.NET 9 GUI） | L（Python 标准库，需现成编译器） |
+| 能力 | ClangBuildAnalyzer | MSVC Build Insights | IWYU / Include Cleaner | IncludeGuardian | deheader | Header Hero | CompileScore | HeavyHeader |
+|---|---|---|---|---|---|---|---|---|
+| 逐头文件耗时 | D | D | — | —（仅 token 估算） | —（仅进度显示） | — | D | L |
+| 逐头文件成本排序（行×次数） | — | ?（Included Files 有次数/耗时） | — | D（token 口径） | — | D | —（时间口径，无行数归因） | L |
+| include 链 / 包含树 | D | D | — | ? | — | D | D（includers 图） | L |
+| 模板 / 代码生成细分 | D | D | — | — | — | — | —（README 未单列模板维度） | L（GCC 阶段精确、按头为启发式） |
+| PCH 建议 | — | D | — | D | — | D（fork 支持排除 PCH 内容） | — | L（仅估算，未实测 PCH 收益） |
+| 判断 include 是否必需 | — | — | D | ? | —（只判是否编译得过） | — | —（有「绑定强度」视图，非判定） | L（启发式 + 实测兜底） |
+| 删除后重编译验证 | — | — | — | — | D | — | — | L |
+| 量化删后收益（时间/内存/体积） | — | — | — | — | — | — | — | L |
+| 三态决策 + 证据等级 | — | — | — | — | — | — | — | L（本工具独有，尚无竞品对照） |
+| 基线 / 回归门禁 | — | — | —（仅 `--error_always` 退出码） | — | D（退出码可做 Makefile 预检） | — | — | L |
+| 多编译器统一（GCC/Clang/MSVC） | —（仅 Clang） | —（仅 MSVC/Windows） | ?（Clang 为主，MSVC 需 driver-mode） | ?（读 compile_commands，二进制仅 Win/Linux） | D（任意 make/ninja） | D（正则，编译器无关） | D（clang -ftime-trace + MSVC Build Insights） | L（GCC/Clang/MSVC 三套驱动） |
+| 零第三方依赖 / 低接入 | ?（需 CMake 构建 + 带 flag 重编） | D（VS2019+，Windows） | ?（需匹配 Clang 版本） | D（下载二进制） | D（单文件 Python 脚本） | D（.NET 9 GUI） | D（VS 扩展/独立应用，Windows 为主；独立应用需自行构建） | L（Python 标准库，需现成编译器） |
 
 ### 2.1 这张表直接得出的三个结论
 
-1. **「发现成本」我们没有优势可言**：ClangBuildAnalyzer 与 Build Insights 在逐头文件耗时、
-   模板、代码生成上都有官方文档支撑，且数据来自编译器内省。继续把头文件排行榜当卖点是撞墙。
+1. **「发现成本」我们没有优势可言**：ClangBuildAnalyzer、CompileScore 与
+   Build Insights 在逐头文件耗时、模板、代码生成上都有官方文档支撑，且数据来自
+   编译器内省。继续把头文件排行榜当卖点是撞墙。
 2. **「验证建议」目前只有 deheader 一个先例**：它做「删除后重编译」，但只给二值结论、
    不量化收益。我们的「量化删后收益 + 三态决策」在矩阵里没有对照项——**但『没有对照项』
    不等于『有价值』，只等于『还没人验证过』**。这是待验证假设，不是护城河。
 3. **「治理」看似空白，实则被两件事侵蚀**：deheader 已有退出码门禁；IWYU 的
    `--error_always` 也能让 CI 失败。我们的门禁差异只在「按实测净收益判定」，
    而这一点尚未在真实 CI 上验证误报率。
+
+### 2.2 边级成本归因的先前实现（2026-10-19 专项搜查）
+
+为规划 v0.4「边级边际成本归因」而做的一轮全网搜查（GitHub / 官网 / 学术）。
+结论：**「按 include 边计算删除收益」有先例，但全部停在文件数 / token / 树形累计
+耗时三种口径；「净收益毫秒预测 + 反事实实测闭环」未见先例。**
+
+| 实现（出处年份） | 粒度 | 口径 | 是否用真实编译器 | 是否算删除边际 | 是否验证/门禁 |
+|---|---|---|---|---|---|
+| Include-Wrangler（2012，lukedodd） | **include 指令（边）** | 文件数（可少打开几个文件） | 否（自写扫描器） | **是** | 否 |
+| IncludeGuardian（v0.0.8） | include 指令（边） | 预处理 token 估算 | 否（不编译） | 部分（最贵单条） | 否 |
+| clang-build-profiler（DmitriBogdanov，MIT） | include 树（边实例） | 解析耗时（树形呈现） | 是（`-ftime-trace`） | 否 | 否 |
+| MSVC C++ Build Insights Include Tree（官方） | include 树（边实例） | 解析耗时（WCTR） | 是（Build Insights） | 否 | 否 |
+| CBA 的 included-via（aras-p） | 头文件（节点） | 累计 ms + 包含链 | 是 | 否 | 否 |
+| include-what-costs（chrisburr，BSD-3，LHCb） | 头文件（节点） | 实测耗时/RSS + 移除暴露估计 | 是（prmon 实测） | 部分（consolidate） | 否 |
+| Header Hero（2011）/ aras-p fork | 头文件（节点） | 行数 × 次数 | 否（正则） | 否 | 否 |
+| ReSharper 包含分析器（2026.2） | 头文件（节点） | 行数估算 | 否（不跑预处理） | 否 | 否 |
+| **HeavyHeader v0.4 规划** | **include 指令（边）** | **独占闭包 × trace 自耗时 = 净收益毫秒** | **是（-H + -ftime-trace）** | **是** | **是（verify + gate）** |
+
+三条必须一起说的校准：① Include-Wrangler 2012 年就算过每条 include 的文件数边际，
+「按边归因」不是我们的发明；② clang-build-profiler 与 Build Insights 呈现过逐边
+解析耗时，但那是树形累计口径、不算删除；③ 本项目声首创的是**三者的组合**
+（闭包 × 自耗时 → 毫秒）与其在反事实闭环中的位置，不是任何单件。
 
 ## 3. 四维评估（候选差异化，不是既成事实）
 

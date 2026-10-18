@@ -50,9 +50,17 @@ _GUARD_HEADER = re.compile(r"^Multiple include guards may be useful for:", re.IG
 
 
 def _normalise(raw: str) -> Path:
+    """Normalise an MSVC-reported path (see depfile._normalise).
+
+    ``/showIncludes`` paths are always Windows-flavoured, even when the
+    parser runs on Linux/macOS, so the drive-letter/backslash forms must be
+    canonicalised through ``PureWindowsPath``.  Converting via ``as_posix()``
+    before wrapping in the platform ``Path`` is what keeps the result
+    comparable with paths coming from ``-H`` on any host.
+    """
     cleaned = raw.strip().strip('"')
     if re.match(r"^[A-Za-z]:[\\/]", cleaned) or cleaned.startswith("\\\\"):
-        return Path(PureWindowsPath(cleaned))
+        return Path(PureWindowsPath(cleaned).as_posix())
     return Path(cleaned)
 
 

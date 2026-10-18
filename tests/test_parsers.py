@@ -73,6 +73,10 @@ def test_deep_nesting_does_not_blow_the_stack():
 
 def test_show_includes_recovers_depth_from_indentation():
     # Real MSVC indents by one space per nesting level, starting at one.
+    # Expected paths are written with forward slashes on purpose: that is the
+    # normalised form the parser contract guarantees, and it compares equal
+    # on Windows (pathlib parts) and on POSIX (same string).  Backslash
+    # literals here would be Windows-only and silently fail the CI matrix.
     msvc = (
         "Note: including file: C:\\src\\a.h\n"
         "Note: including file:  C:\\src\\b.h\n"
@@ -84,7 +88,7 @@ def test_show_includes_recovers_depth_from_indentation():
         ("b.h", 1),
         ("c.h", 0),
     ]
-    assert events[1].includer == Path("C:\\src\\a.h")
+    assert events[1].includer == Path("C:/src/a.h")
 
 
 def test_show_includes_handles_three_levels():
@@ -96,11 +100,11 @@ def test_show_includes_handles_three_levels():
     )
     events = parse_show_includes(msvc, TU)
     assert [e.depth for e in events] == [0, 1, 2, 1]
-    assert events[2].includer == Path("C:\\src\\b.h")
+    assert events[2].includer == Path("C:/src/b.h")
     # d.h sits at depth 1 again, so it is a *sibling* of b.h: its parent is
     # a.h, not b.h.  Getting this wrong would attribute cost to the wrong
     # header, which is exactly what the stack in the parser prevents.
-    assert events[3].includer == Path("C:\\src\\a.h")
+    assert events[3].includer == Path("C:/src/a.h")
 
 
 def test_show_includes_accepts_localised_chinese_prefix():
@@ -115,9 +119,9 @@ def test_show_includes_accepts_localised_chinese_prefix():
     )
     events = parse_show_includes(msvc, TU)
     assert [e.depth for e in events] == [0, 1, 2, 1]
-    assert events[0].included == Path("C:\\src\\a.h")
-    assert events[2].includer == Path("C:\\src\\b.h")
-    assert events[3].includer == Path("C:\\src\\a.h")
+    assert events[0].included == Path("C:/src/a.h")
+    assert events[2].includer == Path("C:/src/b.h")
+    assert events[3].includer == Path("C:/src/a.h")
 
 
 # --------------------------------------------------------------------------

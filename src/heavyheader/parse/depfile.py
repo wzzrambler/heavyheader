@@ -97,11 +97,14 @@ def _normalise(raw: str) -> Path:
 
     Compilers are inconsistent about drive-letter casing and separators on
     Windows, so we canonicalise through ``PureWindowsPath`` when the string
-    looks like a Windows path.
+    looks like a Windows path.  The conversion must go through
+    ``as_posix()`` first: wrapping a ``PureWindowsPath`` in a *platform*
+    ``Path`` on POSIX yields a single weird component (``C:\\/x``), because
+    POSIX does not treat a backslash as a separator.
     """
     cleaned = raw.strip().strip('"')
     if re.match(r"^[A-Za-z]:[\\/]", cleaned) or cleaned.startswith("\\\\"):
-        return Path(PureWindowsPath(cleaned))
+        return Path(PureWindowsPath(cleaned).as_posix())
     return Path(cleaned)
 
 

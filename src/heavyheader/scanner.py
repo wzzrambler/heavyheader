@@ -280,16 +280,36 @@ def _tasks_from_compile_commands(
     return tasks
 
 
+def _same_source(token: str, source: str | Path) -> bool:
+    """Compare a command token with the entry's source path.
+
+    ``compile_commands.json`` routinely disagrees with itself: the ``file``
+    field uses forward slashes while the command line uses backslashes
+    (MSBuild/Ninja), and Windows paths differ in drive-letter casing.  A
+    literal string comparison therefore misses the trailing source token on
+    POSIX -- the file is passed twice, GCC compiles it twice, and every
+    timing read from the first ``-ftime-report`` TOTAL row is silently
+    wrong.  Compare separator- and case-insensitively (only on the final
+    token, so a flag's own value is never touched).
+    """
+
+    def canon(value: str) -> str:
+        return value.replace("\\", "/").lower()
+
+    return canon(token) == canon(str(source))
+
+
 def _strip_source_token(argv: list[str], source: str) -> list[str]:
     """Remove the compilation database's own source file from ``argv``.
 
-    Only the **final** token is considered, and only on an exact match:
-    ``… -c foo.cpp`` is the canonical shape, and never touching anything
-    else keeps a flag's own value (``-I <dir>``) safe even in the absurd
-    case where it shares the source's name.  Anything that is not the
-    trailing source token is left exactly as the build system wrote it.
+    Only the **final** token is considered, and only on a
+    separator-/case-insensitive match: ``… -c foo.cpp`` is the canonical
+    shape, and never touching anything else keeps a flag's own value
+    (``-I <dir>``) safe even in the absurd case where it shares the
+    source's name.  Anything that is not the trailing source token is left
+    exactly as the build system wrote it.
     """
-    if argv and argv[-1] in (str(source), source):
+    if argv and _same_source(argv[-1], source):
         return argv[:-1]
     return argv
 

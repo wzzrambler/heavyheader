@@ -63,8 +63,13 @@ def _key(path: str | Path) -> str:
     casing, mixed separators, or a ``..`` somewhere in the middle.  Matching
     them literally silently drops headers, which looks like "that header
     costs nothing" rather than "we failed to match it".
+
+    The lowercasing is explicit rather than delegated to ``os.path.normcase``:
+    that helper is a no-op on POSIX, which made every lookup miss on
+    Linux/macOS while passing on Windows (the tests only ever ran green
+    on the developer's machine).
     """
-    return os.path.normcase(os.path.normpath(str(path))).replace("\\", "/")
+    return os.path.normcase(os.path.normpath(str(path))).replace("\\", "/").lower()
 
 
 @dataclass

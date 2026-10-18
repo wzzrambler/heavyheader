@@ -9,15 +9,18 @@ Two checks:
 If a future change adds a runtime dependency, this test fails loudly - the
 architecture promise ("the default path runs in the plainest CI container")
 is enforced by CI, not by documentation alone.
+
+Python 3.10 note: ``tomllib`` is stdlib only from 3.11 on, and the CI matrix
+still runs 3.10 (``requires-python = ">=3.10"``).  On 3.10 we fall back to a
+conservative textual read of the ``dependencies`` key.
 """
 
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from pathlib import Path
-
-import tomllib
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -26,9 +29,27 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FIRST_PARTY = "heavyheader"
 
 
+def _declared_dependencies(pyproject_text: str) -> list[str]:
+    """Runtime dependencies from ``pyproject.toml``.
+
+    Prefers ``tomllib`` (3.11+).  On 3.10 the textual fallback reads the
+    ``dependencies`` key inside ``[project]``; if the key cannot be found at
+    all it reports a non-empty list, so the caller fails loudly instead of
+    silently passing on an unproven claim.
+    """
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10: no stdlib TOML parser
+        match = re.search(r"(?ms)^dependencies\s*=\s*\[(.*?)\]", pyproject_text)
+        if match is None:
+            return ["<dependencies key not found>"]
+        return [item for item in re.split(r"[,\n]", match.group(1)) if item.strip()]
+    return tomllib.loads(pyproject_text)["project"].get("dependencies", [])
+
+
 def test_no_runtime_dependencies_declared() -> None:
-    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-    dependencies = pyproject["project"].get("dependencies", [])
+    pyproject = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    dependencies = _declared_dependencies(pyproject)
     assert dependencies == [], (
         "runtime dependencies break the zero-dependency architecture: "
         f"{dependencies}. Discuss in an issue first (GOVERNANCE.md §2)."

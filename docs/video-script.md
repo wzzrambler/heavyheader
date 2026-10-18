@@ -17,7 +17,7 @@
 ```bash
 # 1. 干净环境
 cd heavyheader
-python -m pytest -q                      # 期望 446 passed
+python -m pytest -q                      # 期望 447 passed
 # 2. 准备两个终端：左=命令，右=报告
 ```
 
@@ -89,7 +89,7 @@ python -m pytest -q                      # 期望 446 passed
 
 **念**：
 > 「最终它是一把尺子，不是一台挖掘机：能证明一个改动到底省不省，能拦住下一次回归，
-> 并且每次都告诉你它的判断有多可信。零第三方依赖，446 个测试，
+> 并且每次都告诉你它的判断有多可信。零第三方依赖，447 个测试，
 > GCC、Clang、MSVC 三个编译器都跑通了真实数据——MSVC 的证据来自 CI 的 Windows 机器。
 > 代码在 github.com/wzzrambler/heavyheader，Apache-2.0。」
 

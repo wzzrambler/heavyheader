@@ -91,6 +91,9 @@ jobs:
           $failed = $data.totals.failed_translation_units
           "编译单元 $ok，失败 $failed" | Out-File -Append $env:GITHUB_STEP_SUMMARY
           Write-Host "编译单元: $ok, 失败: $failed"
+          # 用 notice 注解把关键数字暴露到公开页面：产物与日志都要登录才能看，
+          # 而「MSVC 真跑出多少编译单元、多少行」正是要写进文档的那几个数。
+          Write-Host "::notice::MSVC 扫描 TU=$ok 失败=$failed 归因行数=$($data.totals.attributed_lines)"
           if ($ok -lt 1) { Write-Error "MSVC 扫描没有成功单元，R6 仍未关闭"; exit 1 }
           if ($failed -ne 0) { Write-Error "有 $failed 个单元编译失败"; exit 1 }
 

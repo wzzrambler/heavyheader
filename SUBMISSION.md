@@ -7,8 +7,8 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 130 文件 / 50+ commit | `src/heavyheader/` |
-| 测试 | ✅ 399 个全绿 | `tests/` |
+| 代码 | ✅ 142 文件 / 50+ commit | `src/heavyheader/` |
+| 测试 | ✅ 411 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
@@ -18,16 +18,19 @@
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
+| G2 优化闭环 | ❌ **不成立**：真实工程可采纳率 0/10；阳性对照 1/6 证明管线本身有效。据此不再宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-loop-*.{md,json}`、`g2-control-*.{md,json}` |
+| G3 CI 门禁 | ✅ 成立（限归因行数型回归）：注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截、单次 3.38 s | `docs/benchmark-report.md` §10 + `experiments/results/g3-gate-*.{md,json}` |
+| G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 14 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 130 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 142 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，50+ commit，130 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，50+ commit，142 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）

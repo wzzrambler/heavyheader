@@ -83,6 +83,13 @@ class VerifyOptions:
 
     top: int = 5
     runs: int = 3
+    #: 复测遍数。``1`` = 不回测（旧行为）。
+    #:
+    #: 为什么需要它：G2 实测发现，同一候选连测三次，percent_saved 在 1.0%–2.1%
+    #: 之间摆动，``improved`` 出现 1/3 次；第一轮判为 improved 的候选复测
+    #: 0/4 复现。单遍判定在阈值附近等于抽签。设成 2 表示「improved 之后必须
+    #: 再独立测一遍，仍 improved 才保留结论」，否则降级为 no-change 并写明原因。
+    confirm_passes: int = 1
     #: Compiles per side during the probe stage.  1 is enough: a compile error
     #: is deterministic, and a *time* claim is what ``runs`` is for.
     probe_runs: int = 1
@@ -833,6 +840,58 @@ def verify_candidates(
         results.append(result)
         if result.status == "improved":
             improved.append((index, result))
+
+    # ---------------------------------------------------------------- confirm
+    # 复测：只在「已经判为 improved」的候选上再花一遍测量预算。
+    # 单遍测量无法把「真实的 1% 收益」与「噪声恰好偏了 1%」分开，而报告的
+    # 每一句「省了 x%」都建立在这个判定上。复测不通过的一律降级，并把每一遍
+    # 的读数写进 message——读者要能看到它为什么不可信，而不是只看到一个结论。
+    if verify.confirm_passes > 1 and improved:
+        demoted: set[int] = set()
+        for index, result in improved:
+            candidate, source_path, line_number = pending[index]
+            unit_options = _unit_options(scan, candidate, options, effective_includes)
+            original_text = source_path.read_text(encoding="utf-8", errors="replace")
+            percents = [result.percent_saved or 0.0]
+            passed = True
+            with tempfile.TemporaryDirectory(prefix="heavyheader-confirm-") as tmp:
+                patched_path = Path(tmp) / source_path.name
+                patched_path.write_text(
+                    _comment_out(original_text, line_number), encoding="utf-8"
+                )
+                patched_options = _patched_options(
+                    unit_options, effective_includes, source_path
+                )
+                for _ in range(verify.confirm_passes - 1):
+                    base, _, err_b, _ = _measure(
+                        driver, source_path, patched_options, None,
+                        verify.runs, verify.timeout,
+                    )
+                    patched, _, err_p, _ = _measure(
+                        driver, patched_path, patched_options, None,
+                        verify.runs, verify.timeout,
+                    )
+                    if base is None or patched is None:
+                        passed = False
+                        percents.append(0.0)
+                        result.message += (
+                            f"；复测未能编译（{err_b or err_p or 'unknown'}），"
+                            "结论降级为未证实"
+                        )
+                        break
+                    percent = (base - patched) / base * 100 if base else 0.0
+                    percents.append(percent)
+                    if percent < TIME_NOISE_FLOOR * 100:
+                        passed = False
+            if not passed:
+                demoted.add(index)
+                result.status = "no-change"
+                result.message += (
+                    "；复测未通过，各遍 percent_saved = "
+                    + " / ".join(f"{value:.2f}%" for value in percents)
+                    + f"（阈值 {TIME_NOISE_FLOOR * 100:.0f}%）"
+                )
+        improved = [pair for pair in improved if pair[0] not in demoted]
 
     if improved:
         with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:

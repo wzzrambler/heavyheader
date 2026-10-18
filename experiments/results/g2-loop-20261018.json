@@ -1,0 +1,468 @@
+{
+  "date": "2026-10-18",
+  "tus": 25,
+  "candidate_pool": 83,
+  "tool_top": 10,
+  "random_n": 10,
+  "runs_per_side": 3,
+  "noise_floor_percent": 2.0,
+  "aa_control": {
+    "units": [
+      {
+        "tu": "unit-algorithms.cpp",
+        "a_ms": 1022.3,
+        "b_ms": 1016.5,
+        "delta_percent": 0.58
+      },
+      {
+        "tu": "unit-allocator.cpp",
+        "a_ms": 1008.9,
+        "b_ms": 998.3,
+        "delta_percent": 1.07
+      },
+      {
+        "tu": "unit-alt-string.cpp",
+        "a_ms": 1204.3,
+        "b_ms": 1211.0,
+        "delta_percent": 0.55
+      },
+      {
+        "tu": "unit-assert_macro.cpp",
+        "a_ms": 723.0,
+        "b_ms": 723.1,
+        "delta_percent": 0.02
+      },
+      {
+        "tu": "unit-binary_formats.cpp",
+        "a_ms": 837.9,
+        "b_ms": 839.4,
+        "delta_percent": 0.18
+      }
+    ],
+    "max_delta_percent": 1.07,
+    "false_positive": false,
+    "noise_floor_percent": 2.0
+  },
+  "arms": [
+    {
+      "arm": "tool",
+      "candidates": 10,
+      "compiled": 3,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1504.8,
+          "patched_ms": 1542.3,
+          "percent_saved": -2.49,
+          "message": "基线 1505 ms → 移除后 1542 ms"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1449.2,
+          "patched_ms": 1467.1,
+          "percent_saved": -1.24,
+          "message": "差异在噪声范围内（-18 ms）"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1505.9,
+          "patched_ms": 1499.5,
+          "percent_saved": 0.43,
+          "message": "差异在噪声范围内（+6 ms）"
+        },
+        {
+          "tu": "unit-conversions.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-a8x98_pn\\unit-conversions.cpp:21:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-constructor1.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-3cb8wbaa\\unit-constructor1.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-07frfv4m\\unit-bjdata.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-gj20yetj\\unit-deserialization.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-ma6krkl_\\unit-cbor.cpp:12:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-alt-string.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-oaoeul41\\unit-alt-string.cpp:171:18: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-bson.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-0zeh_4kx\\unit-bson.cpp:12:7: error: use of undeclared identifier 'nlohmann'"
+        }
+      ]
+    },
+    {
+      "arm": "random",
+      "candidates": 10,
+      "compiled": 4,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "tu": "unit-bson.cpp",
+          "header": "doctest_compatibility.h",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-3hha7wm9\\unit-bson.cpp:22:5: error: use of undeclared identifier 'SECTION'"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "limits",
+          "status": "no-change",
+          "baseline_ms": 1454.3,
+          "patched_ms": 1439.8,
+          "percent_saved": 1.0,
+          "message": "差异在噪声范围内（+15 ms）"
+        },
+        {
+          "tu": "unit-element_access1.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-0bcskggu\\unit-element_access1.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-alt-string.cpp",
+          "header": "utility",
+          "status": "no-change",
+          "baseline_ms": 1221.8,
+          "patched_ms": 1201.0,
+          "percent_saved": 1.71,
+          "message": "差异在噪声范围内（+21 ms）"
+        },
+        {
+          "tu": "unit-concepts.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-jhx04fuk\\unit-concepts.cpp:12:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-constructor1.cpp",
+          "header": "list",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-17w16ztx\\unit-constructor1.cpp:232:18: error: no member named 'list' in namespace 'std'"
+        },
+        {
+          "tu": "unit-constructor2.cpp",
+          "header": "doctest_compatibility.h",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-xuevwb5q\\unit-constructor2.cpp:14:1: error: a type specifier is required for all declarations"
+        },
+        {
+          "tu": "unit-binary_formats.cpp",
+          "header": "make_test_data_available.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-p7zlgw2p\\unit-binary_formats.cpp:21:32: error: use of undeclared identifier 'TEST_DATA_DIRECTORY'"
+        },
+        {
+          "tu": "unit-bson.cpp",
+          "header": "limits",
+          "status": "no-change",
+          "baseline_ms": 1233.9,
+          "patched_ms": 1243.4,
+          "percent_saved": -0.77,
+          "message": "差异在噪声范围内（-9 ms）"
+        },
+        {
+          "tu": "unit-alt-string.cpp",
+          "header": "string",
+          "status": "no-change",
+          "baseline_ms": 1221.8,
+          "patched_ms": 1201.4,
+          "percent_saved": 1.67,
+          "message": "差异在噪声范围内（+20 ms）"
+        }
+      ]
+    },
+    {
+      "arm": "heuristic",
+      "candidates": 3,
+      "compiled": 3,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1550.9,
+          "patched_ms": 1547.3,
+          "percent_saved": 0.23,
+          "message": "差异在噪声范围内（+4 ms）"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1454.7,
+          "patched_ms": 1450.6,
+          "percent_saved": 0.28,
+          "message": "差异在噪声范围内（+4 ms）"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1499.3,
+          "patched_ms": 1509.9,
+          "percent_saved": -0.71,
+          "message": "差异在噪声范围内（-11 ms）"
+        }
+      ]
+    }
+  ],
+  "arms_with_confirmation": [
+    {
+      "arm": "tool+confirm",
+      "candidates": 10,
+      "compiled": 3,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1512.7,
+          "patched_ms": 1513.6,
+          "percent_saved": -0.06,
+          "message": "差异在噪声范围内（-1 ms）"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1429.7,
+          "patched_ms": 1445.7,
+          "percent_saved": -1.12,
+          "message": "差异在噪声范围内（-16 ms）"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1488.2,
+          "patched_ms": 1520.2,
+          "percent_saved": -2.15,
+          "message": "基线 1488 ms → 移除后 1520 ms"
+        },
+        {
+          "tu": "unit-alt-string.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-fwjr6oa0\\unit-alt-string.cpp:171:18: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-dedhh0gc\\unit-deserialization.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-bson.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-o21g4z5c\\unit-bson.cpp:12:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-fequy0rr\\unit-bjdata.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-vdfd7x6o\\unit-cbor.cpp:12:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-conversions.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-tmcqbrr5\\unit-conversions.cpp:21:7: error: use of undeclared identifier 'nlohmann'"
+        },
+        {
+          "tu": "unit-constructor1.cpp",
+          "header": "json.hpp",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-h3udnxad\\unit-constructor1.cpp:13:7: error: use of undeclared identifier 'nlohmann'"
+        }
+      ]
+    },
+    {
+      "arm": "heuristic+confirm",
+      "candidates": 3,
+      "compiled": 3,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "tu": "unit-bjdata.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1539.7,
+          "patched_ms": 1564.1,
+          "percent_saved": -1.59,
+          "message": "差异在噪声范围内（-24 ms）"
+        },
+        {
+          "tu": "unit-cbor.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1466.3,
+          "patched_ms": 1458.0,
+          "percent_saved": 0.56,
+          "message": "差异在噪声范围内（+8 ms）"
+        },
+        {
+          "tu": "unit-deserialization.cpp",
+          "header": "iostream",
+          "status": "no-change",
+          "baseline_ms": 1536.7,
+          "patched_ms": 1510.8,
+          "percent_saved": 1.68,
+          "message": "差异在噪声范围内（+26 ms）"
+        }
+      ]
+    }
+  ],
+  "borderline": {
+    "repeats": 3,
+    "per_candidate": {
+      "iostream": {
+        "samples": [
+          -0.75,
+          0.98,
+          -0.44,
+          -0.41,
+          6.13,
+          -1.08,
+          1.45,
+          0.04,
+          -1.17
+        ],
+        "min": -1.17,
+        "max": 6.13,
+        "spread": 7.3,
+        "above_floor": 1,
+        "runs": 9
+      }
+    }
+  },
+  "repeat_check": {
+    "improved_in_first_pass": 4,
+    "still_improved": 0,
+    "details": [
+      {
+        "header": "iostream",
+        "status": "no-change",
+        "percent_saved": -0.05
+      },
+      {
+        "header": "iostream",
+        "status": "no-change",
+        "percent_saved": -0.83
+      },
+      {
+        "header": "iostream",
+        "status": "no-change",
+        "percent_saved": 0.31
+      },
+      {
+        "header": "iostream",
+        "status": "no-change",
+        "percent_saved": -0.06
+      }
+    ]
+  }
+}

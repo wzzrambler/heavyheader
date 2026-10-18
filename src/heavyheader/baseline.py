@@ -259,9 +259,23 @@ def evaluate_gate(
         )
 
     if comparison.tu_count_after < comparison.tu_count_before:
+        # 少掉编译单元意味着「总成本」是在更小的集合上算出来的，回归率因此
+        # 会变成一个负得很大的数——看起来像大幅改善，实际是数据缺了一块。
+        # 只报警告不够：G3 实测中，注入一个重头导致 main.cpp 编译失败，TU 从
+        # 2 掉到 1，门禁报出「-67.7%」并**通过**。构建坏得越彻底越容易过，
+        # 这与门禁的目的完全相反，所以这里必须是失败而不是警告。
+        # 若删除文件是有意的，正确动作是更新基线，而不是让门禁闭嘴。
         warnings.append(
             f"translation units dropped from {comparison.tu_count_before} to "
             f"{comparison.tu_count_after} -- did the scan miss files?"
+        )
+        failed_after = len(after.failed_tus)
+        reasons.append(
+            f"only {comparison.tu_count_after} of {comparison.tu_count_before} "
+            "translation units produced data"
+            + (f" ({failed_after} failed to compile)" if failed_after else "")
+            + " -- the comparison is incomplete, so the regression rate cannot be "
+            "trusted; if files were removed on purpose, update the baseline"
         )
 
     # 一个编译单元都没编译成功时，这次扫描没有任何数据可依据：回归算出来是

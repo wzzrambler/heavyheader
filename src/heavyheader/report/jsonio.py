@@ -122,6 +122,11 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "measured_seconds_saved": candidate.measured_seconds_saved,
                 "verified": candidate.verified,
                 "usage_label": candidate.usage_label,
+                # 排序用的是 verdict 而不是 label。只存 label 时，任何从 JSON
+                # 重载的扫描（``compare``、看板、外部脚本）都会把全部候选当成
+                # ``unknown``，分层退化成按估值排——「明确在用」的头文件随之
+                # 排到「疑似未使用」前面。label 是给人看的，不能让逻辑依赖它。
+                "usage_verdict": candidate.usage_verdict,
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
                 "advice": _advice_to_dict(candidate.advice),
@@ -194,6 +199,19 @@ def _template_profile_to_dict(scan: ProjectScan) -> dict | None:
         ],
         "note": "per_tu 数字来自 -ftime-report，精确；by_surface 是文本启发式，非实测",
     }
+
+
+#: 旧版 JSON 只写 ``usage_label``。用它反推排序用的 verdict，避免升级后
+#: 历史基线文件的候选排序整体退化（``unknown`` 会与「无法判定」混为一谈）。
+_LABEL_TO_VERDICT = {
+    "疑似未使用": "plausibly_unused",
+    "正在使用": "in_use",
+    "无法判定": "unknown",
+}
+
+
+def _verdict_from_label(label: object) -> str:
+    return _LABEL_TO_VERDICT.get(str(label), "unknown")
 
 
 def scan_from_dict(data: dict) -> ProjectScan:
@@ -277,6 +295,8 @@ def scan_from_dict(data: dict) -> ProjectScan:
             measured_seconds_saved=entry.get("measured_seconds_saved"),
             verified=entry.get("verified", False),
             usage_label=entry.get("usage_label", "无法判定"),
+            usage_verdict=entry.get("usage_verdict")
+            or _verdict_from_label(entry.get("usage_label")),
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
             advice=_advice_from_dict(entry.get("advice")),

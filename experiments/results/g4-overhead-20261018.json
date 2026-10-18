@@ -1,0 +1,62 @@
+{
+  "date": "2026-10-18",
+  "project": "nlohmann/json (first 25 TUs)",
+  "tus": 25,
+  "repeats": 3,
+  "jobs": 1,
+  "lanes": [
+    {
+      "lane": "gcc",
+      "compiler": "g++",
+      "runs": 3,
+      "failed_units": 0,
+      "wall_median_s": 41.6,
+      "compile_median_s": 36.16,
+      "overhead_ratio": 1.15,
+      "peak_rss_mb": 9.2,
+      "analysis_only_s": 5.44,
+      "attributed_lines_stable": true,
+      "top10_stable": true,
+      "attributed_lines": 4233937,
+      "top10": [
+        "doctest.h",
+        "json.hpp",
+        "binary_reader.hpp",
+        "hedley.hpp",
+        "binary_writer.hpp",
+        "lexer.hpp",
+        "to_chars.hpp",
+        "json_pointer.hpp",
+        "serializer.hpp",
+        "type_traits.hpp"
+      ]
+    },
+    {
+      "lane": "clang",
+      "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+      "runs": 3,
+      "failed_units": 0,
+      "wall_median_s": 33.93,
+      "compile_median_s": 28.3,
+      "overhead_ratio": 1.2,
+      "peak_rss_mb": 9.2,
+      "analysis_only_s": 5.63,
+      "attributed_lines_stable": true,
+      "top10_stable": true,
+      "attributed_lines": 4240012,
+      "top10": [
+        "doctest.h",
+        "json.hpp",
+        "binary_reader.hpp",
+        "hedley.hpp",
+        "binary_writer.hpp",
+        "lexer.hpp",
+        "to_chars.hpp",
+        "json_pointer.hpp",
+        "serializer.hpp",
+        "type_traits.hpp"
+      ]
+    }
+  ],
+  "msvc": "未测：vcvars64 定位 Windows SDK 依赖 reg.exe，被本机安全策略拦截"
+}

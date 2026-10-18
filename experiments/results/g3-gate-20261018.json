@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-18",
+  "sample": "benchmarks/cases/demo",
+  "repeats": 3,
+  "injected_include": "zz_injected_heavy.h",
+  "injected_header_lines": 22903,
+  "baseline_attributed_lines": 229031,
+  "clean_runs": [
+    {
+      "exit": 0,
+      "seconds": 3.38,
+      "tail": "门禁通过：成本回归在 +5.0% 预算内。"
+    },
+    {
+      "exit": 0,
+      "seconds": 3.37,
+      "tail": "门禁通过：成本回归在 +5.0% 预算内。"
+    },
+    {
+      "exit": 0,
+      "seconds": 3.38,
+      "tail": "门禁通过：成本回归在 +5.0% 预算内。"
+    }
+  ],
+  "clean_pass": 3,
+  "clean_false_positive": false,
+  "regression_runs": [
+    {
+      "exit": 1,
+      "seconds": 3.9,
+      "output": [
+        "头文件解析量：229,031 → 251,935 (+10.0%)",
+        "编译耗时：1.43s → 1.57s (+9.8%)",
+        "门禁失败：",
+        "  - header cost regressed +10.0% (229031 -> 251935 attributed lines), budget is +5.0%"
+      ]
+    },
+    {
+      "exit": 1,
+      "seconds": 3.95,
+      "output": [
+        "头文件解析量：229,031 → 251,935 (+10.0%)",
+        "编译耗时：1.43s → 1.60s (+11.9%)",
+        "门禁失败：",
+        "  - header cost regressed +10.0% (229031 -> 251935 attributed lines), budget is +5.0%"
+      ]
+    },
+    {
+      "exit": 1,
+      "seconds": 4.14,
+      "output": [
+        "头文件解析量：229,031 → 251,935 (+10.0%)",
+        "编译耗时：1.43s → 1.75s (+22.4%)",
+        "门禁失败：",
+        "  - header cost regressed +10.0% (229031 -> 251935 attributed lines), budget is +5.0%"
+      ]
+    }
+  ],
+  "regression_detected": 3,
+  "broken_build_runs": [
+    {
+      "exit": 1,
+      "seconds": 3.33,
+      "output": [
+        "头文件解析量：229,031 → 155,094 (-32.3%)",
+        "编译耗时：1.43s → 0.89s (-37.8%)",
+        "警告：translation units dropped from 2 to 1 -- did the scan miss files?",
+        "门禁失败："
+      ]
+    },
+    {
+      "exit": 1,
+      "seconds": 3.34,
+      "output": [
+        "头文件解析量：229,031 → 155,094 (-32.3%)",
+        "编译耗时：1.43s → 0.91s (-36.1%)",
+        "警告：translation units dropped from 2 to 1 -- did the scan miss files?",
+        "门禁失败："
+      ]
+    },
+    {
+      "exit": 1,
+      "seconds": 3.29,
+      "output": [
+        "头文件解析量：229,031 → 155,094 (-32.3%)",
+        "编译耗时：1.43s → 0.91s (-36.2%)",
+        "警告：translation units dropped from 2 to 1 -- did the scan miss files?",
+        "门禁失败："
+      ]
+    }
+  ],
+  "broken_build_detected": 3,
+  "gate_seconds_median": 3.38,
+  "regressed_seconds_median": 3.95
+}

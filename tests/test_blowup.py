@@ -92,3 +92,72 @@ def test_old_json_without_denominator_degrades_to_undeclared():
     again = scan_from_dict(data)
     assert again.total_project_lines == 0
     assert again.blowup_factor() == 0.0
+
+
+def test_candidate_rank_heuristic_survives_json_round_trip():
+    """排序分层必须跟着 JSON 一起存，否则重载后排序整体退化。
+
+    真实影响：``usage_label`` 是给人看的中文，``usage_verdict`` 才是排序键。
+    只序列化 label 时，``scan_from_dict`` 会把全部候选恢复成 ``unknown``，
+    于是「明确在用」的 150k 行伞头文件和「疑似未使用」的 90 行系统头落在
+    同一层，按估值排——推荐列表的第一条变成删不掉的那个。
+    """
+    from heavyheader.models import (
+        HeaderKind,
+        ProjectScan,
+        RemovalCandidate,
+        candidate_rank_key,
+    )
+    from heavyheader.report.jsonio import scan_from_dict, scan_to_dict
+
+    used = RemovalCandidate(
+        tu=Path("a.cpp"),
+        header=Path("big.hpp"),
+        line=1,
+        kind=HeaderKind.PROJECT,
+        estimated_lines_saved=150_000,
+        usage_label="正在使用",
+        usage_verdict="in_use",
+    )
+    maybe = RemovalCandidate(
+        tu=Path("b.cpp"),
+        header=Path("tiny.hpp"),
+        line=1,
+        kind=HeaderKind.SYSTEM,
+        estimated_lines_saved=90,
+        usage_label="疑似未使用",
+        usage_verdict="plausibly_unused",
+    )
+    scan = ProjectScan(
+        root=Path("."), compiler="g++", compiler_family=CompilerFamily.GCC,
+        standard="c++17", candidates=[used, maybe],
+    )
+
+    again = scan_from_dict(scan_to_dict(scan))
+    by_header = {c.header.name: c for c in again.candidates}
+    assert by_header["big.hpp"].usage_verdict == "in_use"
+    assert by_header["tiny.hpp"].usage_verdict == "plausibly_unused"
+    # 排序结论必须和原始扫描一致：疑似未使用排在明确在用之前。
+    ordered = sorted(again.candidates, key=candidate_rank_key)
+    assert [c.header.name for c in ordered] == ["tiny.hpp", "big.hpp"]
+
+
+def test_legacy_json_without_verdict_is_ranked_by_label():
+    """旧基线文件没有 verdict 字段；反推 label 而不是一律当成 unknown。"""
+    from heavyheader.models import ProjectScan, candidate_rank_key
+    from heavyheader.report.jsonio import scan_from_dict
+
+    data = {
+        "schema": 1,
+        "root": ".", "compiler": "g++", "compiler_family": "gcc", "standard": "c++17",
+        "translation_units": [], "headers": [], "warnings": [],
+        "candidates": [
+            {"tu": "a.cpp", "header": "big.hpp", "kind": "project",
+             "estimated_lines_saved": 150000, "usage_label": "正在使用"},
+            {"tu": "b.cpp", "header": "tiny.hpp", "kind": "system",
+             "estimated_lines_saved": 90, "usage_label": "疑似未使用"},
+        ],
+    }
+    scan = scan_from_dict(data)
+    ordered = sorted(scan.candidates, key=candidate_rank_key)
+    assert [c.header.name for c in ordered] == ["tiny.hpp", "big.hpp"]

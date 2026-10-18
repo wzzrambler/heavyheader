@@ -257,12 +257,19 @@ def test_gate_fails_when_unguarded_headers_grow():
     assert any("include guards" in reason for reason in result.reasons)
 
 
-def test_gate_warns_when_translation_units_disappear():
+def test_gate_fails_when_translation_units_disappear():
+    """少了编译单元 = 数据缺一块，回归率不可信，门禁必须失败。
+
+    旧行为是「只报警告、仍然通过」。G3 实测推翻了它：给 main.cpp 注入一个
+    重头后它编译失败，TU 从 2 掉到 1，门禁报出 -67.7% 并**通过**——构建坏得
+    越彻底越容易过。这正是门禁最不该犯的错，所以改为硬失败。
+    """
     before = _scan([_header("/proj/a.h", 10, 2)], tus=4)
     after = _scan([_header("/proj/a.h", 10, 2)], tus=2)
     result = evaluate_gate(before, after, max_regression_percent=5.0)
-    assert result.passed  # not a failure, but it must not pass silently
+    assert not result.passed
     assert any("translation units dropped" in w for w in result.warnings)
+    assert any("comparison is incomplete" in reason for reason in result.reasons)
 
 
 def test_gate_defaults_are_conservative():
@@ -319,16 +326,20 @@ def test_gate_still_passes_a_legitimate_improvement():
     assert result.reasons == []
 
 
-def test_gate_warns_when_units_disappeared_but_still_passes():
-    """Deleting a source file legitimately lowers cost; it must not be
-    reported as a regression, but the coverage change must be visible."""
+def test_gate_blocks_on_coverage_loss_even_when_cost_fell():
+    """删掉源文件确实会降低成本，但门禁不能替用户判断这是不是有意的。
+
+    它无法区分「删了一个不再需要的文件」与「这个文件编译不过了」，而后者是
+    CI 最常见的故障。所以一律失败，并提示：若是有意删除，更新基线。
+    """
     before = _scan([_header("/proj/a.h", 100, 2)], tus=2)
     after = _scan([_header("/proj/a.h", 50, 1)], tus=1)
 
     result = evaluate_gate(before, after, max_regression_percent=5.0)
 
-    assert result.passed is True
+    assert result.passed is False
     assert any("translation units dropped" in w for w in result.warnings)
+    assert any("update the baseline" in reason for reason in result.reasons)
 
 
 # --------------------------------------------------------------------------

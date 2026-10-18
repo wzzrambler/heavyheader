@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-18",
+  "sample": "benchmarks/cases/demo",
+  "tus": 2,
+  "candidates": 6,
+  "runs_per_side": 3,
+  "noise_floor_percent": 2.0,
+  "arm": {
+    "arm": "demo-control",
+    "candidates": 6,
+    "compiled": 2,
+    "improved": 1,
+    "adopt_rate": 0.167,
+    "details": [
+      {
+        "tu": "main.cpp",
+        "header": "lonely.h",
+        "status": "improved",
+        "baseline_ms": 452.0,
+        "patched_ms": 440.6,
+        "percent_saved": 2.51,
+        "message": "基线 452 ms → 移除后 441 ms"
+      },
+      {
+        "tu": "util.cpp",
+        "header": "core.h",
+        "status": "compile-error",
+        "baseline_ms": null,
+        "patched_ms": null,
+        "percent_saved": null,
+        "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-8646bk93\\util.cpp:3:14: error: unknown type name 'Core'"
+      },
+      {
+        "tu": "main.cpp",
+        "header": "core.h",
+        "status": "compile-error",
+        "baseline_ms": null,
+        "patched_ms": null,
+        "percent_saved": null,
+        "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-1vplkk40\\main.cpp:6:14: error: unknown type name 'Core'"
+      },
+      {
+        "tu": "main.cpp",
+        "header": "heavy.h",
+        "status": "no-change",
+        "baseline_ms": 452.0,
+        "patched_ms": 461.3,
+        "percent_saved": -2.06,
+        "message": "基线 452 ms → 移除后 461 ms"
+      },
+      {
+        "tu": "main.cpp",
+        "header": "mid.h",
+        "status": "compile-error",
+        "baseline_ms": null,
+        "patched_ms": null,
+        "percent_saved": null,
+        "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-2y63a8u9\\main.cpp:6:64: error: use of undeclared identifier 'mid'"
+      },
+      {
+        "tu": "util.cpp",
+        "header": "unguarded.h",
+        "status": "compile-error",
+        "baseline_ms": null,
+        "patched_ms": null,
+        "percent_saved": null,
+        "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-pltm2ipp\\util.cpp:3:42: error: use of undeclared identifier 'unguarded'"
+      }
+    ]
+  },
+  "note": "构造样本，仅作阳性对照；不能作为「真实工程可提速」的证据。"
+}

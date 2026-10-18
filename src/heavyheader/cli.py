@@ -157,6 +157,12 @@ def build_parser() -> argparse.ArgumentParser:
     add_common(verify)
     verify.add_argument("--top", type=int, default=5, help="验证前 N 个候选（默认 5）")
     verify.add_argument("--runs", type=int, default=3, help="每侧重复编译次数，取最小值（默认 3）")
+    verify.add_argument(
+        "--confirm",
+        type=int,
+        default=2,
+        help="判为 improved 后复测几遍，全部通过才保留结论（默认 2；1 = 不复测）",
+    )
 
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
     add_common(gate)
@@ -493,7 +499,12 @@ def _cmd_verify(args) -> int:
         scan,
         driver,
         options,
-        verify=VerifyOptions(top=args.top, runs=args.runs, timeout=args.timeout),
+        verify=VerifyOptions(
+            top=args.top,
+            runs=args.runs,
+            timeout=args.timeout,
+            confirm_passes=max(1, getattr(args, "confirm", 1)),
+        ),
         include_dirs=list(args.includes),
         semantic=backend,
         build_path=_semantic_build_path(args) or scan.root,

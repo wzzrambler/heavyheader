@@ -542,3 +542,67 @@ def test_semantic_is_skipped_when_build_path_missing(tmp_path, monkeypatch):
     )
     assert not calls  # analyse 根本不该被调用
     assert results[0].candidate.semantic is None
+
+
+def _scripted_measure(monkeypatch, source: Path, patched_seconds: list[float]):
+    """按顺序回放「移除后」的耗时；基线固定 1.000 s。
+
+    探测、首轮测量、复测都走同一个 ``_measure``，所以用序列而不是按调用点
+    判断阶段——按位置写死会让测试锁住调用顺序，而不是锁住行为。
+    """
+    queue = list(patched_seconds)
+    tail = queue[-1]
+
+    def _fake(driver, source_path, options, _extra, runs, timeout):
+        if str(source_path) == str(source):
+            return 1.000, None, None, ()
+        value = queue.pop(0) if queue else tail
+        return value, None, None, ()
+
+    monkeypatch.setattr("heavyheader.verify._measure", _fake)
+
+
+def test_confirmation_demotes_a_win_that_does_not_repeat(tmp_path, monkeypatch):
+    """G2 实测到的真问题：1–2% 的「收益」单遍不可复现。
+
+    同一候选连测三次，percent_saved 在 1.0%–2.1% 之间摆动，improved 出现
+    1/3 次；第一轮判为 improved 的候选复测 0/4 复现。所以「已实测」必须
+    包含「复测仍成立」，否则报告里的每个百分比都是抽签结果。
+
+    本用例：首轮 3%（improved），复测 0.5%（低于 2% 线）→ 必须降级。
+    """
+    from heavyheader.verify import VerifyOptions
+
+    scan, options, source = _project(tmp_path)
+    # 探测 0.970、首轮测量 0.970（都是 3%），复测 0.995（0.5%）。
+    _scripted_measure(monkeypatch, source, [0.970, 0.970, 0.995])
+
+    results = verify_candidates(
+        scan,
+        _RecordingDriver(),
+        options,
+        verify=VerifyOptions(top=1, runs=1, confirm_passes=2, probe_runs=1, jobs=1),
+    )
+
+    assert results[0].status == "no-change"
+    assert "复测" in results[0].message
+    # 各遍读数必须写进理由，读者才能看到它为什么不可信。
+    assert "3.00%" in results[0].message and "0.50%" in results[0].message
+
+
+def test_confirmation_keeps_a_win_that_repeats(tmp_path, monkeypatch):
+    """复测也成立的收益必须保留——降级逻辑不能把真收益一起杀掉。"""
+    from heavyheader.verify import VerifyOptions
+
+    scan, options, source = _project(tmp_path)
+    _scripted_measure(monkeypatch, source, [0.970, 0.970, 0.968])
+
+    results = verify_candidates(
+        scan,
+        _RecordingDriver(),
+        options,
+        verify=VerifyOptions(top=1, runs=1, confirm_passes=2, probe_runs=1, jobs=1),
+    )
+
+    assert results[0].status == "improved"
+    assert "复测" not in results[0].message

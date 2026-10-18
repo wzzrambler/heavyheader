@@ -528,6 +528,15 @@ class ProjectScan:
     pch: object | None = None
     #: Forward-declaration candidates, only when ``--forward-decl`` is passed.
     forward_candidates: list = field(default_factory=list)
+    #: 候选排序依据：``"lines"`` 是归因行数估算，``"ftime-trace"`` 是实测的
+    #: 每头文件自身耗时。报告必须显示它——同一个候选列表在这两种口径下顺序
+    #: 不同，读者有权知道看到的是哪一种。
+    cost_model: str = "lines"
+    #: ``--cost-model trace`` 采到的实测成本本身（
+    #: :class:`~heavyheader.attrib.cost.HeaderCosts`）。留着它是因为排序只是
+    #: 它的一个用途——报告要能回答「这个头到底花了多少微秒」，而不只是
+    #: 「它排第几」。未采集时为 None。
+    cost_profile: object | None = None
     #: 探针/测量阶段的结果，``--probe`` 时才有内容。None = 这一轮没跑实测，
     #: 报告必须把这种情况说明白，不能让读者以为「没测」等于「没问题」。
     probe_results: list | None = None

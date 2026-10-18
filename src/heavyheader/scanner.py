@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,7 @@ from .attrib.graph import (
     find_removal_candidates,
     redundant_reparse_warnings,
 )
+from .attrib.cost import collect_trace_costs
 from .attrib.sites import find_header_candidates
 from .attrib.forward import find_forward_declaration_candidates
 from .attrib.pch import estimate_pch
@@ -106,6 +108,16 @@ class ScanOptions:
     #: 候选里只有 3 条删得掉）。代价是候选池变大、验证要重编一批单元，
     #: 因此默认关闭，由显式开关或实验脚本启用。
     header_sites: bool = False
+    #: Rank by *measured* header cost instead of attributed lines.
+    #:
+    #: Lines are a structural proxy; the injection experiment showed how bad
+    #: a proxy it is -- a removal that really saved 6.8% of wall time was
+    #: ranked 25th of 61 by line count.  Turning this on compiles every unit
+    #: once more with ``-ftime-trace`` (a real codegen pass: clang ignores
+    #: the flag under ``-fsyntax-only``) and ranks by microseconds instead.
+    #: Off by default because of that extra pass; clang-only, and the tool
+    #: falls back to lines -- saying so in the report -- when no trace lands.
+    cost_model: str = "lines"
     #: Run the probe/measure stage inside the scan.
     #:
     #: This is the framework change the controlled experiment forced.  ``scan``
@@ -515,7 +527,26 @@ def scan_project(
     # 一行」永远排在「改公共头文件的一行」前面：前者风险低得多，收益相同时
     # 没有理由推荐动公共头。
     if options.header_sites:
-        scan.candidates = scan.candidates + find_header_candidates(scan, sizes, kinds)
+        costs = None
+        if options.cost_model == "trace":
+            costs = collect_trace_costs(
+                scan,
+                driver,
+                DriverOptions(),
+                workdir=Path(tempfile.mkdtemp(prefix="heavyheader-trace-")),
+                timeout=options.timeout,
+            )
+            if not costs.available:
+                # 不要静默回退：用户显式要了实测，拿不到必须说清楚。
+                scan.warnings.append(
+                    "未采集到 -ftime-trace 数据（可能不是 clang，或全部单元编译失败），"
+                    "排序回退到归因行数"
+                )
+        scan.cost_model = costs.basis if costs is not None else "lines"
+        scan.cost_profile = costs
+        scan.candidates = scan.candidates + find_header_candidates(
+            scan, sizes, kinds, costs=costs
+        )
     # 「累计编译耗时」对外呈现的是**墙钟**，所以这里优先用驱动实测的
     # wall_seconds。-ftime-report 的 TOTAL 是 CPU 时间，Windows 上两者可差
     # 30 倍（0.02s vs 0.60s，实测），用 CPU 时间会让报告里的「累计耗时」

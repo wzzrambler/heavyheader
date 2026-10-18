@@ -111,6 +111,13 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="实验性：也把头文件里的 #include 当作候选（改动会影响所有解析它的编译单元）",
         )
+        sub.add_argument(
+            "--cost-model",
+            choices=("lines", "trace"),
+            default="lines",
+            help="实验性：候选排序依据。trace = 用 -ftime-trace 实测的每头文件自身耗时"
+            "（需 clang，会额外真编译一遍全项目）；lines = 归因行数估算（默认）",
+        )
         sub.add_argument("--timeout", type=float, default=300.0, help="单个编译单元超时秒数")
 
     scan = subparsers.add_parser("scan", help="分析源码树并生成报告")
@@ -303,6 +310,7 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         pch_top=getattr(args, "pch_top", 5),
         forward_decl=getattr(args, "forward_decl", False),
         header_sites=getattr(args, "header_sites", False),
+        cost_model=getattr(args, "cost_model", "lines"),
         probe=getattr(args, "probe", False),
         probe_top=getattr(args, "probe_top", 0),
         probe_budget=getattr(args, "probe_budget", 0.0),

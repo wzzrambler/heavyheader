@@ -1,0 +1,98 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "injected": "<regex>",
+  "scan_seconds": {
+    "lines": 31.39,
+    "trace": 53.7
+  },
+  "models": [
+    {
+      "model": "lines",
+      "candidates": 16,
+      "injected_rank": null,
+      "top": [
+        {
+          "site": "prelude.h",
+          "header": "algorithm",
+          "lines": 216456,
+          "seconds": 0.6666
+        },
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "lines": 177024,
+          "seconds": 0.5452
+        },
+        {
+          "site": "prelude.h",
+          "header": "vector",
+          "lines": 174096,
+          "seconds": 0.5361
+        },
+        {
+          "site": "prelude.h",
+          "header": "set",
+          "lines": 152088,
+          "seconds": 0.4684
+        },
+        {
+          "site": "prelude.h",
+          "header": "iomanip",
+          "lines": 134832,
+          "seconds": 0.4152
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "lines": 126192,
+          "seconds": 0.3886
+        }
+      ]
+    },
+    {
+      "model": "trace",
+      "candidates": 16,
+      "injected_rank": null,
+      "top": [
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "lines": 177024,
+          "seconds": 0.6136
+        },
+        {
+          "site": "prelude.h",
+          "header": "iomanip",
+          "lines": 134832,
+          "seconds": 0.4746
+        },
+        {
+          "site": "prelude.h",
+          "header": "vector",
+          "lines": 174096,
+          "seconds": 0.3716
+        },
+        {
+          "site": "prelude.h",
+          "header": "algorithm",
+          "lines": 216456,
+          "seconds": 0.3583
+        },
+        {
+          "site": "prelude.h",
+          "header": "set",
+          "lines": 152088,
+          "seconds": 0.3264
+        },
+        {
+          "site": "prelude.h",
+          "header": "atomic",
+          "lines": 125928,
+          "seconds": 0.305
+        }
+      ]
+    }
+  ]
+}

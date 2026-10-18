@@ -130,6 +130,7 @@ def find_header_candidates(
     include_system_sites: bool = False,
     require_plausibly_unused: bool = True,
     usage_index=None,
+    costs=None,
 ) -> list[RemovalCandidate]:
     """...
 
@@ -220,6 +221,17 @@ def find_header_candidates(
             if amplified < min_amplified_lines:
                 continue
 
+            # 成本口径优先：有 -ftime-trace 实测就用它，没有才回退行数换算。
+            # 两者混用会静默改变排序，所以在 notes 里写明依据是哪一种。
+            measured_us = costs.total_us(exclusive) if costs is not None else None
+            covered: tuple[int, int] | None = None
+            if measured_us is not None and measured_us > 0:
+                seconds = round(measured_us * len(affected) / 1_000_000.0, 4)
+                basis = "measured"
+                covered = costs.coverage(exclusive)
+            else:
+                basis = "lines"
+
             representative = max(
                 affected,
                 key=lambda tu: (unit_seconds.get(tu) or 0.0, str(tu)),
@@ -227,18 +239,19 @@ def find_header_candidates(
             total_lines = sum(processed_lines.get(tu, 0) for tu in affected)
             percent = (amplified / total_lines * 100.0) if total_lines else 0.0
 
-            seconds: float | None = None
-            total_seconds = 0.0
-            counted = 0
-            for tu in affected:
-                unit_total = unit_seconds.get(tu) or 0.0
-                lines = processed_lines.get(tu, 0)
-                if unit_total <= 0 or lines <= 0:
-                    continue
-                total_seconds += unit_total * (saved / lines)
-                counted += 1
-            if counted:
-                seconds = round(total_seconds, 4)
+            if basis == "lines":
+                seconds = None
+                total_seconds = 0.0
+                counted = 0
+                for tu in affected:
+                    unit_total = unit_seconds.get(tu) or 0.0
+                    lines = processed_lines.get(tu, 0)
+                    if unit_total <= 0 or lines <= 0:
+                        continue
+                    total_seconds += unit_total * (saved / lines)
+                    counted += 1
+                if counted:
+                    seconds = round(total_seconds, 4)
 
             candidates.append(
                 RemovalCandidate(
@@ -255,13 +268,26 @@ def find_header_candidates(
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
                     confidence=_confidence(saved, len(affected), signal),
-                    notes=_notes(site_file, header, saved, len(affected)),
+                    notes=_notes(site_file, header, saved, len(affected), basis, covered),
                     site_file=site_file,
                     affected_tus=list(affected),
                 )
             )
 
-    candidates.sort(key=lambda c: (-c.amplified_lines_saved, str(c.site), str(c.header)))
+    # 有实测成本时按秒排，没有才按行数排。两个口径都带路径做 tie-breaker，
+    # 否则 Python 的哈希随机化会让「同样的数据」在两次运行间换顺序。
+    if any(c.estimated_seconds_saved for c in candidates) and costs is not None:
+        candidates.sort(
+            key=lambda c: (
+                -(c.estimated_seconds_saved or 0.0),
+                str(c.site),
+                str(c.header),
+            )
+        )
+    else:
+        candidates.sort(
+            key=lambda c: (-c.amplified_lines_saved, str(c.site), str(c.header))
+        )
     return candidates
 
 
@@ -281,10 +307,35 @@ def _confidence(saved: int, reach: int, signal) -> str:
     return "low"
 
 
-def _notes(site_file: Path, header: Path, saved: int, reach: int) -> list[str]:
-    return [
+def _notes(
+    site_file: Path,
+    header: Path,
+    saved: int,
+    reach: int,
+    basis: str = "lines",
+    covered: tuple[int, int] | None = None,
+) -> list[str]:
+    notes = [
         f"这一行在头文件 {site_file.name} 里，被 {reach} 个编译单元解析",
         f"单单元约 {saved} 行，全项目累计约 {saved * reach} 行",
-        "可行性判定基于「该文件自身正文不使用即将消失的标识符」；"
-        "是否真的可删由 verify 重新编译全部受影响单元后给出",
     ]
+    if basis == "measured":
+        # 覆盖不全时要说清楚，否则「实测」两个字会让人以为全测了。
+        if covered and covered[0] < covered[1]:
+            notes.append(
+                f"排序依据：{covered[1]} 个独占头里有 {covered[0]} 个拿到 "
+                "-ftime-trace 实测耗时，其余按未计入处理（可能低估）"
+            )
+        else:
+            notes.append(
+                "排序依据：-ftime-trace 实测的每个头文件自身耗时（已扣除嵌套子头）"
+            )
+    else:
+        notes.append(
+            "排序依据：归因行数估算（未采集 -ftime-trace，或该头没有实测数据）"
+        )
+    notes.append(
+        "可行性判定基于「该文件自身正文不使用即将消失的标识符」；"
+        "是否真的可删由 verify 重新编译全部受影响单元后给出"
+    )
+    return notes

@@ -6,6 +6,16 @@
 
 ### 新增
 
+- **`attrib/edgecost.py`：边级边际成本（含潜在供给闭包修正）**——对每条 include
+  边算「删掉它后本 TU 不再解析的文件集合」，用 `-ftime-trace` 的自耗时求和得到
+  边际毫秒。关键修正：`-H` 只记录每个头**首次生效**的包含点，被 include guard
+  吞掉的替代供给点看不见，导致「独占闭包」系统性高估删除收益（doctest 上 25 条
+  可删边虚报 45 个文件，7/20 条边承诺了不存在的收益）；补全文本层供给边后
+  假阳性 45 → 0、完全一致率 18/25 → 24/25。9 个单测守护语义，其中
+  `test_potential_graph_kills_the_false_saving` 是该 bug 的回归锁。
+  实验与负面结果见 experiments/edge-precision-20261019.md——**未宣称**
+  「毫秒排序比行数排序更准」：墙钟 A/B 显示单条标准头的节省低于噪声，
+  两模型与实测的秩相关均为负，这套能力只用于排序候选，结论仍归 verify。
 - **`blame` 子命令：commit 级成本归因（成本考古）**——把头文件成本回归归因到
   具体 commit、文件与 include 行。`scan` 在 git 仓库里运行时自动记录 commit；
   `blame` 对两份基线算逐头文件成本差，用 `git diff` 解析 include 行变化，

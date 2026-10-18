@@ -1,0 +1,406 @@
+{
+  "sample_tus": 8,
+  "rows": [
+    {
+      "header": "doctest/parts/doctest_fwd.h",
+      "removable": false
+    },
+    {
+      "header": "ctime",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "corecrt_wtime.h",
+        "ctime",
+        "time.h"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 3,
+      "fp_b": 0
+    },
+    {
+      "header": "cmath",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "cmath",
+        "corecrt_malloc.h",
+        "corecrt_search.h",
+        "corecrt_wstdlib.h",
+        "cstdlib",
+        "limits.h",
+        "stdlib.h",
+        "xtr1common"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 8,
+      "fp_b": 0
+    },
+    {
+      "header": "climits",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "climits"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 1,
+      "fp_b": 0
+    },
+    {
+      "header": "math.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "new",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "corecrt_terminate.h",
+        "cstddef",
+        "cstdint",
+        "cstring",
+        "eh.h",
+        "exception",
+        "malloc.h",
+        "new",
+        "stdint.h",
+        "type_traits",
+        "vcruntime_exception.h"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 11,
+      "fp_b": 0
+    },
+    {
+      "header": "cstdio",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "corecrt_stdio_config.h",
+        "corecrt_wstdio.h",
+        "cstdio",
+        "stdio.h"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 4,
+      "fp_b": 0
+    },
+    {
+      "header": "cstdlib",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "cstring",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "limits",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "__float_float.h",
+        "__float_header_macro.h",
+        "__float_infinity_nan.h",
+        "cfloat",
+        "corecrt_share.h",
+        "corecrt_wconio.h",
+        "corecrt_wctype.h",
+        "corecrt_wdirect.h",
+        "corecrt_wio.h",
+        "corecrt_wprocess.h",
+        "cwchar",
+        "float.h",
+        "limits",
+        "stat.h",
+        "types.h",
+        "wchar.h"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 16,
+      "fp_b": 0
+    },
+    {
+      "header": "utility",
+      "removable": true,
+      "actual": [],
+      "pred_a": [
+        "initializer_list",
+        "utility"
+      ],
+      "pred_b": [],
+      "ok_a": false,
+      "ok_b": true,
+      "fp_a": 2,
+      "fp_b": 0
+    },
+    {
+      "header": "fstream",
+      "removable": false
+    },
+    {
+      "header": "sstream",
+      "removable": false
+    },
+    {
+      "header": "iostream",
+      "removable": false
+    },
+    {
+      "header": "algorithm",
+      "removable": false
+    },
+    {
+      "header": "iomanip",
+      "removable": true,
+      "actual": [
+        "iomanip",
+        "xlocmon",
+        "xloctime"
+      ],
+      "pred_a": [
+        "iomanip",
+        "xlocmon",
+        "xloctime"
+      ],
+      "pred_b": [
+        "iomanip",
+        "xlocmon",
+        "xloctime"
+      ],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "vector",
+      "removable": false
+    },
+    {
+      "header": "atomic",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "mutex",
+      "removable": false
+    },
+    {
+      "header": "set",
+      "removable": false
+    },
+    {
+      "header": "map",
+      "removable": false
+    },
+    {
+      "header": "exception",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "stdexcept",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "csignal",
+      "removable": true,
+      "actual": [
+        "csignal",
+        "signal.h"
+      ],
+      "pred_a": [
+        "csignal",
+        "signal.h"
+      ],
+      "pred_b": [
+        "csignal"
+      ],
+      "ok_a": true,
+      "ok_b": false,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "cfloat",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "cctype",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "cstdint",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "string",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "sys/types.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "unistd.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "sys/sysctl.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "AfxWin.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "windows.h",
+      "removable": false
+    },
+    {
+      "header": "io.h",
+      "removable": false
+    },
+    {
+      "header": "sys/time.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    },
+    {
+      "header": "unistd.h",
+      "removable": true,
+      "actual": [],
+      "pred_a": [],
+      "pred_b": [],
+      "ok_a": true,
+      "ok_b": true,
+      "fp_a": 0,
+      "fp_b": 0
+    }
+  ],
+  "summary": {
+    "removable": 25,
+    "with_actual_disappearance": 2,
+    "exact_a": 18,
+    "exact_b": 24,
+    "false_positive_files_a": 45,
+    "false_positive_files_b": 0,
+    "true_positive_a": 2,
+    "true_positive_b": 1
+  }
+}

@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from heavyheader.attrib.cost import _key, parse_trace
+from heavyheader.attrib.edgecost import unit_edge_costs
 from heavyheader.parse.includetree import parse_include_tree
 from heavyheader.scanner import _split_command, _strip_output_flag
 
@@ -87,7 +88,12 @@ def _reachable(graph: dict[str, set[str]], root: str, skip: tuple[str, str] | No
 
 
 def run_unit(
-    entry: dict, project_root: Path, workdir: Path, compiler: str, extra_flags: list[str]
+    entry: dict,
+    project_root: Path,
+    workdir: Path,
+    compiler: str,
+    extra_flags: list[str],
+    effective_only: bool = False,
 ) -> UnitResult:
     source = Path(entry["file"])
     directory = Path(entry.get("directory", project_root))
@@ -132,17 +138,15 @@ def run_unit(
     lines = _line_counts(set(paths.values()))
 
     # 每条边的独占闭包：本 TU 内删掉它后不再可达的集合。
-    reachable = _reachable(graph, root, None)
-    local: list[tuple[str, str, float, int]] = []
-    for parent, children in graph.items():
-        for child in children:
-            without = _reachable(graph, root, (parent, child))
-            excluded = reachable - without
-            if not excluded:
-                continue
-            seconds = sum(self_times.get(k, 0.0) for k in excluded)
-            line_sum = sum(lines.get(k, 0) for k in excluded)
-            local.append((parent, child, seconds, line_sum))
+    # 传入 paths 以补全「潜在供给边」——不传就是有效树的乐观估计（实测会
+    # 对 25 条可删边虚报 45 个文件，见 experiments/edge-closure-*.json）。
+    local = unit_edge_costs(
+        root,
+        [(parent, child) for parent, children in graph.items() for child in children],
+        self_times,
+        lines,
+        files=None if effective_only else paths,
+    )
 
     return UnitResult(
         source=source,
@@ -160,11 +164,12 @@ def build_report(
     compiler: str,
     extra_flags: list[str],
     limit: int,
+    effective_only: bool = False,
 ) -> dict:
     costs: dict[tuple[str, str], EdgeCost] = {}
     units: list[UnitResult] = []
     for entry in entries[:limit]:
-        result = run_unit(entry, project_root, workdir, compiler, extra_flags)
+        result = run_unit(entry, project_root, workdir, compiler, extra_flags, effective_only)
         units.append(result)
         if not result.ok:
             continue
@@ -234,6 +239,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--compiler", default="clang++")
     parser.add_argument("--tus", type=int, default=24)
     parser.add_argument(
+        "--effective-only",
+        action="store_true",
+        help="只用 -H 有效树算闭包（复现旧口径，默认补全潜在供给边）",
+    )
+    parser.add_argument(
         "--flag",
         dest="flags",
         action="append",
@@ -246,7 +256,13 @@ def main(argv: list[str] | None = None) -> int:
     entries = json.loads(args.db.read_text(encoding="utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         report = build_report(
-            entries, args.project, Path(tmp), args.compiler, args.flags, args.tus
+            entries,
+            args.project,
+            Path(tmp),
+            args.compiler,
+            args.flags,
+            args.tus,
+            args.effective_only,
         )
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")

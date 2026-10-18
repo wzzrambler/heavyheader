@@ -1,0 +1,243 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 24,
+  "noise_floor_percent": 1.0,
+  "pools": {
+    "strict": 16,
+    "off": 66
+  },
+  "probe": {
+    "candidates": 66,
+    "compiles": 31,
+    "seconds": 809.3
+  },
+  "outside_strict": {
+    "count": 23,
+    "screen_seconds": 1383.3,
+    "rows": [
+      {
+        "site": "debug_output_window.h",
+        "header": "context_state.h",
+        "reach": 2,
+        "status": "improved",
+        "percent_saved": 3.738,
+        "baseline_ms": 1835.1,
+        "patched_ms": 1766.6
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "contains.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.741,
+        "baseline_ms": 20834.8,
+        "patched_ms": 20680.3
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "result.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.717,
+        "baseline_ms": 20751.3,
+        "patched_ms": 20602.4
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "compiler.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.713,
+        "baseline_ms": 20785.1,
+        "patched_ms": 20637.0
+      },
+      {
+        "site": "prelude.h",
+        "header": "climits",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.488,
+        "baseline_ms": 20776.7,
+        "patched_ms": 20675.3
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "test_case.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.446,
+        "baseline_ms": 20787.0,
+        "patched_ms": 20694.3
+      },
+      {
+        "site": "prelude.h",
+        "header": "cstdio",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.379,
+        "baseline_ms": 20727.8,
+        "patched_ms": 20649.3
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "subcase.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.342,
+        "baseline_ms": 20770.1,
+        "patched_ms": 20699.0
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "context_scope.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.24,
+        "baseline_ms": 20862.0,
+        "patched_ms": 20811.9
+      },
+      {
+        "site": "prelude.h",
+        "header": "ctime",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.211,
+        "baseline_ms": 20642.3,
+        "patched_ms": 20598.8
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "type.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.173,
+        "baseline_ms": 20633.3,
+        "patched_ms": 20597.7
+      },
+      {
+        "site": "config.h",
+        "header": "version",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": 0.119,
+        "baseline_ms": 20784.6,
+        "patched_ms": 20759.9
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "message.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.032,
+        "baseline_ms": 20691.5,
+        "patched_ms": 20698.2
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "utility.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.09,
+        "baseline_ms": 20722.3,
+        "patched_ms": 20740.9
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "generator.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.128,
+        "baseline_ms": 20674.3,
+        "patched_ms": 20700.8
+      },
+      {
+        "site": "config.h",
+        "header": "platform.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.234,
+        "baseline_ms": 20659.8,
+        "patched_ms": 20708.2
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "comparator.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.247,
+        "baseline_ms": 20644.7,
+        "patched_ms": 20695.6
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "test_suite.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.335,
+        "baseline_ms": 20617.4,
+        "patched_ms": 20686.5
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "utility.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.43,
+        "baseline_ms": 20664.0,
+        "patched_ms": 20752.9
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "type_traits.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.463,
+        "baseline_ms": 20611.1,
+        "patched_ms": 20706.6
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "data.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.712,
+        "baseline_ms": 20572.1,
+        "patched_ms": 20718.7
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "context.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.803,
+        "baseline_ms": 20644.2,
+        "patched_ms": 20810.0
+      },
+      {
+        "site": "doctest_fwd.h",
+        "header": "string.h",
+        "reach": 24,
+        "status": "no-change",
+        "percent_saved": -0.827,
+        "baseline_ms": 20524.9,
+        "patched_ms": 20694.6
+      }
+    ]
+  },
+  "confirm": {
+    "count": 1,
+    "seconds": 12.6,
+    "rows": [
+      {
+        "site": "debug_output_window.h",
+        "header": "context_state.h",
+        "status": "no-change",
+        "percent_saved": -0.548,
+        "message": "差异在噪声范围内（-10 ms / 2 个单元）"
+      }
+    ]
+  },
+  "strict_compiles": 8
+}

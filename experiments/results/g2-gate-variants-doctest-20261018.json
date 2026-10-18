@@ -1,0 +1,302 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 24,
+  "probe_only": true,
+  "arms": [
+    {
+      "arm": "strict",
+      "candidates": 16,
+      "compiles": 8,
+      "compile_error": 8,
+      "other": 0,
+      "pass_rate": 0.5,
+      "seconds": 217.1,
+      "seconds_per_candidate": 13.57,
+      "statuses": {
+        "compile-error": 8,
+        "compiles": 8
+      },
+      "pass_list": [
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "sstream",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "new",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "utility",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdlib",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "decorators.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "version.h",
+          "reach": 24
+        }
+      ]
+    },
+    {
+      "arm": "unknown",
+      "candidates": 19,
+      "compiles": 10,
+      "compile_error": 9,
+      "other": 0,
+      "pass_rate": 0.526,
+      "seconds": 263.1,
+      "seconds_per_candidate": 13.85,
+      "statuses": {
+        "compile-error": 9,
+        "compiles": 10
+      },
+      "pass_list": [
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "sstream",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "new",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "utility",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdlib",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "decorators.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "version.h",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "climits",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "compiler.h",
+          "reach": 24
+        }
+      ]
+    },
+    {
+      "arm": "off",
+      "candidates": 66,
+      "compiles": 31,
+      "compile_error": 35,
+      "other": 0,
+      "pass_rate": 0.47,
+      "seconds": 810.1,
+      "seconds_per_candidate": 12.27,
+      "statuses": {
+        "compile-error": 35,
+        "compiles": 31
+      },
+      "pass_list": [
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "sstream",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "new",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "utility",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdlib",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "decorators.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "version.h",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "climits",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "compiler.h",
+          "reach": 24
+        },
+        {
+          "site": "config.h",
+          "header": "version",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "ctime",
+          "reach": 24
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdio",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "string.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "result.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "type_traits.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "type.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "comparator.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "test_case.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "context_scope.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "data.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "message.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "test_suite.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "utility.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "context.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "subcase.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "utility.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "contains.h",
+          "reach": 24
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "generator.h",
+          "reach": 24
+        },
+        {
+          "site": "config.h",
+          "header": "platform.h",
+          "reach": 24
+        },
+        {
+          "site": "debug_output_window.h",
+          "header": "context_state.h",
+          "reach": 2
+        }
+      ]
+    }
+  ]
+}

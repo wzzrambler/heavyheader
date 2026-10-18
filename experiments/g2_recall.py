@@ -232,6 +232,7 @@ def _run(project: Path, db: Path, args, header: Path, unit: Path) -> int:
 
     payload = {
         "date": date.today().isoformat(),
+        "level": args.level,
         "project": project.name,
         "tus": len(scan.ok_tus),
         "injected": INJECTED,
@@ -248,7 +249,7 @@ def _run(project: Path, db: Path, args, header: Path, unit: Path) -> int:
         },
         "verification": rows,
     }
-    out = ROOT / "experiments" / "results" / f"g2-recall-{project.name}-{date.today():%Y%m%d}"
+    out = ROOT / "experiments" / "results" / f"g2-recall-{project.name}-{args.level}-{date.today():%Y%m%d}"
     out.with_suffix(".json").write_text(
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
     )

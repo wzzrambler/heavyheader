@@ -6,46 +6,66 @@
   "runs_per_side": 3,
   "aggregate_noise_floor_percent": 1.0,
   "candidate_pool": {
-    "gated": 3,
+    "gated": 16,
     "ungated": 66
   },
   "arms": [
     {
       "arm": "feasible(header,gated)",
-      "candidates": 3,
-      "compiled": 2,
-      "improved": 0,
-      "adopt_rate": 0.0,
+      "candidates": 5,
+      "compiled": 1,
+      "improved": 1,
+      "adopt_rate": 0.2,
       "details": [
         {
           "site": "prelude.h",
-          "header": "cstdlib",
-          "reach": 24,
-          "status": "no-change",
-          "baseline_ms": 20625.8,
-          "patched_ms": 20560.8,
-          "percent_saved": 0.315,
-          "message": "差异在噪声范围内（+65 ms / 24 个单元）"
-        },
-        {
-          "site": "prelude.h",
-          "header": "iostream",
+          "header": "algorithm",
           "reach": 24,
           "status": "compile-error",
           "baseline_ms": null,
           "patched_ms": null,
           "percent_saved": null,
-          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/xml.h:59:44: error: no member named 'cout' in namespace 'std'; d"
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp:524:18: error: no member named 'sort' in namespace '"
         },
         {
-          "site": "doctest_fwd.h",
-          "header": "version.h",
+          "site": "prelude.h",
+          "header": "unordered_set",
           "reach": 24,
-          "status": "no-change",
-          "baseline_ms": 20547.9,
-          "patched_ms": 20482.0,
-          "percent_saved": 0.32,
-          "message": "差异在噪声范围内（+66 ms / 24 个单元）"
+          "status": "improved",
+          "baseline_ms": 20555.9,
+          "patched_ms": 19937.1,
+          "percent_saved": 3.01,
+          "message": "24 个单元合计 20556 ms → 19937 ms"
+        },
+        {
+          "site": "prelude.h",
+          "header": "vector",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/traversal.h:18:10: error: no template named 'vector' in namespace '"
+        },
+        {
+          "site": "prelude.h",
+          "header": "set",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/test_case.h:14:6: error: no template named 'set' in namespace 's"
+        },
+        {
+          "site": "prelude.h",
+          "header": "iomanip",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：console.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\console.cpp:19:21: error: no member named 'setw' in na"
         }
       ]
     },
@@ -56,6 +76,26 @@
       "improved": 0,
       "adopt_rate": 0.0,
       "details": [
+        {
+          "site": "prelude.h",
+          "header": "algorithm",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp:524:18: error: no member named 'sort' in namespace '"
+        },
+        {
+          "site": "prelude.h",
+          "header": "mutex",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/reporters/console.h:31:5: error: no type named 'mutex' in namesp"
+        },
         {
           "site": "prelude.h",
           "header": "windows.h",
@@ -85,26 +125,6 @@
           "patched_ms": null,
           "percent_saved": null,
           "message": "移除后编译失败（24 个单元之一）：approx.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\matchers\\approx.cpp:28:17: error: no member named 'fabs' in names"
-        },
-        {
-          "site": "prelude.h",
-          "header": "mutex",
-          "reach": 24,
-          "status": "compile-error",
-          "baseline_ms": null,
-          "patched_ms": null,
-          "percent_saved": null,
-          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/reporters/console.h:31:5: error: no type named 'mutex' in namesp"
-        },
-        {
-          "site": "prelude.h",
-          "header": "algorithm",
-          "reach": 24,
-          "status": "compile-error",
-          "baseline_ms": null,
-          "patched_ms": null,
-          "percent_saved": null,
-          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp:524:18: error: no member named 'sort' in namespace '"
         }
       ]
     }

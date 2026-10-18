@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-18",
+  "level": "header",
+  "project": "doctest",
+  "tus": 24,
+  "injected": "<regex>",
+  "runs_per_side": 3,
+  "recall": {
+    "tu_level_rank": null,
+    "tu_level_pool": 60,
+    "header_level_rank": 1,
+    "header_level_pool": 17
+  },
+  "noise_floors_percent": {
+    "single_unit": 2.0,
+    "aggregate": 1.0
+  },
+  "verification": [
+    {
+      "level": "header",
+      "site": "prelude.h",
+      "header": "regex",
+      "reach": 24,
+      "status": "improved",
+      "baseline_ms": 21795.4,
+      "patched_ms": 20457.1,
+      "percent_saved": 6.14,
+      "message": "24 个单元合计 21795 ms → 20457 ms"
+    }
+  ]
+}

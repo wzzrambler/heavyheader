@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-18",
+  "level": "tu",
+  "project": "doctest",
+  "tus": 24,
+  "injected": "<regex>",
+  "runs_per_side": 3,
+  "recall": {
+    "tu_level_rank": 25,
+    "tu_level_pool": 61,
+    "header_level_rank": null,
+    "header_level_pool": 16
+  },
+  "noise_floors_percent": {
+    "single_unit": 2.0,
+    "aggregate": 1.0
+  },
+  "verification": [
+    {
+      "level": "tu",
+      "site": "data.cpp",
+      "header": "regex",
+      "reach": 1,
+      "status": "improved",
+      "baseline_ms": 893.7,
+      "patched_ms": 834.3,
+      "percent_saved": 6.645,
+      "message": "基线 894 ms → 移除后 834 ms"
+    }
+  ]
+}

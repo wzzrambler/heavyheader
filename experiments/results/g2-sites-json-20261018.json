@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-18",
+  "project": "json",
+  "tus": 25,
+  "top": 5,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 0,
+    "ungated": 70
+  },
+  "arms": [
+    {
+      "arm": "ungated(header,top-by-size)",
+      "candidates": 5,
+      "compiled": 2,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "site": "adl_serializer.hpp",
+          "header": "from_json.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：unit-algorithms.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/adl_serializer.hpp:29:29: error: no member named 'from_json' in "
+        },
+        {
+          "site": "binary_reader.hpp",
+          "header": "input_adapters.hpp",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 27383.1,
+          "patched_ms": 27328.1,
+          "percent_saved": 0.201,
+          "message": "差异在噪声范围内（+55 ms / 25 个单元）"
+        },
+        {
+          "site": "input_adapters.hpp",
+          "header": "istream",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：unit-algorithms.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/input/input_adapters.hpp:95:15: error: implicit instantia"
+        },
+        {
+          "site": "json.hpp",
+          "header": "adl_serializer.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：unit-algorithms.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp:17:10: error: no matching constructor for initializ"
+        },
+        {
+          "site": "from_json.hpp",
+          "header": "map",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 27200.0,
+          "patched_ms": 27187.0,
+          "percent_saved": 0.048,
+          "message": "差异在噪声范围内（+13 ms / 25 个单元）"
+        }
+      ]
+    }
+  ]
+}

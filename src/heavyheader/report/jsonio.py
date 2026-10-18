@@ -130,6 +130,14 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
                 "advice": _advice_to_dict(candidate.advice),
+                # 头文件级候选的「改哪个文件」和「要重编哪些单元」必须跟着
+                # 候选走。丢了它们，重载出来的候选会静默变成 TU 级：
+                # site 回落到代表的那个 TU，于是 verify 去改**编译单元的源**
+                # 而不是那个头文件——改错了文件，测出来的秒数还看着挺合理。
+                "site_file": None
+                if candidate.site_file is None
+                else str(candidate.site_file),
+                "affected_tus": [str(p) for p in candidate.affected_tus],
             }
             for candidate in scan.candidates
         ],
@@ -300,6 +308,8 @@ def scan_from_dict(data: dict) -> ProjectScan:
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
             advice=_advice_from_dict(entry.get("advice")),
+            site_file=Path(raw_site) if (raw_site := entry.get("site_file")) else None,
+            affected_tus=[Path(p) for p in entry.get("affected_tus", [])],
         )
         for entry in data.get("candidates", [])
     ]

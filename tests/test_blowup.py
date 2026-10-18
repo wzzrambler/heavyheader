@@ -142,6 +142,52 @@ def test_candidate_rank_heuristic_survives_json_round_trip():
     assert [c.header.name for c in ordered] == ["tiny.hpp", "big.hpp"]
 
 
+def test_header_site_survives_json_round_trip():
+    """「改哪个文件」和「要重编哪些单元」必须跟着 JSON 走。
+
+    丢了这两个字段，重载出来的头文件级候选会静默变成 TU 级——``site`` 回落
+    到代表单元，``verify`` 因此去注释**编译单元源码**里的一行，而不是那个
+    头文件里的一行。改错了文件，测出来的秒数还看着挺合理，这是最难发现的
+    一类错误。
+    """
+    from heavyheader.models import HeaderKind, ProjectScan, RemovalCandidate
+    from heavyheader.report.jsonio import scan_from_dict, scan_to_dict
+
+    site = RemovalCandidate(
+        tu=Path("src/representative.cpp"),
+        header=Path("unneeded.hpp"),
+        line=7,
+        kind=HeaderKind.SYSTEM,
+        estimated_lines_saved=288,
+        usage_verdict="plausibly_unused",
+        site_file=Path("include/shared.h"),
+        affected_tus=[Path("src/a.cpp"), Path("src/b.cpp"), Path("src/c.cpp")],
+    )
+    plain = RemovalCandidate(
+        tu=Path("src/other.cpp"),
+        header=Path("unneeded.hpp"),
+        line=3,
+        kind=HeaderKind.SYSTEM,
+        estimated_lines_saved=288,
+    )
+    scan = ProjectScan(
+        root=Path("."), compiler="g++", compiler_family=CompilerFamily.GCC,
+        standard="c++17", candidates=[site, plain],
+    )
+
+    again = scan_from_dict(scan_to_dict(scan))
+    reloaded = again.candidates[0]
+    assert reloaded.site == Path("include/shared.h")
+    assert reloaded.is_header_site is True
+    assert reloaded.reach == 3
+    assert sorted(reloaded.affected_tus) == [
+        Path("src/a.cpp"), Path("src/b.cpp"), Path("src/c.cpp")
+    ]
+    # TU 级候选不受影响：不能因为加了字段就把它们变成「头文件级」。
+    assert again.candidates[1].reach == 1
+    assert again.candidates[1].is_header_site is False
+
+
 def test_legacy_json_without_verdict_is_ranked_by_label():
     """旧基线文件没有 verdict 字段；反推 label 而不是一律当成 unknown。"""
     from heavyheader.models import ProjectScan, candidate_rank_key

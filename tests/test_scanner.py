@@ -268,3 +268,66 @@ def test_windows_style_compile_commands_also_lose_the_duplicate(tmp_path):
     tasks = _tasks_from_compile_commands(cc_path, max_tus=10, root=tmp_path)
 
     assert str(source) not in tasks[0].options.extra_flags
+
+
+def test_cli_flags_are_appended_to_compile_commands_tasks(tmp_path):
+    """``--flag`` 在 compile_commands 模式下必须生效，不能被静默丢弃。
+
+    真实故障：用 clang 扫 Windows 工程时需要 ``--target=… --gcc-toolchain=…``
+    才能绕开会默认链上的 MSVC 头。CLI 接受了参数、``--reproduce`` 也把它打印
+    出来了，但 ``scan_project`` 只在「任务没有自带 flags」时才注入 CLI 参数，
+    于是这两个 flag 在装配阶段被丢掉，25 个编译单元全部编译失败，而错误信息
+    只是「找不到类型」之类，指向不了真正原因。
+
+    断言语义：数据库自带 flags **保留**，CLI flags **追加**，两者都不丢。
+    """
+    source = tmp_path / "app.cpp"
+    source.write_text("int main() { return 0; }\n", encoding="utf-8")
+    cc_path = tmp_path / "compile_commands.json"
+    cc_path.write_text(
+        json.dumps(
+            [
+                {
+                    "directory": str(tmp_path),
+                    "file": str(source),
+                    "command": f'g++ -std=c++17 -DFROM_DB=1 -c "{source}"',
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    seen: list[list[str]] = []
+
+    class _Recording(CompilerDriver):
+        family = CompilerFamily.GCC
+
+        def __init__(self):
+            self.executable = "g++"
+
+        def run(self, source, options, cwd=None, timeout=300.0):
+            seen.append(list(options.extra_flags))
+            return TranslationUnit(source=Path(source), dependencies=[])
+
+        def build_command(self, source, options):  # pragma: no cover
+            return ["g++", str(source)]
+
+        def interpret(self, source, returncode, stdout, stderr, wall_seconds):
+            return TranslationUnit(source=Path(source), dependencies=[])
+
+    scan_project(
+        ScanOptions(
+            root=tmp_path,
+            compiler="g++",
+            compile_commands=cc_path,
+            max_tus=10,
+            jobs=1,
+            extra_flags=["--target=x86_64-w64-windows-gnu"],
+        ),
+        driver=_Recording(),
+    )
+
+    assert len(seen) == 1
+    flags = seen[0]
+    assert "-DFROM_DB=1" in flags  # 数据库自带参数保留
+    assert "--target=x86_64-w64-windows-gnu" in flags  # CLI 参数被追加

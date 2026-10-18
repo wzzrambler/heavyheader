@@ -1,0 +1,123 @@
+{
+  "date": "2026-10-18",
+  "tus": 25,
+  "runs": 2,
+  "published_top10": [
+    [
+      "json.hpp",
+      "adl_serializer.hpp",
+      "from_json.hpp",
+      "binary_reader.hpp",
+      "doctest_compatibility.h",
+      "serializer.hpp",
+      "input_adapters.hpp",
+      "exceptions.hpp",
+      "type_traits.hpp",
+      "doctest.h"
+    ],
+    [
+      "json.hpp",
+      "adl_serializer.hpp",
+      "from_json.hpp",
+      "binary_reader.hpp",
+      "input_adapters.hpp",
+      "serializer.hpp",
+      "doctest_compatibility.h",
+      "exceptions.hpp",
+      "type_traits.hpp",
+      "doctest.h"
+    ]
+  ],
+  "self_top10": [
+    [
+      "json.hpp",
+      "binary_reader.hpp",
+      "doctest.h",
+      "from_json.hpp",
+      "type_traits.hpp",
+      "serializer.hpp",
+      "exceptions.hpp",
+      "binary_writer.hpp",
+      "to_chars.hpp",
+      "input_adapters.hpp"
+    ],
+    [
+      "json.hpp",
+      "binary_reader.hpp",
+      "doctest.h",
+      "from_json.hpp",
+      "type_traits.hpp",
+      "serializer.hpp",
+      "exceptions.hpp",
+      "binary_writer.hpp",
+      "to_chars.hpp",
+      "input_adapters.hpp"
+    ]
+  ],
+  "published_set_stable": true,
+  "published_order_stable": false,
+  "self_set_stable": true,
+  "self_order_stable": true,
+  "per_header_delta_percent": [
+    {
+      "name": "json_sax.hpp",
+      "run1_ms": 43.1,
+      "run2_ms": 47.0,
+      "delta_percent": 9.0
+    },
+    {
+      "name": "string_concat.hpp",
+      "run1_ms": 30.9,
+      "run2_ms": 33.5,
+      "delta_percent": 8.4
+    },
+    {
+      "name": "binary_writer.hpp",
+      "run1_ms": 102.0,
+      "run2_ms": 106.3,
+      "delta_percent": 4.2
+    },
+    {
+      "name": "adl_serializer.hpp",
+      "run1_ms": 37.9,
+      "run2_ms": 39.3,
+      "delta_percent": 3.7
+    },
+    {
+      "name": "macro_scope.hpp",
+      "run1_ms": 63.6,
+      "run2_ms": 65.9,
+      "delta_percent": 3.6
+    },
+    {
+      "name": "value_t.hpp",
+      "run1_ms": 38.9,
+      "run2_ms": 37.5,
+      "delta_percent": 3.6
+    },
+    {
+      "name": "doctest.h",
+      "run1_ms": 220.5,
+      "run2_ms": 212.8,
+      "delta_percent": 3.5
+    },
+    {
+      "name": "input_adapters.hpp",
+      "run1_ms": 80.6,
+      "run2_ms": 83.3,
+      "delta_percent": 3.3
+    },
+    {
+      "name": "lexer.hpp",
+      "run1_ms": 52.8,
+      "run2_ms": 54.0,
+      "delta_percent": 2.3
+    },
+    {
+      "name": "to_json.hpp",
+      "run1_ms": 72.9,
+      "run2_ms": 74.4,
+      "delta_percent": 2.1
+    }
+  ]
+}

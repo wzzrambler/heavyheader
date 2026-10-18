@@ -474,7 +474,7 @@ def build(path: str) -> None:
     )
     story.append(
         P(
-            "项目当前已完成 v0.1 全部路线图条目、并提前交付 v0.2 的增量扫描、历史看板与 PR 评论机器人，通过 394 个单元测试，CI 覆盖三大操作系统 × 四个 "
+            "项目当前已完成 v0.1 全部路线图条目、并提前交付 v0.2 的增量扫描、历史看板与 PR 评论机器人，通过 399 个单元测试，CI 覆盖三大操作系统 × 四个 "
             "Python 版本。四个真实开源项目（fmt、nlohmann-json、spdlog、cpp-httplib）的基准显示：54 个"
             "成功编译单元合计 1,430 万行头文件解析量、87 个成本候选；单体头 httplib.h 一项即被归因"
             "42 万行解析量，是最极端的成本热点样本。候选清单只含项目自己的头文件——系统头与第三方头"
@@ -1004,7 +1004,7 @@ def build(path: str) -> None:
     story.append(
         P(
             "项目不是一个构想：v0.1 路线图全部条目已完成，代码以 Apache-2.0 许可证公开在 "
-            "github.com/wzzrambler/heavyheader，50+ 个提交、123 个文件、工作区无未提交改动。下表按"
+            "github.com/wzzrambler/heavyheader，50+ 个提交、130 个文件、工作区无未提交改动。下表按"
             "「已有基础 / 已核对的内容 / 接下来的开发工作」汇总。" + D(4)
         )
     )
@@ -1013,7 +1013,7 @@ def build(path: str) -> None:
             ["已有基础", "已经核对的内容", "接下来的开发工作"],
             [
                 ["七命令 CLI（scan / verify / gate / compare / history / pr-comment / toolchains）",
-                 "终端输出样例与 394 个单元测试",
+                 "终端输出样例与 399 个单元测试",
                  "PR 评论机器人（pr-comment 子命令，v0.2 已交付，走 GitHub 的 gh）",
                  "把两次扫描对比渲染成 GitHub 风格评论，幂等地更新而非堆积",
                  "GitLab 后端仍待做（需另一套 API）"],
@@ -1150,7 +1150,7 @@ def build(path: str) -> None:
         ("D2", "docs/architecture.md：《架构》——分层结构、数据流与六个刻意的设计选择。"),
         ("D3", "benchmarks/：run_all.py 基准脚本与 results/summary.md 汇总——四个真实项目的实测数据。"),
         ("D4", "ROADMAP.md：《路线图》——v0.1 / v0.2 / v0.3 排序即优先级。"),
-        ("D5", "tests/：394 个单元测试，样本优先采用真实编译器输出逐字复制。"),
+        ("D5", "tests/：399 个单元测试，样本优先采用真实编译器输出逐字复制。"),
         ("D6", "experiments/results/decision-20261018.md：《删除建议决策层实测》——222 个候选全部真实编译后的结论分布、三维度数据与竞品交叉核对。"),
         ("D7", "SUBMISSION.md：《提交清单》——比赛材料、节点与剩余步骤。"),
         ("D8", "README.md：项目主页——能力总览、诚实的边界与快速开始。"),

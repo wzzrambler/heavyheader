@@ -275,7 +275,7 @@ def build(path: str) -> None:
             "项目已实现四个命令：<font face='%s'>scan</font>（成本归因与报告）、"
             "<font face='%s'>verify</font>（实测验证）、<font face='%s'>gate</font>"
             "（CI 门禁）、<font face='%s'>compare</font>（前后对比），支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链，附带 394 个单元测试与完整开源治理文件。"
+            "Clang 17+ 与 MSVC 三种工具链，附带 399 个单元测试与完整开源治理文件。"
             % (_MONO, _MONO, _MONO, _MONO)
         ),
         P(
@@ -899,7 +899,7 @@ def build(path: str) -> None:
         ),
         P("8.3 测试策略", "h2"),
         P(
-            "394 个单元测试。样本优先用真实编译器输出逐字复制——例如 "
+            "399 个单元测试。样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"
             "这意味着换编译器版本时这些测试会最先报警。"

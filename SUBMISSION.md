@@ -7,8 +7,8 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 123 文件 / 50+ commit | `src/heavyheader/` |
-| 测试 | ✅ 394 个全绿 | `tests/` |
+| 代码 | ✅ 130 文件 / 50+ commit | `src/heavyheader/` |
+| 测试 | ✅ 399 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
@@ -17,16 +17,17 @@
 | 竞品真实对比 | ✅ clang-include-cleaner 同工程同任务：0 删除 / 101 补充；我们 1 条实测 −43.5% | `experiments/results/competitor-*.md` |
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
+| G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
 | 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
-| 选题报告（补充） | ✅ 12 页 PDF | `HeavyHeader-选题报告.pdf` |
+| 选题报告（补充） | ✅ 14 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 123 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 130 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，50+ commit，123 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，50+ commit，130 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）

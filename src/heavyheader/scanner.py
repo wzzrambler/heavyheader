@@ -357,15 +357,28 @@ def scan_project(
             "point --path at a source tree, or supply a compile_commands.json"
         )
 
-    # Tasks coming from compile_commands.json already carry their own flags;
-    # only the auto-discovered ones need the shared include paths.
+    # Tasks coming from compile_commands.json already carry their own flags, so
+    # the shared ``-I``/``-D``/``-std`` must not be layered on top of them --
+    # the entry is the authority on how that file is built.
+    #
+    # But the caller's explicit ``--flag`` is a different thing: it is the one
+    # place a user can override what the database says (``--target=`` and
+    # ``--gcc-toolchain=`` when clang must be pointed at MinGW instead of the
+    # MSVC headers it defaults to on Windows).  Ignoring it in
+    # compile_commands mode was silent -- the flag was accepted by argparse,
+    # reported by ``--reproduce``, and then dropped here, so every unit failed
+    # to compile against the wrong standard library with no hint why.
     for task in tasks:
         if not task.options.extra_flags:
             task.options.include_dirs = include_dirs
             task.options.defines = options.defines
             task.options.standard = options.standard
-            task.options.extra_flags = options.extra_flags
             task.options.full_compile = options.full_compile
+            task.options.extra_flags = list(options.extra_flags)
+        elif options.extra_flags:
+            task.options.extra_flags = list(task.options.extra_flags) + list(
+                options.extra_flags
+            )
 
     jobs = options.jobs or (os.cpu_count() or 4)
     tus: list[TranslationUnit] = []

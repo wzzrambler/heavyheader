@@ -1,33 +1,739 @@
 {
+  "date": "2026-10-18",
   "tus": 25,
-  "failed_compiles": [],
-  "cba_top10": [
-    "json.hpp",
-    "algorithm",
-    "doctest_compatibility.h",
-    "sstream",
-    "set",
-    "fstream",
-    "make_test_data_available.hpp",
-    "deque",
-    "list",
-    "test_utils.hpp"
+  "compiler": "C:\\Program Files\\LLVM\\bin\\clang++.exe",
+  "target_flags": [
+    "--target=x86_64-w64-windows-gnu",
+    "--gcc-toolchain=C:/mingw64"
   ],
-  "hh_top10": [
-    "doctest.h",
+  "failed_compiles": [],
+  "hh_failed_units": 0,
+  "cba_header_rows": 195,
+  "cba_project_header_rows": 35,
+  "cba_top10_project": [
+    {
+      "ms": 10328,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/json.hpp",
+      "count": 25,
+      "avg_ms": 413
+    },
+    {
+      "ms": 2717,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/adl_serializer.hpp",
+      "count": 25,
+      "avg_ms": 108
+    },
+    {
+      "ms": 2589,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/conversions/from_json.hpp",
+      "count": 25,
+      "avg_ms": 103
+    },
+    {
+      "ms": 1208,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/input/binary_reader.hpp",
+      "count": 25,
+      "avg_ms": 48
+    },
+    {
+      "ms": 822,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/tests/thirdparty/doctest/doctest_compatibility.h",
+      "count": 25,
+      "avg_ms": 32
+    },
+    {
+      "ms": 816,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/output/serializer.hpp",
+      "count": 25,
+      "avg_ms": 32
+    },
+    {
+      "ms": 808,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/input/input_adapters.hpp",
+      "count": 25,
+      "avg_ms": 32
+    },
+    {
+      "ms": 667,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/exceptions.hpp",
+      "count": 25,
+      "avg_ms": 26
+    },
+    {
+      "ms": 268,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/meta/type_traits.hpp",
+      "count": 25,
+      "avg_ms": 10
+    },
+    {
+      "ms": 265,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/tests/thirdparty/doctest/doctest.h",
+      "count": 25,
+      "avg_ms": 10
+    }
+  ],
+  "cba_top10_all": [
+    {
+      "ms": 10328,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/json.hpp",
+      "count": 25,
+      "avg_ms": 413
+    },
+    {
+      "ms": 2717,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/adl_serializer.hpp",
+      "count": 25,
+      "avg_ms": 108
+    },
+    {
+      "ms": 2589,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/conversions/from_json.hpp",
+      "count": 25,
+      "avg_ms": 103
+    },
+    {
+      "ms": 1418,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/iterator",
+      "count": 25,
+      "avg_ms": 56
+    },
+    {
+      "ms": 1381,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/bits/streambuf_iterator.h",
+      "count": 25,
+      "avg_ms": 55
+    },
+    {
+      "ms": 1348,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/streambuf",
+      "count": 25,
+      "avg_ms": 53
+    },
+    {
+      "ms": 1208,
+      "path": "C:/Users/31879/WorkBuddy/2026-10-16-23-21-59/heavyheader/experiments/_work/json/include/nlohmann/detail/input/binary_reader.hpp",
+      "count": 25,
+      "avg_ms": 48
+    },
+    {
+      "ms": 1136,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/algorithm",
+      "count": 25,
+      "avg_ms": 45
+    },
+    {
+      "ms": 1133,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/bits/ios_base.h",
+      "count": 25,
+      "avg_ms": 45
+    },
+    {
+      "ms": 930,
+      "path": "C:/mingw64/lib/gcc/x86_64-w64-mingw32/16.2.0/include/c++/valarray",
+      "count": 25,
+      "avg_ms": 37
+    }
+  ],
+  "hh_top10_project": [
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\thirdparty\\doctest\\doctest.h",
+      "name": "doctest.h",
+      "attributed_lines": 177650,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+      "name": "json.hpp",
+      "attributed_lines": 131450,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "name": "binary_reader.hpp",
+      "attributed_lines": 75225,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\thirdparty\\hedley\\hedley.hpp",
+      "name": "hedley.hpp",
+      "attributed_lines": 51125,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\output\\binary_writer.hpp",
+      "name": "binary_writer.hpp",
+      "attributed_lines": 45950,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\lexer.hpp",
+      "name": "lexer.hpp",
+      "attributed_lines": 40825,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\to_chars.hpp",
+      "name": "to_chars.hpp",
+      "attributed_lines": 27950,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\json_pointer.hpp",
+      "name": "json_pointer.hpp",
+      "attributed_lines": 24700,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\output\\serializer.hpp",
+      "name": "serializer.hpp",
+      "attributed_lines": 24700,
+      "tu_reach": 25
+    },
+    {
+      "path": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "name": "type_traits.hpp",
+      "attributed_lines": 19875,
+      "tu_reach": 25
+    }
+  ],
+  "set_overlap_project": [
     "json.hpp",
     "binary_reader.hpp",
-    "hedley.hpp",
-    "binary_writer.hpp",
-    "lexer.hpp",
-    "to_chars.hpp",
-    "json_pointer.hpp",
     "serializer.hpp",
-    "type_traits.hpp"
+    "type_traits.hpp",
+    "doctest.h"
   ],
-  "overlap": [
-    "json.hpp"
+  "set_overlap_count": 5,
+  "jaccard_project": 0.333,
+  "kendall_tau_common": 0.2,
+  "spearman_all_common": 0.42,
+  "common_header_count": 35,
+  "paired_table": [
+    {
+      "name": "json.hpp",
+      "cba_ms": 10328,
+      "cba_count": 25,
+      "hh_lines": 131450,
+      "cba_rank": 1,
+      "hh_rank": 2
+    },
+    {
+      "name": "adl_serializer.hpp",
+      "cba_ms": 2717,
+      "cba_count": 25,
+      "hh_lines": 1375,
+      "cba_rank": 2,
+      "hh_rank": 37
+    },
+    {
+      "name": "from_json.hpp",
+      "cba_ms": 2589,
+      "cba_count": 25,
+      "hh_lines": 12425,
+      "cba_rank": 3,
+      "hh_rank": 14
+    },
+    {
+      "name": "binary_reader.hpp",
+      "cba_ms": 1208,
+      "cba_count": 25,
+      "hh_lines": 75225,
+      "cba_rank": 4,
+      "hh_rank": 3
+    },
+    {
+      "name": "doctest_compatibility.h",
+      "cba_ms": 822,
+      "cba_count": 25,
+      "hh_lines": 925,
+      "cba_rank": 5,
+      "hh_rank": 41
+    },
+    {
+      "name": "serializer.hpp",
+      "cba_ms": 816,
+      "cba_count": 25,
+      "hh_lines": 24700,
+      "cba_rank": 6,
+      "hh_rank": 9
+    },
+    {
+      "name": "input_adapters.hpp",
+      "cba_ms": 808,
+      "cba_count": 25,
+      "hh_lines": 12300,
+      "cba_rank": 7,
+      "hh_rank": 15
+    },
+    {
+      "name": "exceptions.hpp",
+      "cba_ms": 667,
+      "cba_count": 25,
+      "hh_lines": 6425,
+      "cba_rank": 8,
+      "hh_rank": 19
+    },
+    {
+      "name": "type_traits.hpp",
+      "cba_ms": 268,
+      "cba_count": 25,
+      "hh_lines": 19875,
+      "cba_rank": 9,
+      "hh_rank": 10
+    },
+    {
+      "name": "doctest.h",
+      "cba_ms": 265,
+      "cba_count": 25,
+      "hh_lines": 177650,
+      "cba_rank": 10,
+      "hh_rank": 1
+    },
+    {
+      "name": "value_t.hpp",
+      "cba_ms": 192,
+      "cba_count": 25,
+      "hh_lines": 2950,
+      "cba_rank": 11,
+      "hh_rank": 29
+    },
+    {
+      "name": "macro_scope.hpp",
+      "cba_ms": 108,
+      "cba_count": 25,
+      "hh_lines": 12050,
+      "cba_rank": 12,
+      "hh_rank": 16
+    },
+    {
+      "name": "binary_writer.hpp",
+      "cba_ms": 105,
+      "cba_count": 25,
+      "hh_lines": 45950,
+      "cba_rank": 13,
+      "hh_rank": 5
+    },
+    {
+      "name": "string_concat.hpp",
+      "cba_ms": 92,
+      "cba_count": 25,
+      "hh_lines": 3650,
+      "cba_rank": 14,
+      "hh_rank": 25
+    },
+    {
+      "name": "to_json.hpp",
+      "cba_ms": 89,
+      "cba_count": 25,
+      "hh_lines": 11150,
+      "cba_rank": 15,
+      "hh_rank": 17
+    },
+    {
+      "name": "to_chars.hpp",
+      "cba_ms": 82,
+      "cba_count": 25,
+      "hh_lines": 27950,
+      "cba_rank": 16,
+      "hh_rank": 7
+    },
+    {
+      "name": "lexer.hpp",
+      "cba_ms": 52,
+      "cba_count": 25,
+      "hh_lines": 40825,
+      "cba_rank": 17,
+      "hh_rank": 6
+    },
+    {
+      "name": "json_pointer.hpp",
+      "cba_ms": 45,
+      "cba_count": 25,
+      "hh_lines": 24700,
+      "cba_rank": 18,
+      "hh_rank": 8
+    },
+    {
+      "name": "json_sax.hpp",
+      "cba_ms": 43,
+      "cba_count": 25,
+      "hh_lines": 18175,
+      "cba_rank": 19,
+      "hh_rank": 12
+    },
+    {
+      "name": "ordered_map.hpp",
+      "cba_ms": 32,
+      "cba_count": 25,
+      "hh_lines": 8975,
+      "cba_rank": 20,
+      "hh_rank": 18
+    },
+    {
+      "name": "iter_impl.hpp",
+      "cba_ms": 27,
+      "cba_count": 25,
+      "hh_lines": 18775,
+      "cba_rank": 21,
+      "hh_rank": 11
+    },
+    {
+      "name": "internal_iterator.hpp",
+      "cba_ms": 24,
+      "cba_count": 25,
+      "hh_lines": 875,
+      "cba_rank": 22,
+      "hh_rank": 42
+    },
+    {
+      "name": "is_sax.hpp",
+      "cba_ms": 24,
+      "cba_count": 25,
+      "hh_lines": 3975,
+      "cba_rank": 23,
+      "hh_rank": 22
+    },
+    {
+      "name": "parser.hpp",
+      "cba_ms": 22,
+      "cba_count": 25,
+      "hh_lines": 12975,
+      "cba_rank": 24,
+      "hh_rank": 13
+    },
+    {
+      "name": "make_test_data_available.hpp",
+      "cba_ms": 20,
+      "cba_count": 4,
+      "hh_lines": 120,
+      "cba_rank": 25,
+      "hh_rank": 48
+    },
+    {
+      "name": "detected.hpp",
+      "cba_ms": 18,
+      "cba_count": 25,
+      "hh_lines": 1750,
+      "cba_rank": 26,
+      "hh_rank": 35
+    },
+    {
+      "name": "iteration_proxy.hpp",
+      "cba_ms": 16,
+      "cba_count": 25,
+      "hh_lines": 6050,
+      "cba_rank": 27,
+      "hh_rank": 20
+    },
+    {
+      "name": "hedley.hpp",
+      "cba_ms": 14,
+      "cba_count": 25,
+      "hh_lines": 51125,
+      "cba_rank": 28,
+      "hh_rank": 4
+    },
+    {
+      "name": "macro_unscope.hpp",
+      "cba_ms": 12,
+      "cba_count": 20,
+      "hh_lines": 1125,
+      "cba_rank": 29,
+      "hh_rank": 38
+    },
+    {
+      "name": "primitive_iterator.hpp",
+      "cba_ms": 6,
+      "cba_count": 11,
+      "hh_lines": 3300,
+      "cba_rank": 30,
+      "hh_rank": 26
+    },
+    {
+      "name": "test_utils.hpp",
+      "cba_ms": 4,
+      "cba_count": 3,
+      "hh_lines": 99,
+      "cba_rank": 31,
+      "hh_rank": 49
+    },
+    {
+      "name": "output_adapters.hpp",
+      "cba_ms": 3,
+      "cba_count": 6,
+      "hh_lines": 3675,
+      "cba_rank": 32,
+      "hh_rank": 24
+    },
+    {
+      "name": "iterator_traits.hpp",
+      "cba_ms": 2,
+      "cba_count": 5,
+      "hh_lines": 1525,
+      "cba_rank": 33,
+      "hh_rank": 36
+    },
+    {
+      "name": "hash.hpp",
+      "cba_ms": 1,
+      "cba_count": 2,
+      "hh_lines": 3225,
+      "cba_rank": 34,
+      "hh_rank": 28
+    },
+    {
+      "name": "cpp_future.hpp",
+      "cba_ms": 0,
+      "cba_count": 1,
+      "hh_lines": 4275,
+      "cba_rank": 35,
+      "hh_rank": 21
+    }
   ],
-  "overlap_count": 1,
-  "analysis_head": "Analyzing build trace from 'C:\\Users\\31879\\AppData\\Local\\Temp\\cba-998rmclu\\capture.bin'...\n**** Time summary:\nCompilation (25 times):\n  Parsing (frontend):           32.0 s\n  Codegen & opts (backend):      6.3 s\n\n**** Files that took longest to parse (compiler frontend):\n  2860 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u19.o\n  2215 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u21.o\n  2132 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u16.o\n  1975 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u5.o\n  1880 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u9.o\n  1575 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u20.o\n  1523 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u6.o\n  1474 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u13.o\n  1454 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u2.o\n  1246 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u14.o\n\n**** Files that took longest to codegen (compiler backend):\n  1132 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u21.o\n   677 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u5.o\n   638 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u19.o\n   611 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u9.o\n   488 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u13.o\n   422 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u6.o\n   359 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u16.o\n   194 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u20.o\n   180 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u22.o\n   179 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u4.o\n\n**** Templates that took longest to instantiate:\n  4288 ms: nlohmann::basic_json<>::parse<const char *> (25 times, avg 171 ms)\n  3777 ms: nlohmann::detail::parser<nlohmann::basic_json<>, nlohmann::detail::i... (25 times, avg 151 ms)\n  2803 ms: nlohmann::basic_json<>::basic_json (76 times, avg 36 ms)\n  2728 ms: nlohmann::detail::parser<nlohmann::basic_json<>, nlohmann::detail::i... (25 times,"
+  "cba_self_top10_project": [
+    "json.hpp",
+    "binary_reader.hpp",
+    "doctest.h",
+    "from_json.hpp",
+    "type_traits.hpp",
+    "serializer.hpp",
+    "exceptions.hpp",
+    "binary_writer.hpp",
+    "to_chars.hpp",
+    "input_adapters.hpp"
+  ],
+  "cba_self_set_overlap": [
+    "json.hpp",
+    "binary_reader.hpp",
+    "doctest.h",
+    "type_traits.hpp",
+    "serializer.hpp",
+    "binary_writer.hpp",
+    "to_chars.hpp"
+  ],
+  "cba_self_overlap_count": 7,
+  "cba_self_kendall_tau": 0.333,
+  "cba_self_spearman": 0.675,
+  "cba_self_project_header_count": 35,
+  "density_extremes": {
+    "min_lines_threshold": 5000,
+    "cheapest": {
+      "name": "hedley.hpp",
+      "density": 0.28948655256723715
+    },
+    "priciest": {
+      "name": "exceptions.hpp",
+      "density": 17.463035019455255
+    },
+    "spread": 60.3
+  },
+  "cba_self_table": [
+    {
+      "name": "json.hpp",
+      "self_ms": 1411.6,
+      "count": 25,
+      "hh_lines": 131450,
+      "ms_per_1k_lines": 10.7,
+      "self_rank": 1,
+      "hh_rank": 2
+    },
+    {
+      "name": "binary_reader.hpp",
+      "self_ms": 278.8,
+      "count": 25,
+      "hh_lines": 75225,
+      "ms_per_1k_lines": 3.7,
+      "self_rank": 2,
+      "hh_rank": 3
+    },
+    {
+      "name": "doctest.h",
+      "self_ms": 217.4,
+      "count": 25,
+      "hh_lines": 177650,
+      "ms_per_1k_lines": 1.2,
+      "self_rank": 3,
+      "hh_rank": 1
+    },
+    {
+      "name": "from_json.hpp",
+      "self_ms": 160.3,
+      "count": 25,
+      "hh_lines": 12425,
+      "ms_per_1k_lines": 12.9,
+      "self_rank": 4,
+      "hh_rank": 14
+    },
+    {
+      "name": "type_traits.hpp",
+      "self_ms": 157.6,
+      "count": 25,
+      "hh_lines": 19875,
+      "ms_per_1k_lines": 7.9,
+      "self_rank": 5,
+      "hh_rank": 10
+    },
+    {
+      "name": "serializer.hpp",
+      "self_ms": 152.3,
+      "count": 25,
+      "hh_lines": 24700,
+      "ms_per_1k_lines": 6.2,
+      "self_rank": 6,
+      "hh_rank": 9
+    },
+    {
+      "name": "exceptions.hpp",
+      "self_ms": 112.2,
+      "count": 25,
+      "hh_lines": 6425,
+      "ms_per_1k_lines": 17.5,
+      "self_rank": 7,
+      "hh_rank": 19
+    },
+    {
+      "name": "binary_writer.hpp",
+      "self_ms": 101.9,
+      "count": 25,
+      "hh_lines": 45950,
+      "ms_per_1k_lines": 2.2,
+      "self_rank": 8,
+      "hh_rank": 5
+    },
+    {
+      "name": "to_chars.hpp",
+      "self_ms": 82.0,
+      "count": 25,
+      "hh_lines": 27950,
+      "ms_per_1k_lines": 2.9,
+      "self_rank": 9,
+      "hh_rank": 7
+    },
+    {
+      "name": "input_adapters.hpp",
+      "self_ms": 79.4,
+      "count": 25,
+      "hh_lines": 12300,
+      "ms_per_1k_lines": 6.5,
+      "self_rank": 10,
+      "hh_rank": 15
+    },
+    {
+      "name": "to_json.hpp",
+      "self_ms": 72.6,
+      "count": 25,
+      "hh_lines": 11150,
+      "ms_per_1k_lines": 6.5,
+      "self_rank": 11,
+      "hh_rank": 17
+    },
+    {
+      "name": "macro_scope.hpp",
+      "self_ms": 60.2,
+      "count": 25,
+      "hh_lines": 12050,
+      "ms_per_1k_lines": 5.0,
+      "self_rank": 12,
+      "hh_rank": 16
+    },
+    {
+      "name": "lexer.hpp",
+      "self_ms": 52.9,
+      "count": 25,
+      "hh_lines": 40825,
+      "ms_per_1k_lines": 1.3,
+      "self_rank": 13,
+      "hh_rank": 6
+    },
+    {
+      "name": "json_pointer.hpp",
+      "self_ms": 45.6,
+      "count": 25,
+      "hh_lines": 24700,
+      "ms_per_1k_lines": 1.8,
+      "self_rank": 14,
+      "hh_rank": 8
+    },
+    {
+      "name": "json_sax.hpp",
+      "self_ms": 43.7,
+      "count": 25,
+      "hh_lines": 18175,
+      "ms_per_1k_lines": 2.4,
+      "self_rank": 15,
+      "hh_rank": 12
+    },
+    {
+      "name": "adl_serializer.hpp",
+      "self_ms": 37.9,
+      "count": 25,
+      "hh_lines": 1375,
+      "ms_per_1k_lines": 27.6,
+      "self_rank": 16,
+      "hh_rank": 37
+    },
+    {
+      "name": "value_t.hpp",
+      "self_ms": 34.5,
+      "count": 25,
+      "hh_lines": 2950,
+      "ms_per_1k_lines": 11.7,
+      "self_rank": 17,
+      "hh_rank": 29
+    },
+    {
+      "name": "ordered_map.hpp",
+      "self_ms": 32.4,
+      "count": 25,
+      "hh_lines": 8975,
+      "ms_per_1k_lines": 3.6,
+      "self_rank": 18,
+      "hh_rank": 18
+    },
+    {
+      "name": "string_concat.hpp",
+      "self_ms": 30.8,
+      "count": 25,
+      "hh_lines": 3650,
+      "ms_per_1k_lines": 8.4,
+      "self_rank": 19,
+      "hh_rank": 25
+    },
+    {
+      "name": "doctest_compatibility.h",
+      "self_ms": 27.6,
+      "count": 25,
+      "hh_lines": 925,
+      "ms_per_1k_lines": 29.8,
+      "self_rank": 20,
+      "hh_rank": 41
+    }
+  ],
+  "hh_compiler": "C:\\Program Files\\LLVM\\bin\\clang++.exe",
+  "hh_reproduce_command": "heavyheader scan C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json --compiler C:\\Program Files\\LLVM\\bin\\clang++.exe --target=x86_64-w64-windows-gnu --gcc-toolchain=C:/mingw64 --compile-commands C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\compile_commands.json",
+  "includes_system_headers_in_cba": true,
+  "cba_ranks_of_hh_top": {
+    "doctest.h": 10,
+    "json.hpp": 1,
+    "binary_reader.hpp": 4,
+    "hedley.hpp": 28,
+    "binary_writer.hpp": 13,
+    "lexer.hpp": 17,
+    "to_chars.hpp": 16,
+    "json_pointer.hpp": 18,
+    "serializer.hpp": 6,
+    "type_traits.hpp": 9
+  },
+  "hh_ranks_of_cba_top": {
+    "json.hpp": 2,
+    "adl_serializer.hpp": 37,
+    "from_json.hpp": 14,
+    "binary_reader.hpp": 3,
+    "doctest_compatibility.h": 41,
+    "serializer.hpp": 9,
+    "input_adapters.hpp": 15,
+    "exceptions.hpp": 19,
+    "type_traits.hpp": 10,
+    "doctest.h": 1
+  }
 }

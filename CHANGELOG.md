@@ -6,6 +6,13 @@
 
 ### 新增
 
+- **`edge-cost` 子命令：按 include 边归因解析成本**——`scan` 回答「哪个头贵」
+  （节点），`edge-cost` 回答「源文件里哪一行删掉能省多少」（边），因为开发者能删的
+  是那一行。采集 = 一次真编译同时开 `-ftime-trace` 与 `-H`，trace 的嵌套区间还原
+  逐文件自耗时，边按其独占闭包求和。clang-first：GCC/MSVC 没有逐文件自耗时，
+  明确报错而不退化成估算。报告首行写口径（预测 ≠ 结论，可行性归 `verify`）。
+  实现：`edgecollect.py`（采集）+ `report/edges.py`（渲染）+ `attrib/edgecost.py`
+  （计算）；6 个测试（含真 clang 端到端与 CLI 落盘，无 clang 时跳过）。
 - **`attrib/edgecost.py`：边级边际成本（含潜在供给闭包修正）**——对每条 include
   边算「删掉它后本 TU 不再解析的文件集合」，用 `-ftime-trace` 的自耗时求和得到
   边际毫秒。关键修正：`-H` 只记录每个头**首次生效**的包含点，被 include guard

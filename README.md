@@ -70,10 +70,17 @@ $ heavyheader scan ./src --format html -o report.html
 | `gate` | CI 门禁：头文件成本相对基线回归超阈值则流水线失败 |
 | `compare` | 对比两份扫描结果，定位成本上升的具体头文件 |
 | `blame` | 成本考古：把头文件成本回归归因到 commit、文件与 include 行 |
+| `edge-cost` | 按 include **边**归因解析成本（clang-first，需真编译一次）；预测排序用，结论仍归 `verify` |
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 
 `scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
 前向声明的 include。两者都是估算，报告内附限制说明。
+
+`edge-cost` 与它们的分工：它回答「每条 `#include` 删掉后少解析多少」——按**边**
+而不是按头文件归因，因为开发者能删的是源文件里的那一行。它算的是**预测**，
+不判断能不能删（那是 `verify` 的事）；闭包只统计真会消失的文件，被别处
+include guard 拉住的头不计入（口径与实测见
+[`experiments/edge-precision-20261019.md`](experiments/edge-precision-20261019.md)）。
 
 ### 1. 成本归因（`scan`）
 
@@ -228,7 +235,10 @@ heavyheader pr-comment base.json pr.json --post --fail-on-regression
 #    （scan 在 git 仓库里运行时会自动记录 commit，blame 无需手记 revision）
 heavyheader blame base.json pr.json --repo . --format md
 
-# 10. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
+# 10. 边级成本：每条 include 删掉后少解析多少（需要 clang 系工具链）
+heavyheader edge-cost ./my-project --compiler clang++ --top 20
+
+# 11. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
 heavyheader toolchains ./my-project --compilers g++,clang++
 ```
 

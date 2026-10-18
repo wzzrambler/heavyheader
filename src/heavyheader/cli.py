@@ -21,11 +21,13 @@ what you are trying to avoid.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime as _dt
 import sys
 from pathlib import Path
 
 from . import __version__
+from .attrib.edgecost import aggregate_edge_costs
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
     BaselineError,
@@ -37,11 +39,13 @@ from .baseline import (
 from .blame import BlameError, blame_baselines
 from .blame import render_markdown as render_blame
 from .drivers.base import CompilationError, detect_driver
+from .edgecollect import EdgeCostError, collect_edge_units
 from .models import ProjectScan
+from .report.edges import edges_to_dict, render_edges_markdown
 from .report.html import TrendPoint, render_html
 from .report.jsonio import scan_to_dict
 from .report.markdown import markdown_summary_line, render_markdown
-from .scanner import ScanError, ScanOptions, scan_project
+from .scanner import ScanError, ScanOptions, discover_translation_units, scan_project
 from .verify import VerifyOptions, verify_candidates
 
 __all__ = ["main", "build_parser"]
@@ -302,6 +306,49 @@ def build_parser() -> argparse.ArgumentParser:
         help="结束 revision（默认取 after 基线扫描时记录的 commit）",
     )
     bl.add_argument("--format", choices=["md", "json"], default="md")
+
+    edge = subparsers.add_parser(
+        "edge-cost",
+        help="按 include 边归因解析成本（clang-first，需要真编译一次）",
+    )
+    edge.add_argument(
+        "path",
+        type=Path,
+        nargs="?",
+        default=Path("."),
+        help="源码树（默认当前目录）",
+    )
+    edge.add_argument(
+        "--compiler",
+        default="clang++",
+        help="编译器（默认 clang++，需支持 -ftime-trace）",
+    )
+    edge.add_argument("--std", default=None, help="语言标准，如 c++17")
+    edge.add_argument(
+        "-I", "--include", dest="includes", action="append", default=[], type=Path,
+        help="额外头文件搜索路径，可重复",
+    )
+    edge.add_argument(
+        "-D", "--define", dest="defines", action="append", default=[], help="预定义宏，可重复"
+    )
+    edge.add_argument(
+        "--flag", dest="flags", action="append", default=[], help="额外编译参数，可重复"
+    )
+    edge.add_argument(
+        "--compile-commands", type=Path, default=None, help="compile_commands.json 路径"
+    )
+    edge.add_argument("--max-tus", type=int, default=200, help="最多采集的编译单元数（默认 200）")
+    edge.add_argument(
+        "--jobs", "-j", type=int, default=1, help="并行编译数（默认 1；>1 会拉高耗时噪声）"
+    )
+    edge.add_argument("--top", type=int, default=15, help="报告里列出的边数（默认 15）")
+    edge.add_argument(
+        "--effective-only",
+        action="store_true",
+        help="只用 -H 有效树算闭包（会虚报收益，仅用于对照实验）",
+    )
+    edge.add_argument("--format", choices=["md", "json"], default="md")
+    edge.add_argument("-o", "--output", type=Path, default=None, help="输出文件（默认标准输出）")
 
     history = subparsers.add_parser(
         "history", help="查看构建成本历史趋势（来自 scan --history 记录）"
@@ -885,6 +932,75 @@ def _cmd_blame(args) -> int:
     return 0
 
 
+def _with_cli_overrides(task, args):
+    """把命令行给的 std / -I / -D / --flag 叠加到某个编译单元的参数上。
+
+    compile_commands 里的单元自带完整参数，命令行只作为**补充**（例如补一个
+    构建系统没导出的包含路径）。不覆盖原值，避免把能编译的命令行改坏。
+    """
+    options = dataclasses.replace(
+        task.options,
+        standard=args.std or task.options.standard,
+        include_dirs=[*task.options.include_dirs, *args.includes],
+        defines=[*task.options.defines, *args.defines],
+        extra_flags=[*task.options.extra_flags, *args.flags],
+    )
+    return dataclasses.replace(task, options=options)
+
+
+def _cmd_edge_cost(args) -> int:
+    root = args.path.resolve()
+    if not root.exists():
+        print(f"错误：路径不存在 {root}", file=sys.stderr)
+        return 2
+    try:
+        driver = detect_driver(args.compiler)
+    except CompilationError as exc:
+        print(f"错误：{exc}", file=sys.stderr)
+        return 2
+
+    tasks = discover_translation_units(
+        root,
+        compile_commands=args.compile_commands,
+        max_tus=args.max_tus,
+    )
+    if args.std or args.includes or args.defines or args.flags:
+        tasks = [_with_cli_overrides(task, args) for task in tasks]
+
+    try:
+        units = collect_edge_units(
+            tasks,
+            driver,
+            jobs=max(1, args.jobs),
+            timeout=600.0,
+            effective_only=args.effective_only,
+        )
+    except EdgeCostError as exc:
+        print(f"错误：{exc}", file=sys.stderr)
+        return 2
+
+    costs = aggregate_edge_costs(u.edges for u in units if u.ok)
+    text = (
+        _json_pretty(edges_to_dict(costs, units))
+        if args.format == "json"
+        else render_edges_markdown(costs, units, top=args.top)
+    )
+    if args.output:
+        args.output.write_text(text, encoding="utf-8")
+        failed = sum(1 for u in units if not u.ok)
+        print(
+            f"已写入 {args.output}（{len(costs)} 条边，"
+            f"{len(units) - failed}/{len(units)} 个编译单元成功）",
+            file=sys.stderr,
+        )
+    else:
+        print(text)
+    failed = [u for u in units if not u.ok]
+    if failed:
+        print(f"注意：{len(failed)} 个编译单元采集失败，已在报告中列出。", file=sys.stderr)
+    return 0
+
+
 def _cmd_history(args) -> int:
     from .dashboard import load_trend, render_dashboard, serve, summarize
 
@@ -979,6 +1095,7 @@ _COMMANDS = {
     "gate": _cmd_gate,
     "compare": _cmd_compare,
     "blame": _cmd_blame,
+    "edge-cost": _cmd_edge_cost,
     "history": _cmd_history,
     "pr-comment": _cmd_pr_comment,
     "toolchains": _cmd_toolchains,

@@ -76,7 +76,7 @@
 | R3 | **指标未校准**：增量构建税预测比实测高 1.72× | `experiments/results/incremental-tax-20261018.json`（`--full-compile` 每单元多链接一次） | 若当卖点会被现场打脸 | 已降级为「实验性、未校准」，报告标红 |
 | R4 | **建议覆盖度不如 IncludeGuardian**：缺 `inline sources` 等类别 | `docs/competitors.md` §2.3 | 「更全」的说法不成立 | 已如实写入文档，不声称更全 |
 | R5 | **计时精度不如 `-ftime-trace`**：墙钟差分粒度粗 | `docs/competitors.md` §2.2 | 不能声称比 CBA 更准 | 已如实写入 |
-| R6 | **平台验证不全**：MSVC 路径未在本机实测 | 仅有驱动与单测，无真实 MSVC 工程跑通记录 | 跨平台说法可能是纸面能力 | 未验证；基准计划列为必测项 |
+| R6 | **MSVC 未实测**：Windows 是主要用户群，未验证等于少一条腿 | **已解除（2026-10-18）**：本地 `vcvars64` 依赖被策略拦截的 `reg.exe`，改由 CI 的 windows-latest 执行 `scan --compiler cl` 与 `gate`。run #5/#6 均通过，MSVC 侧 TU=2、失败 0、归因行数 196,157，产物 `msvc-evidence` 可下载 | 不再是空白 | 已闭环；口径差异（同一工程 GCC 228,987 行 vs MSVC 196,157 行）写入 benchmark-report §11 |
 | R7 | **用户自写脚本替代**：半天可写出 70% 功能 | 无对照数据 | 价值主张被「不值得装」击穿 | 未验证；需测「从接入到得出可信结论」的人工时间 |
 
 ## 5. 我们明确不声称

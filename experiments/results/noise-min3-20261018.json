@@ -1,0 +1,68 @@
+{
+  "tu_count": 10,
+  "median_percent": 0.72,
+  "p90_percent": 1.89,
+  "max_percent": 2.63,
+  "rows": [
+    {
+      "file": "unit-algorithms.cpp",
+      "group_a": 1.1987,
+      "group_b": 1.20159,
+      "spread_percent": 0.24
+    },
+    {
+      "file": "unit-allocator.cpp",
+      "group_a": 1.25608,
+      "group_b": 1.24716,
+      "spread_percent": 0.71
+    },
+    {
+      "file": "unit-alt-string.cpp",
+      "group_a": 1.33878,
+      "group_b": 1.32247,
+      "spread_percent": 1.23
+    },
+    {
+      "file": "unit-assert_macro.cpp",
+      "group_a": 0.95826,
+      "group_b": 0.9445,
+      "spread_percent": 1.45
+    },
+    {
+      "file": "unit-binary_formats.cpp",
+      "group_a": 1.05682,
+      "group_b": 1.08496,
+      "spread_percent": 2.63
+    },
+    {
+      "file": "unit-bjdata.cpp",
+      "group_a": 1.77063,
+      "group_b": 1.73895,
+      "spread_percent": 1.81
+    },
+    {
+      "file": "unit-bson.cpp",
+      "group_a": 1.46768,
+      "group_b": 1.45991,
+      "spread_percent": 0.53
+    },
+    {
+      "file": "unit-byte_container_with_subtype.cpp",
+      "group_a": 0.94694,
+      "group_b": 0.95386,
+      "spread_percent": 0.73
+    },
+    {
+      "file": "unit-capacity.cpp",
+      "group_a": 0.98233,
+      "group_b": 0.97811,
+      "spread_percent": 0.43
+    },
+    {
+      "file": "unit-cbor.cpp",
+      "group_a": 1.60678,
+      "group_b": 1.59792,
+      "spread_percent": 0.55
+    }
+  ]
+}

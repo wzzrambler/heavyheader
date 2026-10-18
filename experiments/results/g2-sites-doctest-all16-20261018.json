@@ -1,0 +1,183 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "top": 16,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 16,
+    "ungated": 66
+  },
+  "arms": [
+    {
+      "arm": "feasible(header,gated)",
+      "candidates": 16,
+      "compiled": 8,
+      "improved": 1,
+      "adopt_rate": 0.062,
+      "details": [
+        {
+          "site": "prelude.h",
+          "header": "algorithm",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp:524:18: error: no member named 'sort' in namespace '"
+        },
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "reach": 24,
+          "status": "improved",
+          "baseline_ms": 20745.9,
+          "patched_ms": 20121.8,
+          "percent_saved": 3.008,
+          "message": "24 个单元合计 20746 ms → 20122 ms"
+        },
+        {
+          "site": "prelude.h",
+          "header": "vector",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/traversal.h:18:10: error: no template named 'vector' in namespace '"
+        },
+        {
+          "site": "prelude.h",
+          "header": "set",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/test_case.h:14:6: error: no template named 'set' in namespace 's"
+        },
+        {
+          "site": "prelude.h",
+          "header": "iomanip",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：console.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\console.cpp:19:21: error: no member named 'setw' in na"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20731.6,
+          "patched_ms": 20841.1,
+          "percent_saved": -0.528,
+          "message": "差异在噪声范围内（-110 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "atomic",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/atomic.h:18:21: error: no template named 'atomic' in namespace 'std"
+        },
+        {
+          "site": "prelude.h",
+          "header": "map",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：handler.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/reporter.h:15:26: error: no template named 'map' in namespace 's"
+        },
+        {
+          "site": "prelude.h",
+          "header": "sstream",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 21100.1,
+          "patched_ms": 21122.1,
+          "percent_saved": -0.104,
+          "message": "差异在噪声范围内（-22 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "new",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20981.2,
+          "patched_ms": 21010.6,
+          "percent_saved": -0.14,
+          "message": "差异在噪声范围内（-29 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "utility",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20784.5,
+          "patched_ms": 20722.6,
+          "percent_saved": 0.298,
+          "message": "差异在噪声范围内（+62 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdlib",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20709.9,
+          "patched_ms": 20718.9,
+          "percent_saved": -0.044,
+          "message": "差异在噪声范围内（-9 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "iostream",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/xml.h:59:44: error: no member named 'cout' in namespace 'std'; d"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "debugger.h",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/public/assert/handler.h:64:5: error: use of undeclared identifier 'isDebugg"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "decorators.h",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20802.1,
+          "patched_ms": 20841.7,
+          "percent_saved": -0.19,
+          "message": "差异在噪声范围内（-40 ms / 24 个单元）"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "version.h",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 20851.3,
+          "patched_ms": 20858.0,
+          "percent_saved": -0.032,
+          "message": "差异在噪声范围内（-7 ms / 24 个单元）"
+        }
+      ]
+    }
+  ]
+}

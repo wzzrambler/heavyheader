@@ -7,8 +7,8 @@
 
 | 项 | 状态 | 位置 |
 |---|---|---|
-| 代码 | ✅ 148 文件 / 50+ commit | `src/heavyheader/` |
-| 测试 | ✅ 460 个全绿 | `tests/` |
+| 代码 | ✅ 186 文件 / 86 commit | `src/heavyheader/` |
+| 测试 | ✅ 482 个全绿 | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/CI | 仓库根 |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
@@ -18,20 +18,21 @@
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
-| G2 优化闭环 | ❌ **不成立**：真实工程可采纳率 0/10；阳性对照 1/6 证明管线本身有效。据此不再宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-loop-*.{md,json}`、`g2-control-*.{md,json}` |
+| G2 优化闭环 | ⚠️ **成立（有限）**：doctest 16 条闸门候选全部测完：8 条能编过、**1 条**经复测确认省时（删公共头的 `<unordered_set>`，24 单元全通过、聚合 −3.01%），即 1/16；**json 与 zlib 都是 0/5**；注入-召回 2/2。据此仍不宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-sites-*.{md,json}`、`g2-recall-*.{md,json}` |
+| 白卷诊断 | ✅ 0 条候选时逐条给出拦下原因：json 369 条 / zlib 58 条被逐条判过，含标识符证据与成本集中度 | `attrib/diagnosis.py` + `experiments/results/g2-diagnosis-*.{md,json}` |
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
 | 作品介绍文档 | ✅ 15 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 14 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
-| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 148 文件，CI 三工作流 |
+| 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 86 commit / 186 文件，CI 三工作流 |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |
 | 邮件提交 | ⬜ 待发送 | 见下 |
 
 ## 第 1 步：推 GitHub 公开仓库 ✅ 已完成
 
-仓库：**https://github.com/wzzrambler/heavyheader**（Public，50+ commit，148 文件）
+仓库：**https://github.com/wzzrambler/heavyheader**（Public，86 commit，186 文件）
 
 - 远程为空仓库，直接推送成功，无需 merge
 - 分支已命名为 `main`（README 与 CI 工作流均按 `main` 配置）

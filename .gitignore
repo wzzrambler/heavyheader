@@ -47,3 +47,6 @@ experiments/_work/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Windows 保留名，由 clang -o NUL 误建
+nul

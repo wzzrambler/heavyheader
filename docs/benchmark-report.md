@@ -115,3 +115,29 @@ python experiments/aa_noise.py --runs 3 --tus 25
 
 机器与编译器版本（本轮）：Windows，MinGW g++ 16.2.0，Python 3.13.12。
 换机器必须重测噪声底，不得沿用本报告的数值。
+
+
+## 8. G1 首次同任务对照（2026-10-18，部分完成）
+
+环境已补齐：LLVM/clang 23.1.3、CMake 4.4.4、Ninja、MSVC 14.43（但 MSVC 的 SDK
+定位依赖 `reg.exe`，被本机安全策略拦截，Build Insights 仍不可用）。
+
+**ClangBuildAnalyzer 已从源码构建并跑通**（25 个 TU，0 编译失败）：
+`ClangBuildAnalyzer.exe --start/--stop/--analyze`，数据来自真实 `-ftime-trace`。
+
+| Top-10 | 内容 |
+|---|---|
+| CBA（按时间） | json.hpp, algorithm, doctest_compatibility.h, sstream, set, fstream, make_test_data_available.hpp, deque, list, test_utils.hpp |
+| HeavyHeader（按归因行数） | doctest.h, json.hpp, binary_reader.hpp, hedley.hpp, binary_writer.hpp, lexer.hpp, to_chars.hpp, json_pointer.hpp, serializer.hpp, type_traits.hpp |
+
+**重合 1/10（仅 json.hpp）。**
+
+为什么不能据此判「我们更差」：
+1. CBA 的榜单**包含系统头**（algorithm/sstream/set/fstream/deque/list），
+   我们只列项目头；两边候选集合本就不同。
+2. 指标不同：CBA 是编译时间，我们是解析行数。时间序与行数序本来就可能不同
+   （模板重头行数不一定最多）。
+3. 编译器不同：CBA 侧 clang（MinGW target），HeavyHeader 侧 g++。
+
+下一步（G1 继续）：把 CBA 输出按「是否在项目根下」过滤后重算重合度；两边统一
+编译器；再比较「前 10 名集合」与「前 10 名顺序」。在这些做完前，G1 仍判未通过。

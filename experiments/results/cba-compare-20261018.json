@@ -1,0 +1,33 @@
+{
+  "tus": 25,
+  "failed_compiles": [],
+  "cba_top10": [
+    "json.hpp",
+    "algorithm",
+    "doctest_compatibility.h",
+    "sstream",
+    "set",
+    "fstream",
+    "make_test_data_available.hpp",
+    "deque",
+    "list",
+    "test_utils.hpp"
+  ],
+  "hh_top10": [
+    "doctest.h",
+    "json.hpp",
+    "binary_reader.hpp",
+    "hedley.hpp",
+    "binary_writer.hpp",
+    "lexer.hpp",
+    "to_chars.hpp",
+    "json_pointer.hpp",
+    "serializer.hpp",
+    "type_traits.hpp"
+  ],
+  "overlap": [
+    "json.hpp"
+  ],
+  "overlap_count": 1,
+  "analysis_head": "Analyzing build trace from 'C:\\Users\\31879\\AppData\\Local\\Temp\\cba-998rmclu\\capture.bin'...\n**** Time summary:\nCompilation (25 times):\n  Parsing (frontend):           32.0 s\n  Codegen & opts (backend):      6.3 s\n\n**** Files that took longest to parse (compiler frontend):\n  2860 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u19.o\n  2215 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u21.o\n  2132 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u16.o\n  1975 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u5.o\n  1880 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u9.o\n  1575 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u20.o\n  1523 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u6.o\n  1474 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u13.o\n  1454 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u2.o\n  1246 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u14.o\n\n**** Files that took longest to codegen (compiler backend):\n  1132 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u21.o\n   677 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u5.o\n   638 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u19.o\n   611 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u9.o\n   488 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u13.o\n   422 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u6.o\n   359 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u16.o\n   194 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u20.o\n   180 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u22.o\n   179 ms: C:/Users/31879/AppData/Local/Temp/cba-998rmclu/u4.o\n\n**** Templates that took longest to instantiate:\n  4288 ms: nlohmann::basic_json<>::parse<const char *> (25 times, avg 171 ms)\n  3777 ms: nlohmann::detail::parser<nlohmann::basic_json<>, nlohmann::detail::i... (25 times, avg 151 ms)\n  2803 ms: nlohmann::basic_json<>::basic_json (76 times, avg 36 ms)\n  2728 ms: nlohmann::detail::parser<nlohmann::basic_json<>, nlohmann::detail::i... (25 times,"
+}

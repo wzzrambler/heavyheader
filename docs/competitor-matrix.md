@@ -77,6 +77,16 @@
 解析耗时，但那是树形累计口径、不算删除；③ 本项目声首创的是**三者的组合**
 （闭包 × 自耗时 → 毫秒）与其在反事实闭环中的位置，不是任何单件。
 
+### 2.3 其他候选单件能力的撞车检查（2026-10-19）
+
+| 候选单件能力 | 搜查结论 | 判定 |
+|---|---|---|
+| commit 级成本归因（把成本回归归因到具体 commit + include 行，「成本考古」） | 未见同能力工具；相邻：jenkinsci/build-time-blame-plugin（Jenkins 控制台历史）、build-blame（单次构建剖析）、Bencher / cpp-compile-overhead（耗时趋势） | **空白，已本地验证可行**（experiments/blame_probe.md） |
+| 成本最小充分 include 集（多 provider 按成本选子集） | IWYU 覆盖正确性最小集；成本维度联合优化未见 | 空白但实用价值中等 |
+| 单条 include 改动对并行 CI 墙钟的预测 | build-blame 做 ninja trace 近似；单改动预测无人做；需构建 DAG | 半空白，采集成本高 |
+
+搜查方式：GitHub repo search API + 项目官网 + 网页搜索 + 学术检索（2026-10-19）。
+
 ## 3. 四维评估（候选差异化，不是既成事实）
 
 | 维度 | 竞品现状 | 我们是否占优 | 证据 |

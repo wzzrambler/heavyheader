@@ -32,6 +32,7 @@ Niklas Frykholm 2011 年的 [Header Hero](http://bitsquid.blogspot.com/2011/10/c
 |---|---|---|
 | [Header Hero](http://bitsquid.blogspot.com/2011/10/caring-by-sharing-header-hero.html)（2011） | 归因行数排序、Blowup Factor；秒级扫全库 | 正则解析（漏宏/条件编译）；只排序，不验证、不量化删后收益 |
 | [ClangBuildAnalyzer](https://github.com/aras-p/ClangBuildAnalyzer) | 真实 `-ftime-trace` 的逐头文件累计 ms、包含次数、均值 | 仅 Clang 9+；只描述现状，没有「删了会怎样」；无基线、无门禁 |
+| [CompileScore](https://github.com/Viladoman/CompileScore) | `-ftime-trace` / Build Insights 聚合：逐 include 成本、每 TU 时间线、includers 图，VS 内着色 | 仅描述现状；无反事实、无决策、无门禁；Windows / VS 为主，无行数归因口径 |
 | [IncludeGuardian](https://includeguardian.io/) | 七类结构建议（缺 guard、最贵 include、PCH、拆分…），token 级估算 | 不编译、不实测；无三态决策；仅 Win/Linux x64 二进制 |
 | [deheader](http://www.catb.org/~esr/deheader/)（2010） | 注释掉一条 include、重新编译看是否通过；`-r` 可自动删 | 二值结论，不量化收益；跳过 `#if` 区域；无收益阈值 |
 | [include-what-you-use](https://include-what-you-use.org/) | AST 级判断 include 是否必需 | 不给成本量化，无法按收益排序 |

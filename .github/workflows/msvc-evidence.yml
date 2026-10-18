@@ -72,12 +72,12 @@ jobs:
             -o msvc-scan.json 2>&1 | Tee-Object -FilePath scan.log
           $code = $LASTEXITCODE
 
-          "## scan exit=$code" | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          Get-Content scan.log -Tail 60 | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-
-          if ($code -ne 0) { exit $code }
+          "scan exit=$code" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          if ($code -ne 0) {
+            $shown = @(Get-Content scan.log | Where-Object { $_ -match '\S' } | Select-Object -Last 5)
+            foreach ($line in $shown) { Write-Host "::error::scan: $line" }
+            exit $code
+          }
 
       - name: 校验收到的编译单元
         shell: pwsh
@@ -94,19 +94,22 @@ jobs:
 
       - name: 门禁（无回归应通过）
         shell: pwsh
+        # 失败原因用 `::error::` 注解暴露：注解会出现在运行页面的 Annotations
+        # 区块，**不需要登录**就能读；而普通日志与 job summary 在公开页面上
+        # 拿不到。远程排障时这是唯一可靠的通道。
         run: |
-          python -m heavyheader gate benchmarks/cases/demo `
+          $lines = python -m heavyheader gate benchmarks/cases/demo `
             -I benchmarks/cases/demo/include `
             --compiler cl --jobs 1 --baseline msvc-scan.json 2>&1 |
             Tee-Object -FilePath gate.log
           $code = $LASTEXITCODE
+          Write-Host "gate exit=$code"
 
-          "## gate exit=$code" | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          Get-Content gate.log -Tail 40 | Out-File -Append $env:GITHUB_STEP_SUMMARY
-          '```' | Out-File -Append $env:GITHUB_STEP_SUMMARY
-
-          if ($code -ne 0) { exit $code }
+          if ($code -ne 0) {
+            $shown = @($lines | Where-Object { $_ -match '\S' } | Select-Object -First 5)
+            foreach ($line in $shown) { Write-Host "::error::gate: $line" }
+            exit $code
+          }
 
       - name: 上传产物
         uses: actions/upload-artifact@v4

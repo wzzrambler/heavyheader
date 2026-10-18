@@ -21,7 +21,7 @@
 | G2 优化闭环 | ❌ **不成立**：真实工程可采纳率 0/10；阳性对照 1/6 证明管线本身有效。据此不再宣传「自动优化」 | `docs/benchmark-report.md` §9 + `experiments/results/g2-loop-*.{md,json}`、`g2-control-*.{md,json}` |
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截、单次 3.38 s | `docs/benchmark-report.md` §10 + `experiments/results/g3-gate-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
-| 作品介绍文档 | ✅ 14 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
+| 作品介绍文档 | ✅ 15 页 PDF | `HeavyHeader-作品介绍文档.pdf` |
 | 选题报告（补充） | ✅ 14 页 PDF | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
 | 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 50+ commit / 142 文件，CI 三工作流 |

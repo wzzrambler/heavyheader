@@ -42,7 +42,8 @@ jobs:
     name: 发布到 PyPI
     needs: build
     runs-on: ubuntu-latest
-    environment: release
+    # 不声明 environment：PyPI 侧的 trusted publisher 按「无 environment」
+    # 配置（OIDC 声明里带 environment 而 PyPI 条目为空会被拒）。
     permissions:
       id-token: write   # Trusted Publishing，不需要长期 API token
     steps:

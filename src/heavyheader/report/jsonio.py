@@ -123,6 +123,10 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "estimated_percent": candidate.estimated_percent,
                 "measured_seconds_saved": candidate.measured_seconds_saved,
                 "verified": candidate.verified,
+                # 秒数预估参与 verify 的排序（candidate_rank_key 第二键），
+                # 不序列化的话，从 JSON 重载的扫描（compare / 看板 / 外部
+                # 脚本）会在分层内退化成按行数排——预估值最大的候选不再排前。
+                "estimated_seconds_saved": candidate.estimated_seconds_saved,
                 "usage_label": candidate.usage_label,
                 # 排序用的是 verdict 而不是 label。只存 label 时，任何从 JSON
                 # 重载的扫描（``compare``、看板、外部脚本）都会把全部候选当成
@@ -347,6 +351,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
             estimated_lines_saved=entry.get("estimated_lines_saved", 0),
             estimated_percent=entry.get("estimated_percent", 0.0),
             measured_seconds_saved=entry.get("measured_seconds_saved"),
+            estimated_seconds_saved=entry.get("estimated_seconds_saved"),
             verified=entry.get("verified", False),
             usage_label=entry.get("usage_label", "无法判定"),
             usage_verdict=entry.get("usage_verdict")

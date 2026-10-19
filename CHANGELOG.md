@@ -4,6 +4,19 @@
 
 ## [未发布]
 
+### 新增
+
+- **scan 报告新增「待验证队列」小节**（`report/markdown.py`）。没跑 verify
+  的扫描报告以前把「无法判定」层留给读者自己判断；现在按 `verify` 的测量
+  顺序列出队列（疑似未使用 → 无法判定 → 在用），并给出分层计数。依据是
+  实测：Lua 语料上「无法判定」层 32/32 条通过三真值——「静态判不了」多数
+  是判定层保守，而反事实实验能裁。`verify --top` 的帮助文本同步说明池顺序。
+- **基准 JSON 序列化 `estimated_seconds_saved`**（`report/jsonio.py`）。
+  秒数预估参与 verify 排序，但此前只进报告不进 JSON，从 JSON 重载的扫描
+  （compare / 看板 / 外部脚本）会在分层内退化成按行数排。四工程基准已
+  刷新：候选与判定数不变（合计 104 个候选、3 个疑似未使用），预估换锚后
+  首位变为 httplib 12.09s / json.hpp 3.42s / helpers-inl.h 1.16s。
+
 ### 修复
 
 - **clang 的 `-ftime-report` 此前从未被解析**（`parse/timereport.py`）。解析

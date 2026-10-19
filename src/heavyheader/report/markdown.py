@@ -16,7 +16,7 @@ from ..attrib.advice import (
     TIME_NOISE_FLOOR,
 )
 from ..attrib.diagnosis import BLOCK_REASONS
-from ..models import AdviceVerdict, HeaderKind, ProjectScan
+from ..models import AdviceVerdict, HeaderKind, ProjectScan, candidate_rank_key
 
 __all__ = ["render_markdown", "markdown_summary_line"]
 
@@ -205,6 +205,46 @@ def _unique_tails(paths, root: Path) -> dict[Path, str]:
     return labels
 
 
+def _pending_queue_section(scan: ProjectScan, root: Path, queue: list) -> list[str]:
+    """还没实测的候选 = verify 的输入队列，按测量顺序列出来。
+
+    旧版报告把「无法判定」当成留给读者的作业。这一节说清楚三件事：队列有
+    多大、`verify` 按什么顺序测、测完它们会变成什么。无法判定层单列的依据
+    是实测而不是修辞——Lua 语料上这一层 32/32 条通过三真值（编过 + 真少
+    解析 + 程序没变，见 `experiments/failure_taxonomy.py` 的输出），
+    「静态判不了」多数时候是判定层保守，不是候选有问题。
+    """
+    pending_pu = [c for c in queue if c.usage_verdict == "plausibly_unused"]
+    pending_unknown = [c for c in queue if c.usage_verdict == "unknown"]
+    pending_used = [c for c in queue if c.usage_verdict == "in_use"]
+    lines = [
+        "",
+        f"### 待验证队列：{len(queue)} 条等 `verify` 裁定",
+        "",
+        "顺序即 `heavyheader verify --top N` 的测量顺序：**疑似未使用**先测",
+        "（静态判定已经指向删除），**无法判定**次之（静态给不出结论，但反事实",
+        "实验能裁——Lua 语料上这一层 32/32 条实测可删），**在用**默认不测",
+        "（要测得加 `--ungated-sites`）。",
+        "",
+        f"- 疑似未使用 **{len(pending_pu)}** 条 · 无法判定 **{len(pending_unknown)}** 条"
+        f" · 在用 **{len(pending_used)}** 条",
+        "",
+        "| 编译单元 | include | 预计省 (s) | 使用状态 | 判据 |",
+        "|---|---|---:|---|---|",
+    ]
+    for candidate in queue[:10]:
+        estimate = candidate.estimated_seconds_saved
+        lines.append(
+            f"| `{_rel(candidate.tu, root)}` "
+            f"| `{_rel(candidate.header, root)}` "
+            f"| {'—' if estimate is None else f'{estimate:.4f}'} "
+            f"| {candidate.usage_label} "
+            f"| {candidate.usage_reason or '—'} |"
+        )
+    lines.append("")
+    return lines
+
+
 def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
     """删除建议与取舍依据——本报告的核心小节。
 
@@ -213,9 +253,20 @@ def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
     结论：建议删除 / 保留 / 需人工判断。没有证据支持的结论不存在——
     未实测的候选连结论都不给。
     """
+    # 还没实测的候选不是「留给读者判断」，是 verify 的输入队列。按 rank 顺序
+    # （疑似未使用在前、无法判定次之）列出来：一条命令之后它们各自去哪里，
+    # 报告说清楚。无法判定层值得单列的原因有实测支撑——Lua 语料上这一层
+    # 32/32 条全部通过三真值（见 experiments/failure_taxonomy 数据），
+    # 「静态判不了」多数时候是判定层保守，不是候选有问题。
+    queue = sorted(
+        (c for c in scan.candidates if c.advice is None), key=candidate_rank_key
+    )
     advised = [c for c in scan.candidates if c.advice is not None]
-    if not advised:
+    if not advised and not queue:
         return []
+    if not advised:
+        # 纯扫描（没跑 verify）时这一节只剩队列本身——那正是此刻最该说的。
+        return _pending_queue_section(scan, root, queue)
 
     # 组内排序：有实测收益的按省下的秒数排，其余按独占闭包行数排——
     # 都是「读者先看哪个」的顺序，与 candidate_rank_key 同一精神。
@@ -257,6 +308,17 @@ def _advice_section(scan: ProjectScan, root: Path) -> list[str]:
         ),
         "",
     ]
+
+    # 还没实测的候选不是「留给读者判断」，是 verify 的输入队列。按 rank 顺序
+    # （疑似未使用在前、无法判定次之）列出来：一条命令之后它们各自去哪里，
+    # 报告说清楚。无法判定层值得单列的原因有实测支撑——Lua 语料上这一层
+    # 32/32 条全部通过三真值（见 experiments/failure_taxonomy 数据），
+    # 「静态判不了」多数时候是判定层保守，不是候选有问题。
+    queue = sorted(
+        (c for c in scan.candidates if c.advice is None), key=candidate_rank_key
+    )
+    if queue:
+        lines += _pending_queue_section(scan, root, queue)
 
     groups: list[tuple[str, list] ] = [
         ("建议删除（实测有效）", [c for c in advised if c.advice.verdict is AdviceVerdict.REMOVE]),

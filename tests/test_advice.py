@@ -577,3 +577,52 @@ def test_codegen_changed_is_human_with_keep_lean(tmp_path):
     texts = " ".join(reason.text for reason in advice.reasons)
     assert "编译通过" in texts and "同一个程序" in texts
     assert "不计入收益" in texts
+
+
+def test_scan_report_lists_the_verify_queue(tmp_path):
+    """没跑 verify 的扫描报告要把候选列成「待验证队列」，而不是留给读者。
+
+    旧版在 scan-only 报告里把「无法判定」当成读者的作业。这一节说清队列多大、
+    verify 按什么顺序测；无法判定层单列有实测依据（Lua 32/32 通过三真值）。
+    """
+    from heavyheader.report.markdown import render_markdown
+
+    unknown = _candidate(tmp_path / "u")
+    unknown.usage_verdict = "unknown"
+    unknown.usage_label = "无法判定"
+    in_use = _candidate(tmp_path / "i")
+    in_use.usage_verdict = "in_use"
+    in_use.usage_label = "在用"
+    scan = _scan(tmp_path, unknown.header, 1)
+    scan.candidates = [in_use, unknown]
+    scan.reproduce_command = "heavyheader scan /proj --compiler g++"
+
+    text = render_markdown(scan)
+
+    assert "待验证队列" in text
+    assert "verify" in text
+    # 分层计数必须写出来：疑似未使用 0 · 无法判定 1 · 在用 1。
+    assert "疑似未使用 **0** 条 · 无法判定 **1** 条 · 在用 **1** 条" in text
+    # 队列顺序 = candidate_rank_key：无法判定排在在用前面。
+    assert text.index("无法判定") < text.index("在用")
+
+
+def test_pending_queue_absent_when_everything_is_verified(tmp_path):
+    """全部候选都有实测结论时不再渲染队列——没有待验证项就不摆空桌子。"""
+    from heavyheader.report.markdown import render_markdown
+
+    candidate = _candidate(tmp_path)
+    scan = _scan(tmp_path, candidate.header, 1)
+    scan.candidates = [candidate]
+    scan.reproduce_command = "heavyheader scan /proj --compiler g++"
+    scan.candidates[0].advice = build_advice(
+        candidate,
+        _result(candidate, "improved", baseline_seconds=1.0, patched_seconds=0.6),
+        scan,
+    )
+
+    text = render_markdown(scan)
+
+    assert "待验证队列" not in text
+    assert "建议删除" in text
+

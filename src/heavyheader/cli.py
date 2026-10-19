@@ -263,7 +263,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify = subparsers.add_parser("verify", help="实测：移除候选 include 后重新编译并计时")
     add_common(verify)
-    verify.add_argument("--top", type=int, default=5, help="验证前 N 个候选（默认 5）")
+    verify.add_argument(
+        "--top",
+        type=int,
+        default=5,
+        help="验证前 N 个候选（默认 5）：疑似未使用优先，其次无法判定；"
+        "「在用」默认不测，加 --ungated-sites 才测",
+    )
     verify.add_argument("--runs", type=int, default=3, help="每侧重复编译次数，取最小值（默认 3）")
     verify.add_argument(
         "--confirm",

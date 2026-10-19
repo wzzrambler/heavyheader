@@ -1,0 +1,183 @@
+{
+  "date": "2026-10-19",
+  "project": "json",
+  "tus": 25,
+  "top": 16,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 0,
+    "ungated": 58
+  },
+  "arms": [
+    {
+      "arm": "ungated(header,top-by-size)",
+      "candidates": 16,
+      "compiled": 8,
+      "improved": 0,
+      "adopt_rate": 0.0,
+      "details": [
+        {
+          "site": "adl_serializer.hpp",
+          "header": "from_json.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/adl_serializer.hpp:29:29: error: no member named 'from_json' in n"
+        },
+        {
+          "site": "json.hpp",
+          "header": "adl_serializer.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/input/json_sax.hpp:432:27: error: no matching conversion f"
+        },
+        {
+          "site": "from_json.hpp",
+          "header": "valarray",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 23036.3,
+          "patched_ms": 22993.8,
+          "percent_saved": 0.184,
+          "message": "差异在噪声范围内（+42 ms / 25 个单元）"
+        },
+        {
+          "site": "json.hpp",
+          "header": "functional",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 23050.1,
+          "patched_ms": 23066.2,
+          "percent_saved": -0.07,
+          "message": "差异在噪声范围内（-16 ms / 25 个单元）"
+        },
+        {
+          "site": "std_fs.hpp",
+          "header": "filesystem",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/meta/std_fs.hpp:26:25: error: expected namespace name"
+        },
+        {
+          "site": "from_json.hpp",
+          "header": "std_fs.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/conversions/from_json.hpp:461:47: error: use of undeclared"
+        },
+        {
+          "site": "json.hpp",
+          "header": "memory",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 22964.0,
+          "patched_ms": 22991.5,
+          "percent_saved": -0.119,
+          "message": "差异在噪声范围内（-27 ms / 25 个单元）"
+        },
+        {
+          "site": "from_json.hpp",
+          "header": "exceptions.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/conversions/from_json.hpp:41:20: error: use of undeclared "
+        },
+        {
+          "site": "value_t.hpp",
+          "header": "macro_scope.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/string_escape.hpp:34:5: error: use of undeclared identifie"
+        },
+        {
+          "site": "json.hpp",
+          "header": "binary_reader.hpp",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 22922.9,
+          "patched_ms": 22939.4,
+          "percent_saved": -0.072,
+          "message": "差异在噪声范围内（-17 ms / 25 个单元）"
+        },
+        {
+          "site": "from_json.hpp",
+          "header": "map",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 22862.5,
+          "patched_ms": 22871.8,
+          "percent_saved": -0.041,
+          "message": "差异在噪声范围内（-9 ms / 25 个单元）"
+        },
+        {
+          "site": "exceptions.hpp",
+          "header": "value_t.hpp",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/string_escape.hpp:34:5: error: use of undeclared identifie"
+        },
+        {
+          "site": "binary_reader.hpp",
+          "header": "input_adapters.hpp",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 23029.3,
+          "patched_ms": 23052.3,
+          "percent_saved": -0.1,
+          "message": "差异在噪声范围内（-23 ms / 25 个单元）"
+        },
+        {
+          "site": "input_adapters.hpp",
+          "header": "numeric",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 22951.9,
+          "patched_ms": 22959.1,
+          "percent_saved": -0.032,
+          "message": "差异在噪声范围内（-7 ms / 25 个单元）"
+        },
+        {
+          "site": "string_concat.hpp",
+          "header": "cstring",
+          "reach": 25,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（25 个单元之一）：accept__string.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-18-23-59-50\\heavyheader\\experiments\\_work\\json\\include\\nlohmann/detail/string_concat.hpp:43:14: error: no member named 'strlen' i"
+        },
+        {
+          "site": "macro_scope.hpp",
+          "header": "version",
+          "reach": 25,
+          "status": "no-change",
+          "baseline_ms": 22975.1,
+          "patched_ms": 22974.5,
+          "percent_saved": 0.003,
+          "message": "差异在噪声范围内（+1 ms / 25 个单元）"
+        }
+      ]
+    }
+  ]
+}

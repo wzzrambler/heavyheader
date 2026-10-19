@@ -1,0 +1,183 @@
+{
+  "date": "2026-10-19",
+  "project": "zlib-develop",
+  "tus": 15,
+  "top": 16,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 1,
+    "ungated": 16
+  },
+  "arms": [
+    {
+      "arm": "ungated(header,top-by-size)",
+      "candidates": 16,
+      "compiled": 6,
+      "improved": 1,
+      "adopt_rate": 0.062,
+      "details": [
+        {
+          "site": "zlib.h",
+          "header": "zconf.h",
+          "reach": 15,
+          "status": "ambiguous",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "源码里有 2 行 include 都叫 zconf.h，无法判断该注释掉哪一行——注释错行会让结论指向另一个文件，因此跳过。改用更完整的 include 路径，或用编译器的行号信息消歧"
+        },
+        {
+          "site": "zconf.h",
+          "header": "stddef.h",
+          "reach": 15,
+          "status": "ambiguous",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "源码里有 2 行 include 都叫 stddef.h，无法判断该注释掉哪一行——注释错行会让结论指向另一个文件，因此跳过。改用更完整的 include 路径，或用编译器的行号信息消歧"
+        },
+        {
+          "site": "zutil.h",
+          "header": "stdlib.h",
+          "reach": 9,
+          "status": "improved",
+          "baseline_ms": 1307.6,
+          "patched_ms": 1273.0,
+          "percent_saved": 2.652,
+          "message": "9 个单元合计 1308 ms → 1273 ms"
+        },
+        {
+          "site": "zutil.h",
+          "header": "zlib.h",
+          "reach": 9,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（9 个单元之一）：adler32.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\zutil.h:44:16: error: expected ';' after top level declarator"
+        },
+        {
+          "site": "zconf.h",
+          "header": "limits.h",
+          "reach": 15,
+          "status": "no-change",
+          "baseline_ms": 2153.4,
+          "patched_ms": 2156.5,
+          "percent_saved": -0.143,
+          "message": "差异在噪声范围内（-3 ms / 15 个单元）"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "zlib.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzclose.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\gzguts.h:122:10: error: unknown type name 'voidp'; did you mean 'void'?"
+        },
+        {
+          "site": "deflate.h",
+          "header": "zutil.h",
+          "reach": 2,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（2 个单元之一）：deflate.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\deflate.h:74:9: error: unknown type name 'ush'"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "stdio.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzlib.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\gzlib.c:222:15: error: call to undeclared library function 'snprintf' with type 'int (char *restrict, __size_t, const "
+        },
+        {
+          "site": "gzguts.h",
+          "header": "stdlib.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzlib.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\gzlib.c:100:24: error: call to undeclared library function 'malloc' with type 'void *(__size_t)' (aka 'void *(unsigned"
+        },
+        {
+          "site": "zutil.h",
+          "header": "string.h",
+          "reach": 9,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（9 个单元之一）：deflate.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\deflate.c:227:5: error: call to undeclared library function 'memcpy' with type 'void *(void *, const void *, __size_"
+        },
+        {
+          "site": "zconf.h",
+          "header": "stdarg.h",
+          "reach": 15,
+          "status": "no-change",
+          "baseline_ms": 2168.2,
+          "patched_ms": 2165.4,
+          "percent_saved": 0.131,
+          "message": "差异在噪声范围内（+3 ms / 15 个单元）"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "fcntl.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzlib.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\gzlib.c:237:10: error: use of undeclared identifier 'O_RDONLY'"
+        },
+        {
+          "site": "zconf.h",
+          "header": "types.h",
+          "reach": 15,
+          "status": "no-change",
+          "baseline_ms": 2174.2,
+          "patched_ms": 2173.1,
+          "percent_saved": 0.052,
+          "message": "差异在噪声范围内（+1 ms / 15 个单元）"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "string.h",
+          "reach": 5,
+          "status": "no-change",
+          "baseline_ms": 738.2,
+          "patched_ms": 739.7,
+          "percent_saved": -0.21,
+          "message": "差异在噪声范围内（-2 ms / 5 个单元）"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "stat.h",
+          "reach": 5,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（5 个单元之一）：gzlib.c: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop\\gzlib.c:251:41: error: use of undeclared identifier '_S_IREAD'"
+        },
+        {
+          "site": "gzguts.h",
+          "header": "errno.h",
+          "reach": 5,
+          "status": "no-change",
+          "baseline_ms": 740.0,
+          "patched_ms": 736.2,
+          "percent_saved": 0.513,
+          "message": "差异在噪声范围内（+4 ms / 5 个单元）"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+{
+  "date": "2026-10-19",
+  "project": "doctest-pristine",
+  "tus": 24,
+  "top": 16,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "candidate_pool": {
+    "gated": 13,
+    "ungated": 66
+  },
+  "arms": [
+    {
+      "arm": "feasible(header,gated)",
+      "candidates": 13,
+      "compiled": 8,
+      "improved": 1,
+      "adopt_rate": 0.077,
+      "details": [
+        {
+          "site": "prelude.h",
+          "header": "unordered_set",
+          "reach": 24,
+          "status": "improved",
+          "baseline_ms": 19277.6,
+          "patched_ms": 18891.8,
+          "percent_saved": 2.002,
+          "message": "24 个单元合计 19278 ms → 18892 ms"
+        },
+        {
+          "site": "prelude.h",
+          "header": "utility",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19363.3,
+          "patched_ms": 19259.3,
+          "percent_saved": 0.537,
+          "message": "差异在噪声范围内（+104 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "iomanip",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：console.cpp: C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\doctest-pristine\\doctest\\parts\\private\\reporters\\console.cpp:19:21: error: no member named 'setw' in namespace 'std'"
+        },
+        {
+          "site": "prelude.h",
+          "header": "atomic",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:/Users/31879/AppData/Local/Temp/upstream/doctest-pristine\\doctest/parts/private/atomic.h:18:21: error: no template named 'atomic' in namespace 'std'"
+        },
+        {
+          "site": "prelude.h",
+          "header": "map",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：handler.cpp: C:/Users/31879/AppData/Local/Temp/upstream/doctest-pristine\\doctest/parts/private/reporter.h:15:26: error: no template named 'map' in namespace 'std'; did you mean 'max'"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "config.h",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19288.2,
+          "patched_ms": 19320.4,
+          "percent_saved": -0.167,
+          "message": "差异在噪声范围内（-32 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "limits",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19399.7,
+          "patched_ms": 19408.8,
+          "percent_saved": -0.047,
+          "message": "差异在噪声范围内（-9 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "sstream",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19324.7,
+          "patched_ms": 19392.0,
+          "percent_saved": -0.348,
+          "message": "差异在噪声范围内（-67 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "new",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19373.5,
+          "patched_ms": 19368.0,
+          "percent_saved": 0.029,
+          "message": "差异在噪声范围内（+6 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "cstdlib",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19336.2,
+          "patched_ms": 19333.1,
+          "percent_saved": 0.016,
+          "message": "差异在噪声范围内（+3 ms / 24 个单元）"
+        },
+        {
+          "site": "prelude.h",
+          "header": "iostream",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：context.cpp: C:/Users/31879/AppData/Local/Temp/upstream/doctest-pristine\\doctest/parts/private/xml.h:59:44: error: no member named 'cout' in namespace 'std'; did you mean 'count'?"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "debugger.h",
+          "reach": 24,
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败（24 个单元之一）：data.cpp: C:/Users/31879/AppData/Local/Temp/upstream/doctest-pristine\\doctest/parts/public/assert/handler.h:64:5: error: use of undeclared identifier 'isDebuggerActive'"
+        },
+        {
+          "site": "doctest_fwd.h",
+          "header": "version.h",
+          "reach": 24,
+          "status": "no-change",
+          "baseline_ms": 19480.3,
+          "patched_ms": 19556.1,
+          "percent_saved": -0.389,
+          "message": "差异在噪声范围内（-76 ms / 24 个单元）"
+        }
+      ]
+    }
+  ]
+}

@@ -8,9 +8,12 @@
 
 | # | 目标工程 | 改动 | 实测依据 | 状态 |
 |---|---|---|---|---|
-| 1 | doctest | 删 `doctest/parts/private/prelude.h` 的 `#include <unordered_set>`（附 assemble.py 重新生成的 `doctest.h`） | 24 TU 全部编译通过；聚合 20556 → 19937 ms（**−3.01%**），复测通过 | ⬜ 待提交 |
-| 2 | zlib | 删 `zutil.h` 第 29 行的 `#  include <stdlib.h>` | 9 个受影响 TU 全部编译通过；3314 → 3244 ms（**−2.125%**），复测通过 | ⬜ 待提交 |
+| 1 | doctest | 删 `doctest/parts/private/prelude.h` 的 `#include <unordered_set>`（附 assemble.py 重新生成的 `doctest.h`） | 24 TU 全部编译通过；聚合 20556 → 19937 ms（**−3.01%**），复测通过 | ✅ [doctest#1212](https://github.com/doctest/doctest/pull/1212)（2026-10-19 提交）|
+| 2 | zlib | 删 `zutil.h` 第 29 行的 `#  include <stdlib.h>` | 9 个受影响 TU 全部编译通过；3314 → 3244 ms（**−2.125%**），复测通过 | ✅ [zlib#1344](https://github.com/madler/zlib/pull/1344)（2026-10-19 提交，base=develop）|
 | 3 | nlohmann/json | 测试目标加 PCH 治理提案（非 include 删除类改动，涉构建系统，见 §5） | 完整构建墙上 **−7.1%** / 编译 CPU **−11.4%**，63 套件 **4,264,414 条断言逐个一致** | 📄 提案文档 |
+
+补丁在 2026-10-19 对当天 fork 的上游 master/develop `git apply --check` 干净套用，
+分支已推送（`wzzrambler/doctest@drop-unused-unordered-set`、`wzzrambler/zlib@drop-unused-stdlib`）。
 
 原始数据：`experiments/results/g2-confirm-picks-{doctest,zlib}-20261018.json`、
 `experiments/results/experiment-20261017.md`。

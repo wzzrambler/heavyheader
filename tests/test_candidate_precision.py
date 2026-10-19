@@ -543,3 +543,64 @@ def test_conditional_branch_definition_is_not_self_supply(tmp_path):
         alias_defs={},
     )
     assert signal.verdict is UsageVerdict.IN_USE
+
+
+def test_angle_mention_does_not_match_relative(tmp_path):
+    """尖括号包含不搜索 includer 所在目录——相对启发只对引号成立。
+
+    复刻 Lua 的形态：UCRT 的 ``stdlib.h`` 里 ``#include <limits.h>``，同目录
+    也有一个 limits.h，但编译器实际解析到 clang 内建目录的包装头。按相对
+    启发解析会把边补到错的文件上，limits.h 被误判成「独占」，造出一条
+    预估很高、实测少解析 0 个文件的空头承诺候选。
+    """
+    wrapper = _write(tmp_path / "wrapper" / "limits.h", "#define INT_MAX 1\n")
+    impl = _write(tmp_path / "impl" / "limits.h", "#define INT_MAX 1\n")
+    src = _write(tmp_path / "main.c", "#include <limits.h>\nint f(void);\n")
+    stdlib = _write(tmp_path / "impl" / "stdlib.h", "#include <limits.h>\n")
+
+    tu = TranslationUnit(
+        source=src,
+        include_events=[
+            IncludeEvent(includer=src, included=wrapper, depth=0),
+        ],
+    )
+    parsed = {src, wrapper, impl, stdlib}
+
+    adjacency = _potential_adjacency(tu, IncludeMentions(), parsed)
+    # 尖括号 mention 不做相对解析；wrapper/impl 同名无法定位 → 不猜。
+    # 旧实现会把边补到同目录的 impl 上——那是编译器根本不会解析的文件。
+    assert all("limits.h" not in str(t) for t in adjacency.get(stdlib, []))
+
+
+def test_shadowed_same_name_candidate_is_not_the_resolution(tmp_path):
+    """同名候选里「树里由另一个候选激活」的是遮蔽面——补边绕开它。
+
+    clang 的包装 ``limits.h`` 与 UCRT 的实现 ``limits.h`` 成对出现；后者
+    在树里只作为前者的孩子。``<limits.h>`` 的补全边应落在包装头上，
+    否则系统头链条的到达路径会漏。
+    """
+    wrapper = _write(tmp_path / "sys1" / "limits.h", "#define INT_MAX 1\n")
+    impl = _write(tmp_path / "sys2" / "limits.h", "#define INT_MAX 1\n")
+    src = _write(tmp_path / "main.c", "#include <limits.h>\nint f(void);\n")
+
+    tu = TranslationUnit(
+        source=src,
+        include_events=[
+            IncludeEvent(includer=src, included=wrapper, depth=0),
+            # 包装头把实现头带进来（include_next）
+            IncludeEvent(includer=wrapper, included=impl, depth=1),
+        ],
+    )
+    parsed = {src, wrapper, impl}
+
+    # 关键断言：<limits.h> 的解析结果是 wrapper，而非被它带进来的 impl
+    from collections import defaultdict
+
+    from heavyheader.attrib.graph import _resolve_mention, _shadowed_same_name
+
+    by_name = defaultdict(list)
+    for p in parsed:
+        by_name[p.name].append(p)
+    shadowed = _shadowed_same_name(tu, by_name)
+    assert shadowed == {impl}
+    assert _resolve_mention("limits.h", src, by_name, True, shadowed) == [wrapper]

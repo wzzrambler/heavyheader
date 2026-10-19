@@ -113,5 +113,7 @@ python experiments/candidate_precision.py \
   --out experiments/results/candidate-precision-lua-20261019h.json
 ```
 
-数据文件：`experiments/results/candidate-precision-{doctest,zlib,lua}-20261019h.json`
-（最终版）、`…-20261019b.json`（第二轮基线）。
+数据文件：`experiments/results/candidate-precision-{doctest,zlib,lua}-20261019b.json`
+（第二轮基线）。最终数据见第四轮报告
+（[`candidate-precision-round4-20261019.md`](candidate-precision-round4-20261019.md)，
+`…-20261019i.json`）。

@@ -6,6 +6,15 @@
 
 ### 变更
 
+- **候选精度第四轮：空头承诺清零**（对照见
+  [`experiments/candidate-precision-round4-20261019.md`](experiments/candidate-precision-round4-20261019.md)）。
+  Lua 第 2 名候选（`lcode.c -> limits.h`）预估省一大笔、实测少解析 0 个文件——
+  根因是 mention 补边把 `#include <limits.h>` 解析到了 UCRT 的同名实现头，而
+  编译器（尖括号不搜 includer 目录、clang 内建目录优先）实际解析到 clang 的
+  包装头。修法：mention 记录尖/引号形态（**相对路径启发只对引号成立**）、
+  新增遮蔽判定（同名候选里「树里由另一个候选激活」的不是解析结果）。Lua
+  空头承诺 1→0、P@5 80%→**100%**、候选数 233→222（11 条错误独占的系统头
+  候选消失）；doctest/zlib 持平（前几名已被真依赖占满）。
 - **候选精度第三轮：第三个语料（Lua）暴露新根因，判定升级为集合语义**
   （对照见
   [`experiments/candidate-precision-round3-20261019.md`](experiments/candidate-precision-round3-20261019.md)）。

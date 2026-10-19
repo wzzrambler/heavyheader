@@ -35,7 +35,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..includes import find_include_line, find_include_lines
+from ..includes import INCLUDE_RE, find_include_line, find_include_lines
 from ..models import (
     HeaderKind,
     HeaderStats,
@@ -168,19 +168,29 @@ def _build_adjacency(tu: TranslationUnit) -> dict[Path, list[Path]]:
     return {parent: list(children) for parent, children in adjacency.items()}
 
 
-_INCLUDE_LINE = re.compile(
-    r'^\s*#\s*include\s*[<"]([^">]+)[">]', re.MULTILINE
-)
+#: 与 ``includes.INCLUDE_RE`` 同形，但整篇文本扫描需要 ``^`` 逐行生效。
+_MENTION_LINE = re.compile(INCLUDE_RE.pattern, re.MULTILINE)
+
+
+#: 与 ``includes.INCLUDE_RE`` 同形，但整篇文本扫描需要 ``^`` 逐行生效。
+_MENTION_LINE = re.compile(INCLUDE_RE.pattern, re.MULTILINE)
 
 
 class IncludeMentions:
-    """``file -> 它自己的 #include 行列出的头文件名``（按路径缓存的文本扫描）。
+    """``file -> 它自己的 #include 行列出的 (头文件名, 是否尖括号)``。
 
     为什么需要它：``-H`` 只报告**首次生效**的包含点。``type.h`` 里那句
     ``#include "prelude.h"`` 在 ``type.cpp`` 先包含过之后被 guard 吞掉，树里
     根本没有这条边。于是「删掉 ``type.cpp`` 里的直连 prelude.h」看起来会带走
     275 个头，实际上一个也带不走——实测 doctest 上 60 条候选里有 18 条属于
     这一类，全部浪费一次编译去证伪。
+
+    形态（``<>`` vs ``""``）必须区分：尖括号**不搜索 includer 所在目录**，
+    相对路径启发只对引号包含成立。实测（Lua ``lcode.c -> limits.h``）：系统头
+    ``corecrt_wstdlib.h`` 里的 ``#include <limits.h>`` 被相对启发解析到 UCRT 的
+    limits.h，而编译器实际解析到 clang 内建目录的包装头——少了这条边，
+    limits.h 被误判成「独占」，造出一条空头承诺候选（预估省一大笔、实测
+    少解析 0 个文件）。
 
     成本核算必须继续用有效树（一个头只解析一次才叫成本）；只有**删除预测**
     需要这张补全图。同一个文件在多轮扫描间共享缓存。
@@ -189,9 +199,9 @@ class IncludeMentions:
     __slots__ = ("_cache",)
 
     def __init__(self) -> None:
-        self._cache: dict[Path, tuple[str, ...]] = {}
+        self._cache: dict[Path, tuple[tuple[str, bool], ...]] = {}
 
-    def of(self, path: Path) -> tuple[str, ...]:
+    def of(self, path: Path) -> tuple[tuple[str, bool], ...]:
         cached = self._cache.get(path)
         if cached is not None:
             return cached
@@ -199,32 +209,60 @@ class IncludeMentions:
             text = path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             text = ""
-        names = tuple(match.group(1).strip() for match in _INCLUDE_LINE.finditer(text))
+        names = tuple(
+            (match.group("target").strip(), match.group("delim") == "<")
+            for match in _MENTION_LINE.finditer(text)
+        )
         self._cache[path] = names
         return names
 
 
+def _shadowed_same_name(
+    tu: TranslationUnit, by_name: dict[str, list[Path]]
+) -> set[Path]:
+    """同名候选里**被另一个候选遮蔽**的那些（树里的激活点是另一候选给的）。
+
+    系统头几乎都成对出现：clang 的包装 ``limits.h`` 在前、UCRT 的实现
+    ``limits.h`` 在后，后者只作为前者的孩子出现在树里。补全边时若把两者
+    等同看待，「唯一候选」永远判不出来。树里谁把谁带进来是现成的答案：
+    激活点是另一个同名候选的孩子 → 它是遮蔽面，不是解析结果。
+    """
+    shadowed: set[Path] = set()
+    for event in tu.include_events:
+        candidates = by_name.get(event.included.name, [])
+        if len(candidates) > 1 and event.includer in candidates:
+            shadowed.add(event.included)
+    return shadowed
+
+
 def _resolve_mention(
-    name: str, includer: Path, by_name: dict[str, list[Path]]
+    name: str,
+    includer: Path,
+    by_name: dict[str, list[Path]],
+    is_angle: bool = False,
+    shadowed: frozenset[Path] | set[Path] = frozenset(),
 ) -> list[Path]:
     """把一个 ``#include`` 里的名字对到本次真正解析过的文件。
 
-    只认两种情形：① 相对包含者的目录能对上；② 这个名字在本次解析集合里
-    **唯一**。同名多份且无法相对定位时返回空——宁可少补一条边（保守，
+    认三种情形：① **引号**包含相对 includer 目录能对上；② 这个名字在本次
+    解析集合里**唯一**；③ 同名多份时，剔除「树里由另一个同名候选激活」的
+    遮蔽面之后唯一。同名多份且无法定位时返回空——宁可少补一条边（保守，
     闭包偏大），也不猜错把两个同名头混成一个。
     """
     candidates = by_name.get(Path(name).name)
     if not candidates:
         return []
-    relative = (includer.parent / name).resolve()
-    for path in candidates:
-        try:
-            if path.resolve() == relative:
-                return [path]
-        except OSError:  # pragma: no cover - 路径不可解析时退回唯一匹配
-            break
-    if len(candidates) == 1:
-        return [candidates[0]]
+    if not is_angle:
+        relative = (includer.parent / name).resolve()
+        for path in candidates:
+            try:
+                if path.resolve() == relative:
+                    return [path]
+            except OSError:  # pragma: no cover - 路径不可解析时退回唯一匹配
+                break
+    usable = [c for c in candidates if c not in shadowed] or candidates
+    if len(usable) == 1:
+        return [usable[0]]
     return []
 
 
@@ -247,10 +285,11 @@ def _potential_adjacency(
         by_name[path.name].append(path)
     for paths in by_name.values():
         paths.sort()
+    shadowed = _shadowed_same_name(tu, by_name)
 
     for path in parsed:
-        for name in mentions.of(path):
-            for target in _resolve_mention(name, path, by_name):
+        for name, is_angle in mentions.of(path):
+            for target in _resolve_mention(name, path, by_name, is_angle, shadowed):
                 if target != path:
                     adjacency[path][target] = None
     return {parent: list(children) for parent, children in adjacency.items()}

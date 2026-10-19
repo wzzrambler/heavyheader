@@ -293,12 +293,16 @@ class IdentifierIndex:
         return ids
 
     def header_provider_ids(self, path: Path) -> frozenset[str]:
-        """这个头**真正声明**的标识符（去掉纯重命名宏）。
+        """这个头在**删除后仍可能继续供给**的标识符（去掉重命名宏）。
 
-        与 :meth:`header_ids` 只差一条，但很关键：``#define X Y`` 与
-        ``#pragma map(X, ...)`` 只是别名，别名不能让 X 在删除后继续存在。
-        判断「另一个头是否也提供 X」必须用这个集合，否则一条真实依赖会因为
-        别处的重命名被判成「可删」（zlib 的 ``inflate_fast`` 就是这样）。
+        只用于**幸存头**一侧（判断「别的头是否也能提供 X」）：``#define X Y``
+        与 ``#pragma map(X, ...)`` 只是别名，别名不能证明展开目标 Y 在删除后
+        仍然有声明——按"能提供"算会把真实依赖判成可删（zlib 的
+        ``inflate_fast`` 就是这样）。
+
+        **不要**把它用在被删闭包那一侧：闭包里的 ``#define X Y`` 是在**定义**
+        宏 X，宏随头一起消失，X 就是它提供的（fcntl.h 的 ``O_BINARY``）。
+        那一侧必须用 :meth:`header_ids`。
         """
         cached = self._providers.get(path)
         if cached is not None:
@@ -388,9 +392,14 @@ def analyse_usage(
     headers_with_text = 0
 
     for path in ordered:
-        # 「真正声明」而不是「提到」：重命名宏（``#define X Y``）不算提供者，
-        # 否则闭包里的真依赖会被别处的别名掩盖。
-        ids = index.header_provider_ids(path)
+        # 闭包一侧用**完整** header_ids：这里的头是要被删掉的，``#define X Y``
+        # 里的 X 是本头定义的宏，随头一起消失——它就是提供者（zlib 的
+        # ``O_BINARY``：只在 fcntl.h 里定义，删掉后 ``O_BINARY`` 未声明，编译
+        # 失败；若在这里剥掉重命名宏，唯一的证据就没了，判成可删）。
+        # 幸存头一侧（``reachable_counts``，见 graph.py）才用
+        # ``header_provider_ids``：那边 ``#define X Y`` 只是别名，不能证明
+        # 展开目标 Y 在删除后仍然有声明。两侧语义不同，不能共用一个集合。
+        ids = index.header_ids(path)
         if not ids:
             continue
         headers_with_text += 1

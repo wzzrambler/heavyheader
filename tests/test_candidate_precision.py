@@ -75,6 +75,60 @@ def test_without_counts_old_behaviour_is_kept(tmp_path):
     )
 
 
+def test_rename_define_in_deleted_header_still_provides(tmp_path):
+    """被删头里的 ``#define X Y`` 是在**定义**宏 X——删掉它 X 就没了。
+
+    复刻 zlib minigzip.c 的形态：``fcntl.h`` 定义 ``O_BINARY``（形如重命名
+    宏），源码用到它，删除后 ``use of undeclared identifier 'O_BINARY'``。
+    一版修复把重命名宏从**所有**供给集合里剥掉，这里唯一的证据被误杀，
+    判成可删——两侧语义不同：闭包侧看定义，幸存头侧才剥别名。
+    """
+    fcntl = _write(tmp_path / "fcntl.h", "#define O_BINARY _O_BINARY\n")
+    src = _write(
+        tmp_path / "main.c",
+        '#include "fcntl.h"\nint f() { return O_BINARY == 0; }\n',
+    )
+
+    signal = analyse_usage(
+        src, fcntl, closure=[fcntl], index=IdentifierIndex(), reachable_counts={}
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert signal.provided_by == fcntl
+
+
+def test_rename_define_in_surviving_header_is_not_a_provider(tmp_path):
+    """幸存头里的 ``#define X Y`` 只是别名——不能证明 Y 在删除后还有声明。
+
+    复刻 zlib inffast.c 的形态：``zconf.h``（幸存）把 ``inflate_fast`` 重命名成
+    ``z_inflate_fast``，真声明在被删的 ``inffast.h`` 里。重命名不算供给，
+    所以 X 仍由闭包唯一提供 → 判「正在使用」（真值：删除确实编译失败）。
+    """
+    zconf = _write(tmp_path / "zconf.h", "#define inflate_fast z_inflate_fast\n")
+    inffast = _write(tmp_path / "inffast.h", "void z_inflate_fast(void);\n")
+    src = _write(
+        tmp_path / "inffast.c",
+        '#include "zconf.h"\n#include "inffast.h"\nvoid z_inflate_fast(void) {}\n',
+    )
+
+    index = IdentifierIndex()
+    # 头一侧：zconf.h 的文本确实提到 inflate_fast（供闭包侧使用）
+    assert "inflate_fast" in index.header_ids(zconf)
+    # 幸存头一侧：剥掉别名后不再算供给者（graph.py 的 reachable_counts 用它）
+    assert "inflate_fast" not in index.header_provider_ids(zconf)
+
+    signal = analyse_usage(
+        src,
+        inffast,
+        closure=[inffast],
+        index=index,
+        # zconf.h 幸存且它对 inflate_fast 的供给被剥掉 → reachable_counts 里
+        # 没有这个名字 → 闭包是唯一供给者
+        reachable_counts={},
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert signal.provided_by == inffast
+
+
 def test_guarded_re_include_becomes_a_potential_edge(tmp_path):
     """``-H`` 里没有的边，必须从文本补回来。
 

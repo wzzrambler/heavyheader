@@ -35,7 +35,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..includes import find_include_line
+from ..includes import find_include_line, find_include_lines
 from ..models import (
     HeaderKind,
     HeaderStats,
@@ -512,6 +512,11 @@ def find_removal_candidates(
             if site in seen_sites:
                 continue
             seen_sites.add(site)
+            # 行号有歧义时不猜（同名头出现多处），但也不能只给「行号未知」——
+            # 把全部候选位置列出来，读者才知道要在哪些行之间做选择。
+            ambiguous = (
+                () if line is not None else _ambiguous_include_lines(tu, header)
+            )
             # 用法判定必须覆盖「删掉这个 include 后不再被解析的那批头」，
             # 而不是候选头自己的那段文本——实验里 5 个失败候选全部栽在这里：
             # doctest_compatibility.h 自身没有 TEST_CASE，TEST_CASE 在它
@@ -540,7 +545,16 @@ def find_removal_candidates(
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
                     confidence=_confidence(exclusive, analysis, signal.verdict),
-                    notes=_notes(tu, header, exclusive, sizes, signal),
+                    notes=_notes(tu, header, exclusive, sizes, signal)
+                    + (
+                        [
+                            "同名 include 出现在第 "
+                            + "、".join(str(n) for n in ambiguous)
+                            + " 行（条件编译分支），请人工确认改哪一处"
+                        ]
+                        if ambiguous
+                        else []
+                    ),
                 )
             )
 
@@ -596,6 +610,20 @@ def _include_line(
         except OSError:
             return None
     return find_include_line(text, header)
+
+
+def _ambiguous_include_lines(tu: TranslationUnit, header: Path) -> tuple[int, ...]:
+    """同名 include 的**全部**出现位置（仅在唯一行号定不出来时调用）。
+
+    典型形态是 zlib minigzip.c 的 ``<stdlib.h>``：两个条件编译分支里各有一处，
+    删哪一处取决于哪个分支被激活——静态文本无法判定，但这不等于读者只该看到
+    「行号未知」。
+    """
+    try:
+        text = tu.source.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ()
+    return tuple(find_include_lines(text, header))
 
 
 def _confidence(exclusive: set[Path], analysis: _TuAnalysis, verdict) -> str:

@@ -12,6 +12,8 @@
 
 from __future__ import annotations
 
+import re
+
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.lib.pagesizes import A4
@@ -124,11 +126,48 @@ def P(text: str, style: str = "body") -> Paragraph:
     return Paragraph(text, S[style])
 
 
+#: 允许出现在表格单元格里的标记（只认我们自己写的那几种形式）。
+#: 单元格文本必须转义——`#include <vector>` 里的 `<` 会被 reportlab 当成标签
+#: 开头，整段消失；但一律转义又会把有意写的 `<font>` / `<b>` 印成字面量
+#: （这就是上一版 PDF 里 18 处 `<font face='Cascadia'>` 直接印在纸上的原因）。
+_ALLOWED_TAG = re.compile(
+    r"</?(?:b|i)>|<br\s*/>"
+    r"|<font\s+(?:face|color|size)\s*=\s*(?:\"[^\"]*\"|'[^']*')\s*>"
+    r"|</font>"
+)
+
+
+def _escape(raw: str) -> str:
+    return raw.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _escape_keep_markup(text: str) -> str:
+    """转义文本，但放行 :data:`_ALLOWED_TAG` 命中的标记。"""
+    out: list[str] = []
+    position = 0
+    for match in _ALLOWED_TAG.finditer(text):
+        out.append(_escape(text[position : match.start()]))
+        out.append(match.group(0))
+        position = match.end()
+    out.append(_escape(text[position:]))
+    return "".join(out)
+
+
+#: 等宽字体（Cascadia）没有的字符：CJK、数学符号（∪ ∈ ≤ ×）、箭头。
+#: 实测 Cascadia 会把 ∪ / ∈ 画成空字形（PDF 里读出来是 \x00），
+#: 公式因此看起来像「少了个符号」。这些片段回退到正文字体。
+_FALLBACK_RUN = re.compile(
+    r"([\u2190-\u21ff\u2200-\u22ff\u27f0-\u27ff\u2a00-\u2aff"
+    r"\u2e80-\u9fff\u3000-\u303f\uff00-\uffef"
+    r"\u2018\u2019\u201c\u201d\u2014\u2026]+)"
+)
+
+
 def CODE(text: str) -> Paragraph:
-    escaped = (
-        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
-    return Paragraph(escaped.replace("\n", "<br/>"), S["code"])
+    """等宽代码块。中文片段切回正文字体——Cascadia 没有 CJK 字形。"""
+    escaped = _escape(text)
+    with_cjk = _FALLBACK_RUN.sub('<font face="%s">\\1</font>' % _FONT, escaped)
+    return Paragraph(with_cjk.replace("\n", "<br/>"), S["code"])
 
 
 def SP(h: float = 6) -> Spacer:
@@ -136,8 +175,7 @@ def SP(h: float = 6) -> Spacer:
 
 
 def _cell(text: str, style: str = "cell") -> Paragraph:
-    escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    return Paragraph(escaped.replace("\n", "<br/>"), S[style])
+    return Paragraph(_escape_keep_markup(text).replace("\n", "<br/>"), S[style])
 
 
 def TABLE(header: list[str], rows: list[list[str]], widths: list[float] | None = None):
@@ -283,28 +321,33 @@ def build(path: str) -> None:
             "<font face='%s'>docs/innovation.md</font>。" % _MONO
         ),
         P(
-            "项目已实现七个命令：<font face='%s'>scan</font>（成本归因与报告）、"
+            "项目已实现九个命令：<font face='%s'>scan</font>（成本归因与报告）、"
             "<font face='%s'>verify</font>（实测验证）、<font face='%s'>gate</font>"
             "（CI 门禁）、<font face='%s'>compare</font>（前后对比）、"
+            "<font face='%s'>blame</font>（成本考古：把回归归因到具体 commit 与 include 行）、"
+            "<font face='%s'>edge-cost</font>（每条 include 边的边际解析成本）、"
             "<font face='%s'>toolchains</font>（多编译器横评）、"
             "<font face='%s'>history</font>（成本趋势看板）、"
             "<font face='%s'>pr-comment</font>（PR 评论机器人），支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链；<b>508 个单元测试</b>，CI 覆盖三大操作系统 "
-            "× Python 3.10–3.13 的测试矩阵、lint、自举扫描、覆盖率与 MSVC 证据共 15 个岗位，"
-            "<b>当前全部通过</b>；运行时<b>零第三方依赖</b>，且由测试守护（新增依赖会让 CI "
-            "直接失败）。"
-            % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
+            "Clang 17+ 与 MSVC 三种工具链；<b>544 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
+            "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
+            "MSVC 证据），<b>当前全部通过</b>；运行时<b>零第三方依赖</b>，且由测试守护"
+            "（新增依赖会让 CI 直接失败）。"
+            % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
         ),
         P(
-            "除成本归因外，项目还做了三件现有工具不做的事：<b>模板实例化成本归因</b>"
+            "除成本归因外，项目还做了四件现有工具不做的事：<b>模板实例化成本归因</b>"
             "（实测包含 nlohmann/json.hpp 的文件有 39% 构建时间花在模板实例化上）、"
-            "<b>预编译头收益估算</b>、<b>前向声明建议</b>。"
+            "<b>预编译头收益估算</b>、<b>前向声明建议</b>，以及<b>成本考古</b>——"
+            "把成本增量归因到具体 commit 与 include 行，2026-10-19 全网搜查未见同能力实现。"
         ),
         P(
             "在 4 个真实开源项目（fmt / nlohmann-json / spdlog / cpp-httplib）上共扫描 "
             "54 个编译单元、1430 万行头文件解析量，产出 87 个成本候选。"
-            "候选清单只含项目自己的头文件：系统头与第三方头照常计入解析量统计，"
-            "但从不建议删除——「建议删掉 &lt;vector&gt;」这类无法执行的条目会把可操作项全部埋掉。"
+            "候选清单包含<b>每一条直接 include</b>，系统头与第三方头也在内——被删的那一行"
+            "永远写在我们自己的源文件里，删掉 &lt;iostream&gt; 是完全正常的改动；早先版本"
+            "把系统头整体排除在候选之外，结果恰好把对照实验里 3/3 个有效改动全部挡在门外。"
+            "头文件来源（项目 / 系统 / 第三方）在报告里只作为标签，不是过滤器。"
             "在刻意构造的基准工程上，它准确识别出唯一一条未使用的 include 并实测节省 "
             "200 ms（38.5%）。"
         ),
@@ -318,26 +361,26 @@ def build(path: str) -> None:
             [
                 [
                     "技术创新（30%）",
-                    "第二章（范式与消融表）、第三章 3.5（四道门槛）、1.2.1（同任务对照）",
-                    "反事实构建实验：把「删掉会怎样」变成可复现的受控实验；"
-                    "每层创新的消融证据在库里，不声称单件首创",
+                    "第二章（范式与消融表）、第三章 3.5（四道门槛）、1.2.1（同任务对照）、6.4–6.5 与 8.3",
+                    "反事实构建实验 + 两项新增能力（成本考古 blame、边级归因 edge-cost）；"
+                    "每层创新都有消融证据，跑输的那部分在 8.3 如实写出来",
                 ],
                 [
                     "场景落地（30%）",
                     "第三章（完整任务示例）、第四章（真实工程 + 完整构建对照 + 上游 PR）",
-                    "四条命令接成流水线；63 TU 完整构建 −11.4% CPU、断言逐个一致；"
+                    "scan → verify → gate 接成流水线；63 TU 完整构建 −11.4% CPU、断言逐个一致；"
                     "两条实测优化已做成上游 PR 补丁",
                 ],
                 [
                     "开源治理（20%）",
-                    "第九章（治理结构、CI 15 岗位、测试策略）、第十章（缺陷与路线图）",
+                    "第九章（治理结构、CI 16 岗位、测试策略）、第十章（缺陷与路线图）",
                     "GOVERNANCE + 零依赖守护测试 + 语义化版本发布；"
                     "CI 三系统 × 四 Python 版本矩阵当前全绿",
                 ],
                 [
                     "长期发展（20%）",
                     "第十章（Roadmap 与团队）、第九章 9.1（CI 与自举）",
-                    "v0.1–v0.3 已交付、v0.4 生态集成进行中；"
+                    "v0.1–v0.4 已交付（v0.4 = 成本考古 + 边级归因）、v0.5 生态集成计划中；"
                     "贡献者阶梯与基金会孵化路径写在 GOVERNANCE.md",
                 ],
             ],
@@ -410,6 +453,21 @@ def build(path: str) -> None:
                     "不给成本量化；同工程同任务实测 0 条删除建议（见 1.2.1）",
                 ],
                 [
+                    "Include-Wrangler",
+                    "每条 include 的边际：省掉它少打开几个文件",
+                    "只数文件、不测时间（2012 年，已休眠）；自写扫描器，不碰编译器",
+                ],
+                [
+                    "clang-build-profiler",
+                    "include 树逐边解析耗时 + 模板实例化树",
+                    "纯呈现：不算「删了省多少」；无验证、无决策、无门禁",
+                ],
+                [
+                    "include-what-costs",
+                    "逐头文件实测编译耗时与内存占用",
+                    "节点级而非逐条语句（LHCb 出品）；无三态结论，无基线门禁",
+                ],
+                [
                     "HeavyHeader（本项目）",
                     "删了的净收益是多少、有多大把握：反事实实验 + 三态结论 + 门禁",
                     "候选池精度不如 AST 级（222 个候选里 187 个编译不过，如实报）",
@@ -461,7 +519,7 @@ def build(path: str) -> None:
         ),
         P(
             "<b>验证场景与目标场景的差距如实说明</b>：本文第三、四章的全部实测来自开源"
-            "工程（nlohmann/json、doctest、zlib、fmt、spdlog、cpp-httplib，单个工程"
+            "工程（nlohmann/json、doctest、zlib、fmt、spdlog、cpp-httplib，单个工程 "
             "15–63 个编译单元）与开源工程的上游贡献（contrib/upstream/）；工业规模"
             "单体仓库上的验证尚未进行，这是承认的边界而非隐藏的假设——门禁指标在大规模"
             "下的行为由构造样本与真实小工程双重检验，但「3000 个编译单元的 monorepo 上"
@@ -559,7 +617,7 @@ def build(path: str) -> None:
             "删掉一条 include 后，唯一会停止被解析的头文件集合叫它的<b>独占闭包</b>："
         ),
         CODE(
-            "exclusive(d) = closure(d) − ( ⋃ closure(d′) )\n"
+            "exclusive(d) = closure(d) − ( ∪ closure(d′) )\n"
             "               d′ ∈ direct_includes(t),  d′ ≠ d"
         ),
         P(
@@ -710,12 +768,14 @@ def build(path: str) -> None:
             "机器漂移会整块算成收益，聚合 A/A 实测 2.005%，改成交替测量后降到 0.644%。"
             "<b>③ 一处判定被自己污染</b>——「#include &lt;regex&gt;」这一行的文件名会进入包含者的"
             "标识符集，用法判定于是恒判「在用」。修完之后：doctest（24 单元）上带可行性闸门的"
-            "16 条候选<b>全部测完</b>——8 条能编过、<b>1 条</b>被证实可删且真省时——删掉一个公共头里的 "
+            " 16 条候选<b>全部测完</b>——8 条能编过、<b>1 条</b>被证实可删且真省时——删掉一个公共头里的 "
             "<font face='Cascadia'>#include &lt;unordered_set&gt;</font>，24 个单元全部"
             "编译通过，聚合耗时 20556 → 19937 ms（<b>−3.01%</b>）并通过复测；关闸门的 5 条里 0 条能编过。"
-            "关掉闸门后，zlib（15 单元，C 语言）也找到一条：`zutil.h` 删掉 `<stdlib.h>`，"
+            "关掉闸门后，zlib（15 单元，C 语言）也找到一条：<font face='Cascadia'>zutil.h</font> "
+            "里删掉 <font face='Cascadia'>#include &lt;stdlib.h&gt;</font>，"
             "9 个单元全部通过，3314 → 3244 ms（<b>−2.125%</b>）并通过复测——"
-            "<b>这条正是闸门漏掉的</b>，它被 `size` 这个词判成了「在用」。json（25 单元）"
+            "<b>这条正是闸门漏掉的</b>，它被 <font face='Cascadia'>size</font> 这个词判成了「在用」。"
+            "json（25 单元）"
             "仍是 0。三个工程的全量命中率是 1/16、1/16、0/16；放行的 16 条里还有 8 条"
             "编译不过——闸门只管筛，能不能编由 verify 说话。"
             "三档全量探测把闸门的作用量出来了：放行 16 条通过率 50%、加「无法判定」19 条 53%、"
@@ -908,7 +968,7 @@ def build(path: str) -> None:
             "即 <b>39%%</b>。在 nlohmann-json 的 25 个编译单元上，全项目模板实例化占 "
             "<b>42.8%%</b>，22 个单元占比超过 25%%。" % (_MONO, _MONO, _MONO)
         ),
-        P("两部分，诚实程度不同，报告里分别标注：", "quote"),
+        P("模板成本分两部分，诚实程度不同，报告里分别标注：", "quote"),
         TABLE(
             ["指标", "来源", "性质"],
             [
@@ -957,7 +1017,7 @@ def build(path: str) -> None:
         P(
             "「阻断类型」非空表示该头文件里还有其他类型需要完整定义，<b>不能整个 include "
             "换掉</b>，只能把可前向声明的类型拆出去。开发过程中修掉一个真实的假阴性："
-            "<font face='%s'>int read(Value* v) {{ return v-&gt;n; }}</font> 里 "
+            "<font face='%s'>int read(Value* v) { return v-&gt;n; }</font> 里 "
             "<font face='%s'>Value</font> 只以指针位置出现，纯文本检查会判为可前向声明，"
             "但 <font face='%s'>v-&gt;n</font> 需要完整类型。补上「跟踪指针变量是否被"
             "解引用」后正确判为阻断。" % (_MONO, _MONO, _MONO)
@@ -970,8 +1030,8 @@ def build(path: str) -> None:
     story += [
         P("六、平台能力：从工具到流水线的一环", "h1"),
         P(
-            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的七个命令覆盖"
-            "「发现 → 验证 → 门禁 → 对比 → 看趋势 → 进 PR」的完整闭环："
+            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的九个命令覆盖"
+            "「发现 → 验证 → 门禁 → 对比 → 破案 → 看趋势 → 进 PR」的完整闭环："
         ),
         TABLE(
             ["命令", "作用", "在流水线中的位置"],
@@ -980,6 +1040,8 @@ def build(path: str) -> None:
                 ["<font face='%s'>verify</font>" % _MONO, "注释掉候选 include、重编译、实测耗时/内存/体积差异", "采纳建议前的确认"],
                 ["<font face='%s'>gate</font>" % _MONO, "成本相对基线回归超阈值则非零退出", "PR 门禁"],
                 ["<font face='%s'>compare</font>" % _MONO, "对比两份扫描，定位成本上升的具体头文件", "版本间对比"],
+                ["<font face='%s'>blame</font>" % _MONO, "把成本回归归因到 commit、文件与具体的 include 行", "门禁报警后的破案"],
+                ["<font face='%s'>edge-cost</font>" % _MONO, "按 include 边归因解析成本（clang-first，需真编译一次）", "候选排序与热点定位"],
                 ["<font face='%s'>toolchains</font>" % _MONO, "同一份代码在多个编译器下的成本横评", "工具链迁移决策"],
                 ["<font face='%s'>history</font>" % _MONO, "多次扫描聚合成时间序列，终端摘要 / 自包含网页 / 本地看板", "成本趋势治理"],
                 ["<font face='%s'>pr-comment</font>" % _MONO, "把两次扫描对比渲染成 GitHub 风格评论，可选经 gh 幂等发布", "PR 自动评论"],
@@ -1022,6 +1084,55 @@ def build(path: str) -> None:
             "<font face='%s'>release.yml</font> 自动构建并校验「装得上、CLI 可用」的发布件。"
             % (_MONO, _MONO, _MONO, _MONO)
         ),
+        P("6.4 成本考古：门禁报警之后，谁干的", "h2"),
+        P(
+            "门禁说「成本回归 +17.1%%，主要是 include/bloated.h」，然后呢？在几百个提交里找"
+            "是谁把这条 include 加进来的，只能靠人翻——这一步不做，报警就只是一张罚单。"
+            "<font face='%s'>blame</font> 把这一步变成一条命令：它读两份基线（扫描时自动记录了"
+            "当时的 git commit），用 <font face='%s'>git diff</font> 解析出两次之间的 include 行"
+            "变化，再按「可达目标且新增/失去它的编译单元集合完全一致」确定影响半径。"
+            % (_MONO, _MONO)
+        ),
+        CODE(
+            "$ heavyheader blame base.json pr.json --repo .\n"
+            "成本 +56,487 行（206,106 → 262,593）\n"
+            "  commit  d37bcca4  c3: core.h pulls bloated.h\n"
+            "  file    include/core.h\n"
+            "  change  +#include \"bloated.h\"\n"
+            "  预测 +56,485   实测 +56,485   置信度 high\n"
+            "  未解释  +2 行（被改文件自身的行数变化）"
+        ),
+        P(
+            "预测与实测<b>分行列出、不相加</b>：预测是「这条边影响的头文件行数 × 受影响的 "
+            "TU 数」，实测是两份基线的差，两者对得上才是结论，对不上就进「未解释」——上面"
+            "那 +2 行正是被修改文件自己的行数变化，工具不把它硬塞进任何一条 include 的账上。"
+        ),
+        P(
+            "这条能力做过全网搜查（GitHub 仓库检索 + 项目官网 + 学术检索，2026-10-19）："
+            "相邻的 <font face='%s'>build-time-blame-plugin</font> 分析的是 Jenkins 控制台历史、"
+            "<font face='%s'>build-blame</font> 剖析单次构建、Bencher 一类只画耗时趋势——"
+            "<b>把成本增量归因到具体 commit 与 include 行</b>的工具，搜查未见同能力实现。" % (_MONO, _MONO)
+        ),
+        P("6.5 边级归因：从「哪个头贵」到「哪一行贵」", "h2"),
+        P(
+            "<font face='%s'>scan</font> 回答「哪个头文件贵」（节点级），但开发者能删的是"
+            "源文件里的那一行（边级）。两者不是同一个量：一个头被五个编译单元共享时，"
+            "删掉其中一条 include 只省下这条边独占的那部分。"
+            "<font face='%s'>edge-cost</font> 就答这一句：一次真编译同时开 "
+            "<font face='%s'>-ftime-trace</font> 与 <font face='%s'>-H</font>，"
+            "trace 的嵌套区间还原逐文件自耗时，每条边按「独占闭包」求和，再跨编译单元聚合。"
+            % (_MONO, _MONO, _MONO, _MONO)
+        ),
+        P(
+            "<b>这里有一个不做就会系统性高估的坑</b>：<font face='%s'>-H</font> 只记录每个头"
+            "<b>首次生效</b>的包含点，第二次包含被 include guard 吞掉、根本不出现在树里。"
+            "于是「删掉 prelude.h 里的 &lt;cmath&gt;」在树上看起来只通向 cmath，"
+            "实测删掉之后该编译单元的解析文件数一个不少——cmath 早被别的头拉进来了。"
+            "修法是把树内每个文件的 <font face='%s'>#include</font> 行文本扫描一遍，"
+            "补回被抑制的替代供给点；用「删掉后真消失的文件集合」作确定性真值验证："
+            "25 条可删边的假阳性由 <b>45 个文件降到 0</b>，完全一致率 18/25 → 24/25。"
+            % (_MONO, _MONO)
+        ),
     ]
 
     # ======================================================================
@@ -1029,7 +1140,7 @@ def build(path: str) -> None:
     # ======================================================================
     story += [
         P("七、技术路线与架构", "h1"),
-        P("6.1 分层", "h2"),
+        P("7.1 分层", "h2"),
         CODE(
             "src/heavyheader/\n"
             "├── drivers/        向编译器提问：GCC/Clang/MSVC 各自的方言\n"
@@ -1046,7 +1157,7 @@ def build(path: str) -> None:
             "归因引擎的全部测试用例都不需要安装任何编译器。"
             % (_MONO, _MONO)
         ),
-        P("6.2 为什么核心用 Python 而不是 C++", "h2"),
+        P("7.2 为什么核心用 Python 而不是 C++", "h2"),
         P(
             "项目的使用者是 C++ 开发者，但工具本身用 Python 写。理由是工作性质："
             "它的主体是调用子进程、解析文本、建图、排序、渲染报告——这是 I/O 密集型而非"
@@ -1059,7 +1170,7 @@ def build(path: str) -> None:
             "被放大，而 libclang 绑定在 Python 生态里更成熟。Roadmap 中的「精确模式」"
             "会利用后一点。"
         ),
-        P("6.3 支持的工具链", "h2"),
+        P("7.3 支持的工具链", "h2"),
         TABLE(
             ["编译器", "依赖树", "分阶段计时"],
             [
@@ -1121,9 +1232,9 @@ def build(path: str) -> None:
         P(
             "开发过程中在 fmt 上发现 <font face='%s'>baseline_seconds</font> 报出约 1170 年。"
             "根因不在本项目：GCC 16.2.0 (MinGW-w64) 的 <font face='%s'>-ftime-report</font> "
-            "在编译包含 <font face='%s'>&lt;windows.h&gt;</font> 的文件时，会把 "
-            "<font face='%s'>phase parsing</font> 报成 <font face='%s'>18446744070.35</font> "
-            "秒——即 2^64 纳秒折成秒，约 584 年。" % (_MONO, _MONO, _MONO, _MONO, _MONO)
+            "在编译包含 <font face='%s'>&lt;windows.h&gt;</font> 的文件时，会把某个阶段报成 "
+            "<font face='%s'>18446744070.35</font> 秒——即 2^64 纳秒折成秒，约 584 年；"
+            "总数是若干这样的阶段累加出来的。" % (_MONO, _MONO, _MONO, _MONO)
         ),
         P(
             "解析器忠实解析了垃圾，于是报告里出现一个看起来权威实际荒谬的数字。"
@@ -1145,6 +1256,39 @@ def build(path: str) -> None:
             "前需清缓存。完整列表见仓库 <font face='%s'>docs/methodology.md</font> 第 9 节。"
             % (_MONO, _MONO, _MONO)
         ),
+        P("8.3 一次被我们自己否决的精度声明", "h2"),
+        P(
+            "6.5 说边级归因能给出「每条 include 删掉后省多少毫秒」。那么它比行数排序更准吗？"
+            "这个问题只有实测能答，我们做了：doctest 的 24 个编译单元、prelude.h 里 36 条候选，"
+            "逐条真删真编，6 个单元 × 3 轮<b>顺序交替</b>（基线/改动、改动/基线…，抵消"
+            "「先跑的总是吃冷缓存」这个系统偏差），取中位数。整轮 19 分钟。"
+        ),
+        P(
+            "结果不好看：25 条可删边的实测节省分布在 <b>−168 ms 到 +305 ms</b> 之间，"
+            "<b>符号都不稳定</b>；毫秒排序、行数排序与实测节省的秩相关分别是 "
+            "<b>−0.21 与 −0.19</b>，都是负的。原因不复杂：基线单编译单元 0.67 s，"
+            "单条标准头只解析几毫秒——<b>低于这台机器的分辨率</b>。"
+        ),
+        P(
+            "所以本项目<b>不声称</b>「毫秒排序比行数排序更准」。这句话缺证据，缺证据就不写进"
+            "任何材料——包括这份文档。边级毫秒只用于<b>排序候选</b>，一条 include 值不值得删，"
+            "仍然只能由 verify 的 A/B 实测回答。"
+        ),
+        P(
+            "但同一批实验抓到了一个真 bug，并且修好了：<font face='%s'>-H</font> 只记录每个头"
+            "<b>首次生效</b>的包含点，被 guard 吞掉的替代路径看不见，于是「独占闭包」"
+            "系统性高估收益——25 条可删边合计虚报 <b>45 个「会消失但其实不会消失」的文件</b>，"
+            "20 条出边里 7 条承诺了根本不存在的收益。改用「删掉后真消失的文件集合」这个"
+            "<b>确定性真值</b>（不受计时噪声影响）验证：补全潜在供给边后，假阳性 45 → 0，"
+            "完全一致率 18/25 → 24/25。"
+            % _MONO
+        ),
+        P(
+            "这件事的方法学结论比功能本身更重要：<b>细粒度预测不能用墙钟验证</b>，噪声会淹没"
+            "信号；要用「哪些文件还在被解析」这种确定性集合去验。实验脚本、原始数据与"
+            "全部负面结果在仓库 <font face='%s'>experiments/edge-precision-20261019.md</font>。"
+            % _MONO
+        ),
     ]
 
     # ======================================================================
@@ -1153,7 +1297,7 @@ def build(path: str) -> None:
     story += [
         P("九、开源治理与社区", "h1"),
         P(
-            "项目从第一行代码起就按可协作的标准组织，而不是跑出demo再补文件。"
+            "项目从第一行代码起就按可协作的标准组织，而不是跑出 Demo 再补文件。"
             "大赛评分中「开源治理」占 20%，但我们做这些的理由更直接："
             "一个没有 CONTRIBUTING 的项目收不到贡献，没有行为准则的社区留不住人。"
         ),
@@ -1166,23 +1310,23 @@ def build(path: str) -> None:
                 ["CODE_OF_CONDUCT.md", "基于 Contributor Covenant 1.4"],
                 ["SECURITY.md", "威胁模型：编译器输出是不可信输入、临时文件、不联网"],
                 ["GOVERNANCE.md", "治理结构：角色与贡献者阶梯、决策流程、发布纪律、依赖政策"],
-                ["ROADMAP.md", "v0.1–v0.4 路线图 + 「明确不做的事」清单"],
+                ["ROADMAP.md", "v0.1–v0.5 路线图 + 「明确不做的事」清单"],
                 ["CHANGELOG.md", "语义化版本，记录每个修复的根因"],
                 ["docs/innovation.md", "独创性说明：CBE 范式、三项创新点、消融表、不声称清单"],
                 ["docs/scenario.md", "场景落地：四步全链路 + 真实工程数据卡 + 复现入口"],
                 ["docs/methodology.md", "每个指标的定义、局限、以及「查不到就不该出现在报告里」"],
                 ["docs/architecture.md", "分层设计与刻意选择的理由"],
                 ["tests/test_no_deps.py", "CI 守护零运行时依赖（架构约束变成会失败的测试）"],
-                [".github/", "Issue 模板（bug/feature）、PR 模板、CODEOWNERS、5 个工作流"],
+                [".github/", "Issue 模板（bug/feature）、PR 模板、CODEOWNERS、4 个工作流（CI / 覆盖率 / MSVC 证据 / 发布）"],
             ],
             widths=[130, 290],
         ),
         SP(4),
-        P("9.1 CI：15 个岗位，当前全部通过", "h2"),
+        P("9.1 CI：16 个岗位，当前全部通过", "h2"),
         P(
             "CI 覆盖 Linux / Windows / macOS 三个操作系统 × Python 3.10–3.13 四个版本的"
             "测试矩阵（12 个岗位），外加 lint（ruff）、自举扫描、覆盖率与 MSVC 证据，"
-            "共 15 个岗位。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
+            "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
             "HeavyHeader 扫描它，断言归因行数非零、编译单元被发现——这一步同时也是集成测试，"
             "验证工具在非 Windows、非 MinGW 的工具链下也能正确解析编译器输出；MSVC 证据"
             "任务在 Windows runner 上真实运行 <font face='%s'>cl</font> 并跑门禁。"
@@ -1202,7 +1346,8 @@ def build(path: str) -> None:
         ),
         P("9.3 测试策略", "h2"),
         P(
-            "<b>508 个单元测试</b>。样本优先用真实编译器输出逐字复制——例如 "
+            "<b>544 个单元测试</b>（另有 2 个需要 clang++ 的用例在无 clang 的机器上跳过）。"
+            "样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"
             "这意味着换编译器版本时这些测试会最先报警。测试按平台中性编写："
@@ -1271,6 +1416,17 @@ def build(path: str) -> None:
                     "前两份同名测试从未被执行",
                     "复制粘贴后第二次定义静默覆盖第一次，无任何报警",
                 ],
+                [
+                    "边级闭包按「首次包含」计算",
+                    "25 条可删边虚报 45 个「会消失但其实不会消失」的文件（见 8.3）",
+                    "-H 只记首次生效的包含点，被 include guard 吞掉的替代路径看不见；"
+                    "症状是「预测省了很多、实测一分没省」",
+                ],
+                [
+                    "编译命令缺 -c（edge-cost 兜底路径）",
+                    "clang 一路链接下去，Windows 上报 lld-link: undefined symbol",
+                    "报错长得像源码有错，其实是工具在让它链接",
+                ],
             ],
             widths=[120, 150, 150],
         ),
@@ -1282,7 +1438,8 @@ def build(path: str) -> None:
                 ["v0.1", "可用的核心：三种工具链解析、成本归因、四个命令", "已交付"],
                 ["v0.2", "从工具到平台：趋势看板、增量扫描、PR 评论机器人、多编译器横评", "已交付"],
                 ["v0.3", "精确模式：独占闭包判定、可选 AST 交叉检查、前向声明建议、PCH 收益评估", "已交付"],
-                ["v0.4", "生态集成：CMake、Bazel/Meson、VSCode 插件、IWYU 输出互转、PyPI 上架", "进行中"],
+                ["v0.4", "精度引擎：成本考古（blame）、边级归因（edge-cost）", "已交付"],
+                ["v0.5", "生态集成：CMake、Bazel/Meson、VSCode 插件、IWYU 输出互转、PyPI 上架", "计划中"],
             ],
             widths=[60, 280, 80],
         ),
@@ -1334,14 +1491,21 @@ def build(path: str) -> None:
             "    include-what-you-use.org ；github.com/include-what-you-use/include-what-you-use\n"
             "R7  微软 C++ Build Insights\n"
             "    learn.microsoft.com/cpp/build-insights/get-started-with-cpp-build-insights\n"
-            "R8  基准对象：nlohmann/json（github.com/nlohmann/json）、fmt（github.com/fmtlib/fmt）、\n"
+            "R8  Include-Wrangler（2012）\n"
+            "    github.com/lukedodd/include-wrangler\n"
+            "R9  clang-build-profiler（MIT）\n"
+            "    github.com/DmitriBogdanov/clang-build-profiler\n"
+            "    dmitribogdanov.github.io/clang-build-profiler/\n"
+            "R10 include-what-costs（BSD-3, LHCb）\n"
+            "    github.com/chrisburr/include-what-costs ；pypi.org/project/include-what-costs/\n"
+            "R11 基准对象：nlohmann/json（github.com/nlohmann/json）、fmt（github.com/fmtlib/fmt）、\n"
             "    spdlog、cpp-httplib、doctest、zlib（madler/zlib）"
         ),
         P("11.2 实际使用的编译器文档", "h2"),
         CODE(
-            "R5  GCC 手册：-H、-ftime-report、-M/-MM 选项说明\n"
-            "R6  MSVC 文档：/showIncludes 编译器选项\n"
-            "R7  C++ 标准：include guard 与 #pragma once 的语义"
+            "R12 GCC 手册：-H、-ftime-report、-M/-MM 选项说明\n"
+            "R13 MSVC 文档：/showIncludes 编译器选项\n"
+            "R14 C++ 标准：include guard 与 #pragma once 的语义"
         ),
         P("11.3 未引用但想说明的事", "h2"),
         P(

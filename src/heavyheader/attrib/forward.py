@@ -217,6 +217,16 @@ def _scan_type_usage(source_text: str, name: str) -> tuple[list[int], bool]:
     return lines, needs_definition
 
 
+def pointer_only_usage(source_text: str, name: str) -> bool:
+    """``name`` 是否只以指针/引用出现——前向声明成立的必要条件。
+
+    与 :func:`find_forward_declaration_candidates` 共用同一套判定，避免
+    「建议前向声明」和「判定能否前向声明」两处规则各自漂移。
+    """
+    lines, needs_definition = _scan_type_usage(source_text, name)
+    return bool(lines) and not needs_definition
+
+
 def find_forward_declaration_candidates(
     scan,
     *,

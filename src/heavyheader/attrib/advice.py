@@ -55,10 +55,12 @@ from ..models import (
     AdviceAspect,
     AdviceReason,
     AdviceVerdict,
+    HeaderKind,
     ProjectScan,
     RemovalAdvice,
     RemovalCandidate,
 )
+from . import blockers
 
 if TYPE_CHECKING:
     # 只在类型注解里出现：verify 要 import 本模块的噪声阈值，反向 import
@@ -196,13 +198,40 @@ def _unprobed(candidate: RemovalCandidate) -> RemovalAdvice:
     )
 
 
+def _source_text(candidate: RemovalCandidate) -> str | None:
+    """读源码用于用法判定。读不到就返回 None——不要猜。"""
+    try:
+        return candidate.tu.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
 def _keep(candidate: RemovalCandidate, result: VerificationResult) -> RemovalAdvice:
-    """The compiler said no.  Record it; do not dress it up."""
-    detail = " ".join(str(result.message).split())[:160]
+    """The compiler said no.  Record it; do not dress it up.
+
+    但「编不过」不是结论，是证据：它说明删掉这一行缺了什么。把缺的东西归因
+    出来（符号、位置、能不能用前向声明替代），一条死路才有下一步——否则
+    187 条被否决的候选在报告里长得一模一样，使用者只知道「不行」。
+    """
+    # 先清洗再归因：verify 的 message 带着临时目录与「移除后编译失败：」前缀，
+    # 原样进报告既是噪声，也会让位置解析落空。
+    cleaned = blockers.clean_error(result.message)
+    detail = cleaned[:160]
+    attribution = blockers.attribute(
+        cleaned,
+        candidate.header,
+        _source_text(candidate),
+        extra_headers=candidate.exclusive_headers,
+        system_header=candidate.kind is not HeaderKind.PROJECT,
+    )
     reasons = [
         AdviceReason(
             aspect=AdviceAspect.FUNCTION,
             text=f"实测编译失败：{detail}" if detail else "实测编译失败",
+        ),
+        AdviceReason(
+            aspect=AdviceAspect.FUNCTION,
+            text=attribution.sentence(),
         ),
         AdviceReason(
             aspect=AdviceAspect.MAINTENANCE,

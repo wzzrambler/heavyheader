@@ -34,8 +34,14 @@ usage 分层排序的 TU 臂，三次独立运行（各自重新扫描、编译�
 * `cfg.cpp` 的收益三次复现（聚合 566 → 125 ms 量级，差距远超抖动）；
   reach=1：这条独占子树只有 cfg.cpp 付钱。
 * `async.cpp` 在噪声线边缘（+1.1% → +2.4% → +2.7%），如实标注为「不稳定改善」。
-* 排名第 1 的 `ranges.h` 是假阳性——spdlog 不在四轮精度的三语料里，这是
-  判定在第四个语料上的已知误差样本（方向：误判可删，由 verify 挡住）。
+* 排名第 1 的 `ranges.h` 判了「疑似未使用」但删除编译失败——诊断结论：**已知
+  边界（AST 区）的又一实例，非可修新根因**。example.cpp 格式化 `std::vector`
+  （第 224 行），区间格式化的重载模板在 `fmt/ranges.h` 里；删掉后错误不是
+  「未声明的标识符」而是 `implicit instantiation of undefined template
+  'fmt::detail::type_is_unformattable_for<vector<int>, char>'`——**由重载决议
+  选中的模板实例化**，源码里没有任何标识符唯一指向这个头（`format`、`vector`
+  都有别的供给者），文本层无信号可抓。同 doctest `context_scope.h` 的保守
+  误判同类。防护照旧：verify 实测拦截，用户不会被误导。
 
 ## 结论
 

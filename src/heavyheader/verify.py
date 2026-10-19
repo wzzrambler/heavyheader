@@ -36,6 +36,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import NamedTuple
 
+from . import codegen
 from .attrib.advice import AGGREGATE_NOISE_FLOOR, TIME_NOISE_FLOOR, build_advice
 from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
@@ -105,6 +106,14 @@ class VerifyOptions:
     #: real concurrency -- this is the difference between 2 minutes and 20
     #: seconds on a 200-candidate pool.
     jobs: int = 4
+    #: 代码等价校验：删掉这一行之后，编出来的还是不是同一个程序。
+    #:
+    #: 为什么需要：2026-10-19 实测里，删掉 ``<iomanip>`` 后编译通过，但目标文件
+    #: 从 21,289 字节缩到 10,183 字节——重载解析变了。只判「能编过」的工具会把
+    #: 这种改动当成可删建议发出去。开启后，探针阶段会多编译两次（原始 + 补丁，
+    #: 编到汇编比哈希），代价约等于一次探针，换的是「建议删除」从「能编」升级为
+    #: 「代码没变」。默认关闭：它属于更强的证据，而不是更快的默认。
+    codegen_check: bool = False
     #: Optional test hook, called as ``test_runner(source_path) -> (ok, detail)``.
     #:
     #: Why a callback and not a command-line flag: the patched source lives in
@@ -882,6 +891,8 @@ def verify_candidates(
     # 因此 probe_runs=1 就够；把 runs 也用在这里会让每个坏候选多花两倍时间。
     probe_seconds: dict[int, float | None] = {}
     probe_errors: dict[int, str | None] = {}
+    #: 代码等价校验的结果（仅 codegen_check 开启时填充）
+    probe_codegen: dict[int, tuple[object, object]] = {}
 
     def _probe_one(index: int, source_path: Path, line_number: int) -> None:
         candidate, source_path, line_number = pending[index]
@@ -903,6 +914,18 @@ def verify_candidates(
                 verify.probe_runs,
                 verify.timeout,
             )
+            if error is None and verify.codegen_check:
+                # 比的是「同一个源文件、去掉那一行之后，编出来的汇编是否一字不差」。
+                # 两次用同一份 options、同一个输出路径；源码目录由 codegen.compare 掩平。
+                probe_codegen[index] = codegen.compare(
+                    driver,
+                    source_path,
+                    patched_path,
+                    patched_options,
+                    None,
+                    Path(tmp),
+                    verify.timeout,
+                )
         probe_seconds[index] = seconds
         probe_errors[index] = error
 
@@ -933,6 +956,18 @@ def verify_candidates(
                     candidate=candidate,
                     status="compile-error",
                     message=f"移除后编译失败：{probe_errors.get(index) or 'compile failed'}",
+                )
+            )
+            continue
+        codegen_pair = probe_codegen.get(index)
+        if codegen_pair is not None and not codegen_pair[0].same_as(codegen_pair[1]):
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="codegen-changed",
+                    patched_seconds=patched_seconds,
+                    message="移除后编译通过，但生成的代码与原来不同"
+                    "（重载解析或条件编译发生变化）",
                 )
             )
             continue

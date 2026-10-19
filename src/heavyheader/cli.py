@@ -229,6 +229,14 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     scan.add_argument(
+        "--check-codegen",
+        action="store_true",
+        help=(
+            "实测阶段加一道代码等价校验：删除后用汇编哈希比对，"
+            "确认编出来的还是同一个程序（每个候选多两次编译）"
+        ),
+    )
+    scan.add_argument(
         "--probe-top",
         type=int,
         default=0,
@@ -262,6 +270,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=2,
         help="判为 improved 后复测几遍，全部通过才保留结论（默认 2；1 = 不复测）",
+    )
+
+    verify.add_argument(
+        "--check-codegen",
+        action="store_true",
+        help=(
+            "代码等价校验：删除后用汇编哈希比对，确认编出来的还是同一个程序"
+            "（多两次编译，约等于一次探针的成本）"
+        ),
     )
 
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
@@ -482,6 +499,7 @@ def _scan_options_for(args, compiler: str) -> ScanOptions:
         probe_budget=getattr(args, "probe_budget", 0.0),
         probe_jobs=getattr(args, "probe_jobs", 4),
         probe_runs=getattr(args, "probe_runs", 3),
+        check_codegen=getattr(args, "check_codegen", False),
     )
 
 
@@ -707,6 +725,7 @@ def _cmd_verify(args) -> int:
             runs=args.runs,
             timeout=args.timeout,
             confirm_passes=max(1, getattr(args, "confirm", 1)),
+            codegen_check=getattr(args, "check_codegen", False),
         ),
         include_dirs=list(args.includes),
         semantic=backend,

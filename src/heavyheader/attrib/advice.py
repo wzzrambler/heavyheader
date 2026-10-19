@@ -245,6 +245,34 @@ def _keep(candidate: RemovalCandidate, result: VerificationResult) -> RemovalAdv
     return RemovalAdvice(verdict=AdviceVerdict.KEEP, reasons=reasons)
 
 
+def _codegen_changed(
+    candidate: RemovalCandidate, result: VerificationResult
+) -> RemovalAdvice:
+    """编译通过，但生成的目标代码变了——这不是优化，是改语义。
+
+    与 :func:`_keep` 的区别：编译器没有否决，是**代码等价性检查**否决的。
+    两者都要留记录，但理由不同：前者是「删不掉」，后者是「删得掉，但删了程序
+    就变了」。实测案例：删掉 ``<iomanip>`` 后目标文件从 21,289 字节缩到
+    10,183 字节，起因是重载解析改变。
+    """
+    reasons = [
+        AdviceReason(
+            aspect=AdviceAspect.FUNCTION,
+            text=str(result.message) or "移除后编译通过，但生成代码不同",
+        ),
+        AdviceReason(
+            aspect=AdviceAspect.FUNCTION,
+            text="编译通过 ≠ 同一个程序：少了这个头会改变重载解析或条件编译，"
+            "行为可能随之改变",
+        ),
+        AdviceReason(
+            aspect=AdviceAspect.BUILD,
+            text="省下的时间建立在一个行为不同的构建上，不计入收益",
+        ),
+    ]
+    return RemovalAdvice(verdict=AdviceVerdict.HUMAN, reasons=reasons, lean="keep")
+
+
 def _cannot_locate(
     candidate: RemovalCandidate, result: VerificationResult
 ) -> RemovalAdvice:
@@ -610,6 +638,9 @@ def build_advice(
     2. probe says compile failed  → ``KEEP`` (the compiler already vetoed)
     3. line cannot be located     → ``HUMAN``, no lean (guessing would lie)
     4. compiles, not timed        → ``HUMAN``, no lean
+    4b. compiles, but the generated code changed → ``HUMAN`` with a keep lean.
+       「能编过」不等于「同一个程序」：实测删 ``<iomanip>`` 后目标文件面积减半，
+       因为重载解析变了。这类改动不能作为「建议删除」发出去。
     5. compiles, timed, improved  → ``REMOVE`` -- *unless* a test runner was
        supplied and the unit's tests fail, in which case the compiler's
        blessing is overruled by the tests': ``HUMAN`` with a keep lean.
@@ -630,6 +661,8 @@ def build_advice(
 
     if result.status == "compile-error":
         return _keep(candidate, result)
+    if result.status == "codegen-changed":
+        return _codegen_changed(candidate, result)
     if result.status in ("ambiguous", "not-found", "error"):
         return _cannot_locate(candidate, result)
     if result.status == "compiles":

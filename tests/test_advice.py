@@ -557,3 +557,23 @@ def test_ast_tool_failure_is_stated_not_silent(tmp_path):
     function_reasons = advice.by_aspect(AdviceAspect.FUNCTION)
     assert any("未能提供" in r.text for r in function_reasons)
     assert any("unit-not-analysed" in r.evidence for r in function_reasons)
+
+
+def test_codegen_changed_is_human_with_keep_lean(tmp_path):
+    """编译通过但代码变了：不能给「建议删除」，也不能当成「删不掉」。
+
+    实测案例：删 `<iomanip>` 后目标文件面积减半（重载解析改变）。这类改动
+    如果按 `improved` 处理，使用者会在不知情的情况下换掉程序的行为。
+    """
+    candidate = _candidate(tmp_path)
+    result = _result(
+        candidate,
+        "codegen-changed",
+        message="移除后编译通过，但生成的代码与原来不同",
+    )
+    advice = build_advice(candidate, result, None)
+    assert advice.verdict is AdviceVerdict.HUMAN
+    assert advice.lean == "keep"
+    texts = " ".join(reason.text for reason in advice.reasons)
+    assert "编译通过" in texts and "同一个程序" in texts
+    assert "不计入收益" in texts

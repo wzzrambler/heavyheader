@@ -167,6 +167,8 @@ class ScanOptions:
     probe_jobs: int = 4
     #: Compiles per side during full measurement (probes always use 1).
     probe_runs: int = 3
+    #: 实测时是否做代码等价校验（汇编哈希比对），见 VerifyOptions.codegen_check
+    check_codegen: bool = False
     #: 可选 AST 交叉检查后端（attrib.semantic.SemanticBackend 实例）。
     #: ``None`` = 不跑——这是默认且诚实的行为：没有该工具时，结论仍以本工具
     #: 实证为准，绝不假装做过 AST 校验。类型用 object 以避免 scanner 反向依赖
@@ -650,6 +652,7 @@ def scan_project(
                 runs=options.probe_runs,
                 budget_seconds=options.probe_budget,
                 jobs=options.probe_jobs,
+                codegen_check=options.check_codegen,
             ),
             semantic=options.semantic,
             build_path=options.semantic_build_path,
@@ -667,6 +670,7 @@ def scan_project(
                 probe_only=True,
                 budget_seconds=options.probe_budget,
                 jobs=options.probe_jobs,
+                codegen_check=options.check_codegen,
             ),
             semantic=None,
             build_path=options.semantic_build_path,

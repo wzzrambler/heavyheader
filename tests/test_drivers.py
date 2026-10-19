@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from unittest import mock
 
@@ -338,3 +339,53 @@ def test_source_is_never_passed_twice_even_if_extra_flags_carry_it():
     assert argv.count("a.cpp") == 1
     assert argv[-1] == "a.cpp"
     assert "-c" in argv  # 编译开关本身无罪，重复的源文件才有罪
+
+
+# --------------------------------------------------------------------------
+# relative -H paths must be rebased onto the compile cwd (2026-10-19)
+# --------------------------------------------------------------------------
+
+
+class _FakeHDriver(GccLikeDriver):
+    """编译器不真实存在：用一段 Python 往 stderr 打印 -H 树。
+
+    真实故障在 spdlog 上抓到：自建 compile_commands.json 用相对 ``-Iinclude``，
+    clang 就把 ``-H`` 路径打印成 ``include\\spdlog\\fmt\\ranges.h``；下游按
+    扫描进程 cwd 解析不到文件，行数记 0、标识符集为空，用法判定**静默**
+    退化（候选从 2 条「疑似未使用」虚增到 7 条）。修复在
+    ``GccLikeDriver.run``：解析出事件后按编译 cwd 把相对路径落地。
+    """
+
+    def __init__(self, tree: str) -> None:
+        super().__init__(executable="fake", is_clang=True)
+        self._tree = tree
+
+    def build_command(self, source, options):  # noqa: D102 - 测试替身
+        return [
+            sys.executable,
+            "-c",
+            "import sys; sys.stderr.write(sys.argv[1]); sys.exit(0)",
+            self._tree,
+        ]
+
+
+def test_relative_h_paths_are_rebased_onto_the_compile_cwd(tmp_path):
+    driver = _FakeHDriver(". ./inc/a.h\n.. ./inc/b.h\n")
+    tu = driver.run(source=tmp_path / "main.cpp", options=DriverOptions(), cwd=tmp_path)
+
+    assert not tu.error
+    assert [e.included for e in tu.include_events] == [
+        (tmp_path / "inc" / "a.h").resolve(),
+        (tmp_path / "inc" / "b.h").resolve(),
+    ]
+    # includer 也一起落地：深度 0 事件的 includer 是源码本身。
+    assert tu.include_events[0].includer == (tmp_path / "main.cpp").resolve()
+
+
+def test_absolute_h_paths_pass_through_untouched(tmp_path):
+    elsewhere = tmp_path / "other"
+    driver = _FakeHDriver(f". {elsewhere / 'a.h'}\n")
+    tu = driver.run(
+        source=tmp_path / "main.cpp", options=DriverOptions(), cwd=tmp_path
+    )
+    assert tu.include_events[0].included == (elsewhere / "a.h").resolve()

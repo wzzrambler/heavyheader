@@ -1,0 +1,7 @@
+[
+ {
+  "tu": "C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-bench\\spdlog\\example\\async.cpp",
+  "header": "async.h",
+  "verdict": "below-noise"
+ }
+]

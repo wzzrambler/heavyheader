@@ -1,0 +1,959 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "tus": 34,
+  "mirror_top_k": 40,
+  "candidates_total": 222,
+  "usage_split": {
+    "plausibly_unused": 20,
+    "unknown": 32,
+    "in_use": 170
+  },
+  "probe_set": 92,
+  "categories": {
+    "parse_proven_timing_unmeasured": 19,
+    "verdict_false_positive": 1,
+    "unknown_rejected_conservative_miss": 32,
+    "usage_rejected_compile_error": 26,
+    "usage_rejected_silent_change": 1,
+    "usage_rejected_conservative_miss": 13
+  },
+  "rows": [
+    {
+      "tu": "llex.c",
+      "header": "lparser.h",
+      "line": 24,
+      "usage": "plausibly_unused",
+      "reason": "firstchar 由本文件自己定义",
+      "estimate_s": 0.0143,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ltm.c",
+      "header": "lvm.h",
+      "line": 25,
+      "usage": "plausibly_unused",
+      "reason": "v2 由本文件自己定义",
+      "estimate_s": 0.01,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldo.c",
+      "header": "ltable.h",
+      "line": 30,
+      "usage": "plausibly_unused",
+      "reason": "NULL、StkId 另有供给者",
+      "estimate_s": 0.0054,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lgc.c",
+      "header": "ldebug.h",
+      "line": 18,
+      "usage": "plausibly_unused",
+      "reason": "Proto、StkId 另有供给者",
+      "estimate_s": 0.0054,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "lualib.h",
+      "line": 18,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_coroutine 由本文件自己定义",
+      "estimate_s": 0.0048,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lcode.c",
+      "header": "lstring.h",
+      "line": 29,
+      "usage": "plausibly_unused",
+      "reason": "extra 由本文件自己定义",
+      "estimate_s": 0.0046,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lstring.c",
+      "header": "ldebug.h",
+      "line": 17,
+      "usage": "plausibly_unused",
+      "reason": "TString、cast_int 另有供给者",
+      "estimate_s": 0.0046,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lparser.c",
+      "header": "ldebug.h",
+      "line": 19,
+      "usage": "plausibly_unused",
+      "reason": "msg、what 由本文件自己定义",
+      "estimate_s": 0.0045,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "luac.c",
+      "header": "lopnames.h",
+      "line": 24,
+      "usage": "plausibly_unused",
+      "reason": "opnames 不由任何头提供（命令行宏）",
+      "estimate_s": 0.0041,
+      "category": "verdict_false_positive",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lundump.c",
+      "header": "ldebug.h",
+      "line": 18,
+      "usage": "plausibly_unused",
+      "reason": "x80 不由任何头提供（命令行宏）",
+      "estimate_s": 0.0041,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "lualib.h",
+      "line": 21,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_base 由本文件自己定义",
+      "estimate_s": 0.0039,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "lualib.h",
+      "line": 20,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_debug 由本文件自己定义",
+      "estimate_s": 0.0039,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "liolib.c",
+      "header": "lualib.h",
+      "line": 23,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_io 由本文件自己定义",
+      "estimate_s": 0.0033,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "lualib.h",
+      "line": 22,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_math 由本文件自己定义",
+      "estimate_s": 0.0032,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ltablib.c",
+      "header": "lualib.h",
+      "line": 20,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_table 由本文件自己定义",
+      "estimate_s": 0.0031,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "plausibly_unused",
+      "reason": "LUA_USE_C89 另有供给者",
+      "estimate_s": 0.0028,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "loslib.c",
+      "header": "lualib.h",
+      "line": 22,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_os 由本文件自己定义",
+      "estimate_s": 0.0027,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lstrlib.c",
+      "header": "lualib.h",
+      "line": 26,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_string 由本文件自己定义",
+      "estimate_s": 0.0025,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "loslib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "plausibly_unused",
+      "reason": "LUA_USE_C89 另有供给者",
+      "estimate_s": 0.0023,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lutf8lib.c",
+      "header": "lualib.h",
+      "line": 21,
+      "usage": "plausibly_unused",
+      "reason": "luaopen_utf8 由本文件自己定义",
+      "estimate_s": 0.0023,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lctype.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0075,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lopcodes.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0072,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lfunc.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.006,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lmem.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0054,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldump.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0049,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0041,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldo.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0039,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lapi.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0038,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lgc.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0038,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "llex.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0038,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lauxlib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0037,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lcode.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0036,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldebug.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0036,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "linit.c",
+      "header": "lprefix.h",
+      "line": 27,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0035,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0034,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0034,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ltable.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0034,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lstring.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0032,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ltm.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0032,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lobject.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0031,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lparser.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0031,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lstate.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.003,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lundump.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0029,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "liolib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0028,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "ltablib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0027,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lzio.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0026,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lstrlib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0021,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lutf8lib.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.002,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "luac.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0018,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lvm.c",
+      "header": "lprefix.h",
+      "line": 10,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0016,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "loadlib.c",
+      "header": "lprefix.h",
+      "line": 14,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0002,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "lua.c",
+      "header": "lprefix.h",
+      "line": 9,
+      "usage": "unknown",
+      "reason": "",
+      "estimate_s": 0.0002,
+      "category": "unknown_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "loadlib.c",
+      "header": "windows.h",
+      "line": 150,
+      "usage": "in_use",
+      "reason": "副作用：DECL_SA(OnParameterOnly,SA(Parameter))",
+      "estimate_s": 1.6095,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lctype.c",
+      "header": "lctype.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：check_exp(('A' <= (c) && (c) <= 'Z') || (c) == ((c) | ('A' ^ 'a')),  \\",
+      "estimate_s": 1.0892,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lopcodes.c",
+      "header": "lopcodes.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：LUAI_DDEC(const lu_byte luaP_opmodes[NUM_OPCODES]",
+      "estimate_s": 1.0881,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lua.c",
+      "header": "windows.h",
+      "line": 419,
+      "usage": "in_use",
+      "reason": "副作用：DECL_SA(OnParameterOnly,SA(Parameter))",
+      "estimate_s": 1.085,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 215
+    },
+    {
+      "tu": "linit.c",
+      "header": "lauxlib.h",
+      "line": 35,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.551,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "lauxlib.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.4625,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lgc.c",
+      "header": "stdio.h",
+      "line": 12,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != 0)         _ACRTIMP char* __cdecl gets_s(         ",
+      "estimate_s": 0.403,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 3
+    },
+    {
+      "tu": "lobject.c",
+      "header": "stdio.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != 0)         _ACRTIMP char* __cdecl gets_s(         ",
+      "estimate_s": 0.323,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "lauxlib.h",
+      "line": 21,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.3115,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "ltablib.c",
+      "header": "lauxlib.h",
+      "line": 19,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.2979,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "ldump.c",
+      "header": "lstate.h",
+      "line": 19,
+      "usage": "in_use",
+      "reason": "副作用：check_exp(novariant((o)->tt) == LUA_TSTRING, &((cast_u(o))->ts)) \tchec",
+      "estimate_s": 0.2907,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "loslib.c",
+      "header": "lauxlib.h",
+      "line": 21,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.2621,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lutf8lib.c",
+      "header": "lauxlib.h",
+      "line": 20,
+      "usage": "in_use",
+      "reason": "副作用：luaL_checkversion_(L, LUA_VERSION_NUM, LUAL_NUMSIZES)  LUALIB_API int ",
+      "estimate_s": 0.2248,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "stdlib.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.2101,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "ldo.c",
+      "header": "stdlib.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.198,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lauxlib.c",
+      "header": "stdlib.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1869,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lcode.c",
+      "header": "stdlib.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.186,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "stdlib.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1738,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "stdlib.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1723,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "lvm.c",
+      "header": "stdio.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != 0)         _ACRTIMP char* __cdecl gets_s(         ",
+      "estimate_s": 0.1676,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 3
+    },
+    {
+      "tu": "lobject.c",
+      "header": "stdlib.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1561,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "ldo.c",
+      "header": "string.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1465,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lapi.c",
+      "header": "string.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1448,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 6
+    },
+    {
+      "tu": "lgc.c",
+      "header": "string.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1441,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "liolib.c",
+      "header": "stdlib.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.144,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "llex.c",
+      "header": "string.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1419,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 6
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "stdlib.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1415,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "ldebug.c",
+      "header": "string.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1342,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "string.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1286,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "string.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1275,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lauxlib.c",
+      "header": "string.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1271,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lstring.c",
+      "header": "string.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1213,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "ltm.c",
+      "header": "string.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.121,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 6
+    },
+    {
+      "tu": "loslib.c",
+      "header": "stdlib.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1191,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lparser.c",
+      "header": "string.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1187,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lobject.c",
+      "header": "string.h",
+      "line": 18,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1155,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lstate.c",
+      "header": "string.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1139,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lstrlib.c",
+      "header": "stdlib.h",
+      "line": 20,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1093,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    },
+    {
+      "tu": "lundump.c",
+      "header": "string.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.1079,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "lutf8lib.c",
+      "header": "stdlib.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.1021,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 9
+    }
+  ],
+  "timing": {
+    "jobs": 8,
+    "scan_seconds": 15.3,
+    "baseline_seconds": 2.2,
+    "probe_seconds": 5.2,
+    "codegen_seconds": 12.5,
+    "total_seconds": 35.3,
+    "total_minutes": 0.59,
+    "compiler_invocations": 256
+  },
+  "headline": {
+    "parse_proven": 19,
+    "conservative_misses": 45,
+    "proven_per_100_tu": 55.9,
+    "analysis_minutes_per_proven": 0.03
+  }
+}

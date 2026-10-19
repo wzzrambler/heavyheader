@@ -1,0 +1,299 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-bench\\spdlog",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 8,
+  "mirror_top_k": 40,
+  "candidates_total": 26,
+  "usage_split": {
+    "plausibly_unused": 2,
+    "unknown": 0,
+    "in_use": 24
+  },
+  "probe_set": 25,
+  "categories": {
+    "verdict_false_positive": 1,
+    "silent_change": 1,
+    "usage_rejected_silent_change": 2,
+    "usage_rejected_compile_error": 20,
+    "usage_rejected_conservative_miss": 1,
+    "not_probeable": 1
+  },
+  "rows": [
+    {
+      "tu": "example.cpp",
+      "header": "ranges.h",
+      "line": 210,
+      "usage": "plausibly_unused",
+      "reason": "SPDLOG_USE_STD_FORMAT 不由任何头提供（命令行宏）",
+      "estimate_s": 0.005,
+      "category": "verdict_false_positive",
+      "parse_shrink": null
+    },
+    {
+      "tu": "async.cpp",
+      "header": "async.h",
+      "line": 8,
+      "usage": "plausibly_unused",
+      "reason": "",
+      "estimate_s": 0.0017,
+      "category": "silent_change",
+      "parse_shrink": 2
+    },
+    {
+      "tu": "cfg.cpp",
+      "header": "helpers-inl.h",
+      "line": 8,
+      "usage": "in_use",
+      "reason": "副作用：_GLIBCXX_BEGIN_INLINE_ABI_NAMESPACE(_V2)    template<typename _FIter> ",
+      "estimate_s": 0.9185,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 311
+    },
+    {
+      "tu": "bundled_fmtlib_format.cpp",
+      "header": "format-inl.h",
+      "line": 11,
+      "usage": "in_use",
+      "reason": "副作用：_GLIBCXX_BEGIN_INLINE_ABI_NAMESPACE(_V2)    template<typename _FIter> ",
+      "estimate_s": 0.8593,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "mdc.h",
+      "line": 389,
+      "usage": "in_use",
+      "reason": "副作用：__attribute__((__nonnull__))   void   _Rb_tree_insert_and_rebalance(co",
+      "estimate_s": 0.0387,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "ostr.h",
+      "line": 33,
+      "usage": "in_use",
+      "reason": "副作用：if (*begin != '%') FMT_THROW(format_error(\"invalid format\"))",
+      "estimate_s": 0.0385,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 10
+    },
+    {
+      "tu": "example.cpp",
+      "header": "udp_sink.h",
+      "line": 244,
+      "usage": "in_use",
+      "reason": "副作用：defined(__GNUG__) __extension__ typedef unsigned long long u_int64",
+      "estimate_s": 0.0206,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "daily_file_sink.h",
+      "line": 131,
+      "usage": "in_use",
+      "reason": "daily_logger_mt 由 daily_file_sink.h 提供",
+      "estimate_s": 0.006,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "stdout_sinks.cpp",
+      "header": "async.h",
+      "line": 10,
+      "usage": "in_use",
+      "reason": "async_factory 由 async.h 提供",
+      "estimate_s": 0.0059,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "stdout_sinks.cpp",
+      "header": "stdout_sinks-inl.h",
+      "line": 12,
+      "usage": "in_use",
+      "reason": "console_mutex、console_nullmutex 由 console_globals.h 提供",
+      "estimate_s": 0.0048,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "spdlog.cpp",
+      "header": "spdlog-inl.h",
+      "line": 19,
+      "usage": "in_use",
+      "reason": "SPDLOG_NAMESPACE 由 spdlog.h 提供",
+      "estimate_s": 0.0035,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 4
+    },
+    {
+      "tu": "example.cpp",
+      "header": "async.h",
+      "line": 160,
+      "usage": "in_use",
+      "reason": "async_factory 由 async.h 提供",
+      "estimate_s": 0.0027,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "color_sinks.cpp",
+      "header": "async.h",
+      "line": 10,
+      "usage": "in_use",
+      "reason": "async_factory 由 async.h 提供",
+      "estimate_s": 0.0024,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "file_sinks.cpp",
+      "header": "rotating_file_sink-inl.h",
+      "line": 18,
+      "usage": "in_use",
+      "reason": "rotating_file_sink 由 rotating_file_sink-inl.h 提供",
+      "estimate_s": 0.0022,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "spdlog.h",
+      "line": 31,
+      "usage": "in_use",
+      "reason": "SPDLOG_DEBUG、SPDLOG_LOGGER_TRACE 由 spdlog.h 提供",
+      "estimate_s": 0.0021,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "bin_to_hex.h",
+      "line": 186,
+      "usage": "in_use",
+      "reason": "to_hex 由 bin_to_hex.h 提供",
+      "estimate_s": 0.0013,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "file_sinks.cpp",
+      "header": "basic_file_sink-inl.h",
+      "line": 11,
+      "usage": "in_use",
+      "reason": "basic_file_sink 由 basic_file_sink-inl.h 提供",
+      "estimate_s": 0.001,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "stdout_color_sinks.h",
+      "line": 109,
+      "usage": "in_use",
+      "reason": "stdout_color_mt、stdout_color_sink_mt 由 stdout_color_sinks.h 提供",
+      "estimate_s": 0.0009,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "spdlog.cpp",
+      "header": "base_sink-inl.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "base_sink 由 base_sink-inl.h 提供",
+      "estimate_s": 0.0008,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "pattern_formatter.h",
+      "line": 324,
+      "usage": "in_use",
+      "reason": "add_flag、pattern_formatter 由 pattern_formatter.h 提供",
+      "estimate_s": 0.0007,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "rotating_file_sink.h",
+      "line": 124,
+      "usage": "in_use",
+      "reason": "rotating_logger_mt 由 rotating_file_sink.h 提供",
+      "estimate_s": 0.0006,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "color_sinks.cpp",
+      "header": "stdout_color_sinks-inl.h",
+      "line": 34,
+      "usage": "in_use",
+      "reason": "stderr_color_mt、stderr_color_st 由 stdout_color_sinks-inl.h 提供",
+      "estimate_s": 0.0006,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "basic_file_sink.h",
+      "line": 118,
+      "usage": "in_use",
+      "reason": "basic_file_sink_mt、basic_logger_mt 由 basic_file_sink.h 提供",
+      "estimate_s": 0.0004,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "stopwatch.h",
+      "line": 236,
+      "usage": "in_use",
+      "reason": "stopwatch 由 stopwatch.h 提供",
+      "estimate_s": 0.0004,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "callback_sink.h",
+      "line": 137,
+      "usage": "in_use",
+      "reason": "callback_logger_mt 由 callback_sink.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.cpp",
+      "header": "env.h",
+      "line": null,
+      "usage": "in_use",
+      "reason": "cfg、load_env_levels 由 env.h 提供",
+      "estimate_s": 0.0004,
+      "category": "not_probeable",
+      "parse_shrink": null
+    }
+  ],
+  "timing": {
+    "jobs": 8,
+    "scan_seconds": 17.0,
+    "baseline_seconds": 2.4,
+    "probe_seconds": 5.7,
+    "codegen_seconds": 5.0,
+    "total_seconds": 30.0,
+    "total_minutes": 0.5,
+    "compiler_invocations": 41
+  },
+  "headline": {
+    "parse_proven": 0,
+    "conservative_misses": 1,
+    "proven_per_100_tu": 0.0,
+    "analysis_minutes_per_proven": null
+  }
+}

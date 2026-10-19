@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..models import CompilerFamily, TranslationUnit
+from ..models import CompilerFamily, IncludeEvent, TranslationUnit
 from ..parse.includetree import (
     parse_include_guards,
     parse_include_tree,
@@ -171,6 +171,24 @@ class CompilerDriver(ABC):
         )
         # 记下来以便扫描层能提示用户：这个 TU 差一点就被误记成失败了。
         tu.spawn_retries = attempts - 1
+        if cwd is not None:
+            # ``-H`` 打印的路径形态跟着编译时的 cwd 走：编译命令里写相对
+            # ``-Iinclude``（或相对源文件）时，clang 原样打印 ``include/x.h``。
+            # 后续所有消费者（行数统计、标识符索引、闭包）都按**进程 cwd**
+            # 解析路径——扫描进程的 cwd 不是编译时的 cwd，于是头文件「存
+            # 在但读不到」：行数记 0、标识符集为空，用法判定静默退化。
+            # 实测 spdlog（自建 compile_commands 用相对 -Iinclude）：候选
+            # 从 2 条「疑似未使用」虚增到 7 条、真证据全部消失。这里在唯一
+            # 知道编译 cwd 的地方把相对路径落地。
+            tu.include_events = [
+                IncludeEvent(
+                    includer=_rebase_path(event.includer, cwd),
+                    included=_rebase_path(event.included, cwd),
+                    depth=event.depth,
+                    line=event.line,
+                )
+                for event in tu.include_events
+            ]
         return tu
 
     def _subprocess_env(self) -> dict | None:
@@ -246,6 +264,20 @@ def _strip_for_object(
             continue
         out.append(token)
     return out
+
+
+def _rebase_path(path: Path, cwd: Path) -> Path:
+    """相对路径按编译时的 cwd 落地；绝对路径原样返回。
+
+    见 :meth:`GccLikeDriver.run` 里的说明：``-H`` 的路径形态跟着编译 cwd 走，
+    而下游消费者按扫描进程的 cwd 解析，不落地就会静默读不到头文件。
+    """
+    if path.is_absolute():
+        return path
+    try:
+        return (cwd / path).resolve()
+    except OSError:  # pragma: no cover - 路径不可解析时保持原样
+        return path
 
 
 def _append_source(argv: list[str], source: Path, extra: list[str]) -> list[str]:

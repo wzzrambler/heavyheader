@@ -63,3 +63,22 @@ python experiments/corpus_timing.py --case spdlog --top 3 --arm tu   # 计时
 数据：`corpus-timing-spdlog-tu8-20261019.json`（run 1，8 候选全测）、
 `corpus-timing-spdlog-tu3-20261019.json`（run 3；run 2 与 run 3 同名被覆盖，
 其读数 78.443% / 2.390% 以本报告记录为准）。
+
+---
+
+## 2026-10-19 补记：本轮计时的两条 improved 都是静默改程序
+
+第五轮失败原因分类（`experiments/candidate-precision-round5-20261019.md`）
+给同一个语料补了第三条真值（汇编指纹），结论要修正：
+
+* `cfg.cpp → helpers-inl.h`（−77.8%，usage 判定 **in_use**）：删除后汇编从
+  **10,329 行塌缩到 40 行**——cfg.cpp 就是把
+  `spdlog::cfg::helpers::load_levels` 等函数编进库的 TU，删掉的是它们的
+  **定义**。`-fsyntax-only` 照样过（声明在别的头里），计时测到的「省时」
+  是真的，产物少了整个公共 API 的实现，链接期才炸。usage 判「在用」
+  判对了；**计时单独庆祝了它**。
+* `async.cpp → async.h`（+2.4~2.9%）：同样是静默改程序。
+* 修正后的读法：spdlog 的「P@3 改善率 67%」是**计时口径**的数字；接上
+  汇编闸门后，该语料推送集 2 条全灭（1 假阳性 + 1 静默改程序）、镜像里
+  这条 −78% 也是静默改程序。这条案例现在是「计时回答不了程序是否被改」
+  的标准样本，写进了第五轮报告与两份提交 PDF。

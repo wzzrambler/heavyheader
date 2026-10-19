@@ -1,0 +1,437 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "tus": 34,
+  "mirror_top_k": 40,
+  "candidates_total": 40,
+  "usage_split": {
+    "plausibly_unused": 1,
+    "unknown": 0,
+    "in_use": 39
+  },
+  "probe_set": 39,
+  "categories": {
+    "parse_proven_timing_unmeasured": 1,
+    "usage_rejected_compile_error": 37,
+    "usage_rejected_silent_change": 1,
+    "not_probeable": 1
+  },
+  "rows": [
+    {
+      "tu": "inffast.c",
+      "header": "inffast.h",
+      "line": 9,
+      "usage": "plausibly_unused",
+      "reason": "inflate_fast、start 由本文件自己定义",
+      "estimate_s": 0.0009,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "gzread.c",
+      "header": "gzguts.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.4883,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "trees.c",
+      "header": "deflate.h",
+      "line": 37,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.4644,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inftrees.c",
+      "header": "zutil.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 1.4492,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "gzclose.c",
+      "header": "gzguts.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.4294,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inflate.c",
+      "header": "zutil.h",
+      "line": 83,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 1.4028,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "gzlib.c",
+      "header": "gzguts.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.3361,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "gzwrite.c",
+      "header": "gzguts.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.3173,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "adler32.c",
+      "header": "zutil.h",
+      "line": 8,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 1.3121,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "compress.c",
+      "header": "zlib.h",
+      "line": 9,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.2839,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "infback.c",
+      "header": "zutil.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 1.2001,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inffast.c",
+      "header": "zutil.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 1.1711,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "uncompr.c",
+      "header": "zlib.h",
+      "line": 9,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.1559,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "deflate.c",
+      "header": "deflate.h",
+      "line": 52,
+      "usage": "in_use",
+      "reason": "副作用：__ANNOTATION(SAL_useHeader(void))",
+      "estimate_s": 1.0543,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "crc32.c",
+      "header": "zutil.h",
+      "line": 33,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 0.8433,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "crc32.c",
+      "header": "crc32.h",
+      "line": 153,
+      "usage": "in_use",
+      "reason": "crc_big_table、crc_braid_big_table 由 crc32.h 提供",
+      "estimate_s": 0.5786,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.c",
+      "header": "stdio.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != 0)         _ACRTIMP char* __cdecl gets_s(         ",
+      "estimate_s": 0.2026,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "stdio.h",
+      "line": 30,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != 0)         _ACRTIMP char* __cdecl gets_s(         ",
+      "estimate_s": 0.2,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.c",
+      "header": "zlib.h",
+      "line": 12,
+      "usage": "in_use",
+      "reason": "Byte、Bytef 由 zconf.h 提供",
+      "estimate_s": 0.1205,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "zlib.h",
+      "line": 29,
+      "usage": "in_use",
+      "reason": "MAXSEG_64K、MSDOS 由 zconf.h 提供",
+      "estimate_s": 0.1187,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "example.c",
+      "header": "stdlib.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.0979,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "zutil.c",
+      "header": "gzguts.h",
+      "line": 10,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != -1)     _Check_return_     _ACRTIMP intptr_t __cde",
+      "estimate_s": 0.0796,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 15
+    },
+    {
+      "tu": "example.c",
+      "header": "string.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.0724,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "string.h",
+      "line": 33,
+      "usage": "in_use",
+      "reason": "副作用：__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(     errno_t, strcat_s,         ",
+      "estimate_s": 0.0715,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "io.h",
+      "line": 45,
+      "usage": "in_use",
+      "reason": "副作用：_Success_(return != -1)     _Check_return_     _ACRTIMP intptr_t __cde",
+      "estimate_s": 0.0374,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "zutil.c",
+      "header": "zutil.h",
+      "line": 8,
+      "usage": "in_use",
+      "reason": "副作用：return (strm->msg = ERR_MSG(err), (err))                              ",
+      "estimate_s": 0.0183,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inftrees.c",
+      "header": "inflate.h",
+      "line": 17,
+      "usage": "in_use",
+      "reason": "distbits、distcode 由 inflate.h 提供",
+      "estimate_s": 0.0133,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "trees.c",
+      "header": "trees.h",
+      "line": 114,
+      "usage": "in_use",
+      "reason": "base_dist、base_length 由 trees.h 提供",
+      "estimate_s": 0.0132,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inflate.c",
+      "header": "inflate.h",
+      "line": 85,
+      "usage": "in_use",
+      "reason": "BAD、CHECK 由 inflate.h 提供",
+      "estimate_s": 0.0128,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "infback.c",
+      "header": "inflate.h",
+      "line": 15,
+      "usage": "in_use",
+      "reason": "BAD、DONE 由 inflate.h 提供",
+      "estimate_s": 0.011,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inffast.c",
+      "header": "inflate.h",
+      "line": 8,
+      "usage": "in_use",
+      "reason": "BAD、TYPE 由 inflate.h 提供",
+      "estimate_s": 0.0107,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inftrees.c",
+      "header": "inffixed.h",
+      "line": 351,
+      "usage": "in_use",
+      "reason": "distfix、lenfix 由 inffixed.h 提供",
+      "estimate_s": 0.0099,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inftrees.c",
+      "header": "inftrees.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "CODES、DISTS 由 inftrees.h 提供",
+      "estimate_s": 0.0074,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inflate.c",
+      "header": "inftrees.h",
+      "line": 84,
+      "usage": "in_use",
+      "reason": "CODES、DISTS 由 inftrees.h 提供",
+      "estimate_s": 0.0071,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "infback.c",
+      "header": "inftrees.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "CODES、DISTS 由 inftrees.h 提供",
+      "estimate_s": 0.0061,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inffast.c",
+      "header": "inftrees.h",
+      "line": 7,
+      "usage": "in_use",
+      "reason": "code、val 由 inftrees.h 提供",
+      "estimate_s": 0.006,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "fcntl.h",
+      "line": 44,
+      "usage": "in_use",
+      "reason": "O_BINARY 由 fcntl.h 提供",
+      "estimate_s": 0.0029,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "inflate.c",
+      "header": "inffast.h",
+      "line": 86,
+      "usage": "in_use",
+      "reason": "inflate_fast 由 inffast.h 提供",
+      "estimate_s": 0.0011,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "infback.c",
+      "header": "inffast.h",
+      "line": 16,
+      "usage": "in_use",
+      "reason": "inflate_fast 由 inffast.h 提供",
+      "estimate_s": 0.001,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "minigzip.c",
+      "header": "stdlib.h",
+      "line": null,
+      "usage": "in_use",
+      "reason": "副作用：_CRT_INSECURE_DEPRECATE_GLOBALS(_get_pgmptr ) _ACRTIMP char**    __cde",
+      "estimate_s": 0.0966,
+      "category": "not_probeable",
+      "parse_shrink": null
+    }
+  ],
+  "timing": {
+    "jobs": 8,
+    "scan_seconds": 4.9,
+    "baseline_seconds": 1.1,
+    "probe_seconds": 1.9,
+    "codegen_seconds": 0.5,
+    "total_seconds": 8.4,
+    "total_minutes": 0.14,
+    "compiler_invocations": 60
+  },
+  "headline": {
+    "parse_proven": 1,
+    "conservative_misses": 0,
+    "proven_per_100_tu": 2.9,
+    "analysis_minutes_per_proven": 0.14
+  }
+}

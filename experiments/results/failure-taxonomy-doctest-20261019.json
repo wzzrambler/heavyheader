@@ -1,0 +1,418 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\doctest-pristine",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "tus": 24,
+  "mirror_top_k": 40,
+  "candidates_total": 38,
+  "usage_split": {
+    "plausibly_unused": 3,
+    "unknown": 0,
+    "in_use": 35
+  },
+  "probe_set": 38,
+  "categories": {
+    "parse_proven_timing_unmeasured": 3,
+    "usage_rejected_compile_error": 31,
+    "usage_rejected_silent_change": 2,
+    "usage_rejected_no_benefit": 1,
+    "usage_rejected_conservative_miss": 1
+  },
+  "rows": [
+    {
+      "tu": "context_scope.cpp",
+      "header": "context_scope.h",
+      "line": 3,
+      "usage": "plausibly_unused",
+      "reason": "DOCTEST_CONFIG_DISABLE 不由任何头提供（命令行宏）",
+      "estimate_s": 0.0002,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "filters.cpp",
+      "header": "filters.h",
+      "line": 2,
+      "usage": "plausibly_unused",
+      "reason": "caseSensitive、detail 由本文件自己定义",
+      "estimate_s": 0.0002,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "common.cpp",
+      "header": "common.h",
+      "line": 2,
+      "usage": "plausibly_unused",
+      "reason": "DOCTEST_CONFIG_DISABLE 不由任何头提供（命令行宏）",
+      "estimate_s": 0.0001,
+      "category": "parse_proven_timing_unmeasured",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "approx.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.4439,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "is_nan.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.4349,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "debugger.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.3852,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "main.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.3616,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "path.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.3482,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "contains.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.3349,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "expression.cpp",
+      "header": "prelude.h",
+      "line": 1,
+      "usage": "in_use",
+      "reason": "副作用：_Check_memory_order(_Order)",
+      "estimate_s": 2.3145,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "result.cpp",
+      "header": "reporter.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "DOCTEST_ITERATE_THROUGH_REPORTERS、g_cs 由 reporter.h 提供",
+      "estimate_s": 0.0028,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context_state.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "getElapsedSeconds、numAssertsCurrentTest_atomic 由 timer.h 提供",
+      "estimate_s": 0.0025,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "exceptions.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_cs、numAssertsFailedCurrentTest_atomic 由 context_state.h 提供",
+      "estimate_s": 0.0025,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "color.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_no_colors 由 context_state.h 提供",
+      "estimate_s": 0.0024,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "data.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_cs 由 context_state.h 提供",
+      "estimate_s": 0.0023,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "options.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_cs 由 context_state.h 提供",
+      "estimate_s": 0.0023,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context_scope.cpp",
+      "header": "context_state.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_cs、stringifiedContexts 由 context_state.h 提供",
+      "estimate_s": 0.0023,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "junit.h",
+      "line": 13,
+      "usage": "in_use",
+      "reason": "副作用：DOCTEST_REGISTER_REPORTER(\"junit\", 0, JUnitReporter)",
+      "estimate_s": 0.0022,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "context.cpp",
+      "header": "debug_output_window.h",
+      "line": 5,
+      "usage": "in_use",
+      "reason": "副作用：DOCTEST_REGISTER_REPORTER(\"console\", 0, ConsoleReporter)",
+      "estimate_s": 0.0014,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "signals.h",
+      "line": 9,
+      "usage": "in_use",
+      "reason": "FatalConditionHandler、allocateAltStackMem 由 signals.h 提供",
+      "estimate_s": 0.0011,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "reporter.cpp",
+      "header": "reporter.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "g_cs、reporterMap 由 reporter.h 提供",
+      "estimate_s": 0.0011,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "traversal.cpp",
+      "header": "context_state.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "g_cs、traversal 由 context_state.h 提供",
+      "estimate_s": 0.0008,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "xml.h",
+      "line": 14,
+      "usage": "in_use",
+      "reason": "副作用：DOCTEST_REGISTER_REPORTER(\"xml\", 0, XmlReporter)",
+      "estimate_s": 0.0006,
+      "category": "usage_rejected_silent_change",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "console.cpp",
+      "header": "console.h",
+      "line": 4,
+      "usage": "in_use",
+      "reason": "副作用：DOCTEST_REGISTER_REPORTER(\"console\", 0, ConsoleReporter)",
+      "estimate_s": 0.0005,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "handler.cpp",
+      "header": "reporter.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "DOCTEST_ITERATE_THROUGH_REPORTERS 由 reporter.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "message.cpp",
+      "header": "handler.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "addAssert、addFailedAssert 由 handler.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "message.cpp",
+      "header": "reporter.h",
+      "line": 4,
+      "usage": "in_use",
+      "reason": "DOCTEST_ITERATE_THROUGH_REPORTERS 由 reporter.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "result.cpp",
+      "header": "handler.h",
+      "line": 4,
+      "usage": "in_use",
+      "reason": "addAssert、addFailedAssert 由 handler.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "type.cpp",
+      "header": "exceptions.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "DOCTEST_INTERNAL_ERROR 由 exceptions.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "reporter.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "DOCTEST_ITERATE_THROUGH_REPORTERS、getListeners 由 reporter.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_no_benefit",
+      "parse_shrink": 0
+    },
+    {
+      "tu": "context.cpp",
+      "header": "filters.h",
+      "line": 8,
+      "usage": "in_use",
+      "reason": "matchesAny 由 filters.h 提供",
+      "estimate_s": 0.0003,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "handler.cpp",
+      "header": "handler.h",
+      "line": 4,
+      "usage": "in_use",
+      "reason": "reportFatal 由 handler.h 提供",
+      "estimate_s": 0.0002,
+      "category": "usage_rejected_conservative_miss",
+      "parse_shrink": 1
+    },
+    {
+      "tu": "result.cpp",
+      "header": "exception_translator.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "translateActiveException 由 exception_translator.h 提供",
+      "estimate_s": 0.0002,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "exception_translator.h",
+      "line": 6,
+      "usage": "in_use",
+      "reason": "translateActiveException 由 exception_translator.h 提供",
+      "estimate_s": 0.0002,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "context.cpp",
+      "header": "test_case.h",
+      "line": 7,
+      "usage": "in_use",
+      "reason": "getRegisteredTests 由 test_case.h 提供",
+      "estimate_s": 0.0002,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "exception_translator.cpp",
+      "header": "exception_translator.h",
+      "line": 2,
+      "usage": "in_use",
+      "reason": "getExceptionTranslators 由 exception_translator.h 提供",
+      "estimate_s": 0.0002,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "reporter.cpp",
+      "header": "context_scope.h",
+      "line": 4,
+      "usage": "in_use",
+      "reason": "g_infoContexts 由 context_scope.h 提供",
+      "estimate_s": 0.0001,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    },
+    {
+      "tu": "console.cpp",
+      "header": "reporter.h",
+      "line": 3,
+      "usage": "in_use",
+      "reason": "getListeners、getReporters 由 reporter.h 提供",
+      "estimate_s": 0.0001,
+      "category": "usage_rejected_compile_error",
+      "parse_shrink": null
+    }
+  ],
+  "timing": {
+    "jobs": 8,
+    "scan_seconds": 18.2,
+    "baseline_seconds": 3.5,
+    "probe_seconds": 5.1,
+    "codegen_seconds": 3.6,
+    "total_seconds": 30.4,
+    "total_minutes": 0.51,
+    "compiler_invocations": 74
+  },
+  "headline": {
+    "parse_proven": 3,
+    "conservative_misses": 1,
+    "proven_per_100_tu": 12.5,
+    "analysis_minutes_per_proven": 0.17
+  }
+}

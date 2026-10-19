@@ -6,6 +6,26 @@
 
 ### 变更
 
+- **候选精度第五轮：失败原因分类 + 「分析时间→已证实优化」核心指标**（对照见
+  [`experiments/candidate-precision-round5-20261019.md`](experiments/candidate-precision-round5-20261019.md)）。
+  新脚本 `experiments/failure_taxonomy.py` 把每条候选的结局分成七类（判定假阳性 /
+  空头承诺 / 静默改程序 / 已证实 / 判定正确 / 保守漏报 / 无法实测），并探测
+  「被判 in_use 的前 40 条镜像样本」把漏报也量出来。四语料 100 TU：已证实 23 条、
+  保守漏报 47 条、**约 4.5 秒分析/条**、每 100 TU 23 条。结论：推送集零假阳性是
+  准确（26 条疑似未使用里 1 条漏判），保守挡住的主要是小额机会（47 条里仅 1 条
+  预估超 0.1 s），瓶颈在语料冗余度与噪声线而不在算法。
+- **修复：驱动层相对路径静默退化**（`GccLikeDriver.run`）。`-H` 打印的路径形态
+  跟着编译 cwd 走：编译命令用相对 `-Iinclude` 时，下游消费者按扫描进程 cwd
+  解析不到头文件——行数记 0、标识符集为空，用法判定**不报错地**退化（spdlog
+  上疑似未使用从 2 条虚增到 7 条）。现在事件解析后按编译 cwd 把相对路径落地，
+  两条回归测试锁住（`tests/test_drivers.py`）。
+- **修正 spdlog 计时选型结论**：`cfg.cpp -> helpers-inl.h` 的 −77.8% 是**静默改
+  程序**——删除后汇编从 10,329 行塌缩到 40 行（删掉的是 `load_levels` 等公共 API
+  的实现，`-fsyntax-only` 照样过、链接期才炸）。计时口径的两条「improved」在
+  第三条真值（汇编指纹）下全部现形；`corpus-timing-spdlog-20261019.md` 已加补记。
+
+### 变更（第四轮）
+
 - **候选精度第四轮：空头承诺清零**（对照见
   [`experiments/candidate-precision-round4-20261019.md`](experiments/candidate-precision-round4-20261019.md)）。
   Lua 第 2 名候选（`lcode.c -> limits.h`）预估省一大笔、实测少解析 0 个文件——

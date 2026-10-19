@@ -1,0 +1,8 @@
+{
+  "tu": "expression.cpp",
+  "baseline_size": 21285,
+  "benign_singles": 34,
+  "joint_changes_program": false,
+  "minimal_counterexample": [],
+  "compiles_used": 38
+}

@@ -1478,7 +1478,7 @@ def build(path: str) -> None:
         P("十一、参考资料", "h1"),
         P("11.1 实际核读过的同类项目", "h2"),
         P(
-            "以下项目在 2026 年 10 月 18—19 日两轮逐项核读（能力、限制、平台均以官方"
+            "以下项目在 2026 年 10 月 18—19 日两轮逐项核读（能力、限制、平台均以官方 "
             "README / 文档 / 发布页为准），用于第一章的竞争格局表。逐格证据等级与"
             "复核清单见 <font face='%s'>docs/competitor-matrix.md</font> 与 "
             "<font face='%s'>docs/competitors.md</font>。" % (_MONO, _MONO)

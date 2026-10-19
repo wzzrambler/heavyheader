@@ -41,7 +41,8 @@ def screen(case) -> None:
         ),
         driver=driver,
     )
-    print(f"\n===== {case.name}: {len(scan.ok_tus)} TU ok / {len(scan.tus) - len(scan.ok_tus)} fail")
+    n_fail = len(scan.tus) - len(scan.ok_tus)
+    print(f"\n===== {case.name}: {len(scan.ok_tus)} TU ok / {n_fail} fail")
     if not scan.ok_tus:
         return
     sizes = HeaderSizes()
@@ -55,7 +56,9 @@ def screen(case) -> None:
         ungated, key=lambda c: -c.estimated_percent
     )
     for c in pool[:8]:
-        site = str(Path(c.site).relative_to(project))[:40] if str(c.site).startswith(str(project)) else Path(c.site).name
+        site = Path(c.site).name
+        if str(c.site).startswith(str(project)):
+            site = str(Path(c.site).relative_to(project))[:40]
         print(
             f"    {site:42s} -> {c.header.name[:22]:22s} est%={c.estimated_percent:6.3f} "
             f"reach={c.reach:3d} verdict={c.usage_verdict[:12]}"

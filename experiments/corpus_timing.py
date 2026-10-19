@@ -30,6 +30,17 @@ CLANGXX = "C:/Program Files/LLVM/bin/clang++.exe"
 TARGET_FLAGS = ["--target=x86_64-w64-windows-gnu", "--gcc-toolchain=C:/mingw64"]
 
 
+def _clone(candidate):
+    """丢掉上一轮的探针/测量状态（与 g2_sites.clone 相同）。"""
+    return replace(
+        candidate,
+        measured_seconds_saved=None,
+        verified=False,
+        probe_status="",
+        advice=None,
+    )
+
+
 def run_arm(scan, driver, project, candidates, confirm: int, runs: int, jobs: int):
     saved = scan.candidates
     scan.candidates = list(candidates)
@@ -52,7 +63,8 @@ def run_arm(scan, driver, project, candidates, confirm: int, runs: int, jobs: in
 
 
 def _includes(scan):
-    return [str(p) for p in scan.options.include_dirs] if getattr(scan, "options", None) else []
+    opts = getattr(scan, "options", None)
+    return [str(x) for x in opts.include_dirs] if opts else []
 
 
 def _extra(scan):
@@ -82,14 +94,23 @@ def summarize(results, label: str) -> dict:
                 "reach": r.candidate.reach,
                 "verdict": r.candidate.usage_verdict,
                 "status": r.status,
-                "baseline_ms": None if r.baseline_seconds is None else round(r.baseline_seconds * 1000, 1),
-                "patched_ms": None if r.patched_seconds is None else round(r.patched_seconds * 1000, 1),
-                "percent_saved": None if r.percent_saved is None else round(r.percent_saved, 3),
+                "baseline_ms": (
+                    None if r.baseline_seconds is None
+                    else round(r.baseline_seconds * 1000, 1)
+                ),
+                "patched_ms": (
+                    None if r.patched_seconds is None
+                    else round(r.patched_seconds * 1000, 1)
+                ),
+                "percent_saved": (
+                    None if r.percent_saved is None else round(r.percent_saved, 3)
+                ),
                 "message": r.message[:200],
             }
             for r in results
         ],
     }
+
 
 
 def main() -> int:
@@ -130,20 +151,20 @@ def main() -> int:
 
     gated_sites = find_header_candidates(scan, sizes, kinds)
     tu_pool = sorted(scan.candidates, key=candidate_rank_key)
-    print(
-        f"TU: {len(scan.ok_tus)}  TU 候选 {len(tu_pool)}（疑似未使用 "
-        f"{sum(1 for c in tu_pool if c.usage_verdict == 'plausibly_unused')}）"
-        f"  site 闸门开 {len(gated_sites)}"
-    )
+    n_pu = sum(1 for c in tu_pool if c.usage_verdict == "plausibly_unused")
+    print(f"TU: {len(scan.ok_tus)}  TU 候选 {len(tu_pool)}（疑似未使用 {n_pu}）"
+          f"  site 闸门开 {len(gated_sites)}")
 
     arms = []
     wanted = ["tu", "sites"] if args.arm == "both" else [args.arm]
     if "tu" in wanted and tu_pool:
-        pool = [replace(c, measured_seconds_saved=None, verified=False, probe_status="", advice=None) for c in tu_pool[: args.top]]
-        arms.append(summarize(run_arm(scan, driver, project, pool, 2, args.runs, args.jobs), "tu(usage-ranked)"))
+        pool = [_clone(c) for c in tu_pool[: args.top]]
+        res = run_arm(scan, driver, project, pool, 2, args.runs, args.jobs)
+        arms.append(summarize(res, "tu(usage-ranked)"))
     if "sites" in wanted and gated_sites:
-        pool = [replace(c, measured_seconds_saved=None, verified=False, probe_status="", advice=None) for c in sorted(gated_sites, key=candidate_rank_key)[: args.top]]
-        arms.append(summarize(run_arm(scan, driver, project, pool, 2, args.runs, args.jobs), "sites(header,gated)"))
+        ranked = sorted(gated_sites, key=candidate_rank_key)[: args.top]
+        res = run_arm(scan, driver, project, [_clone(c) for c in ranked], 2, args.runs, args.jobs)
+        arms.append(summarize(res, "sites(header,gated)"))
 
     payload = {
         "date": date.today().isoformat(),
@@ -166,7 +187,8 @@ def main() -> int:
         )
         for d in arm["details"]:
             pct = "-" if d["percent_saved"] is None else f"{d['percent_saved']:+.3f}%"
-            print(f"  {d['site'][:36]:36s} -> {d['header'][:20]:20s} {d['status']:12s} {pct}")
+            print(f"  {d['site'][:36]:36s} -> {d['header'][:20]:20s} "
+                  f"{d['status']:12s} {pct}")
     return 0
 
 

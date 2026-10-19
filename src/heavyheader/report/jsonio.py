@@ -129,6 +129,7 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 # ``unknown``，分层退化成按估值排——「明确在用」的头文件随之
                 # 排到「疑似未使用」前面。label 是给人看的，不能让逻辑依赖它。
                 "usage_verdict": candidate.usage_verdict,
+                "usage_reason": candidate.usage_reason,
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
                 "advice": _advice_to_dict(candidate.advice),
@@ -350,6 +351,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
             usage_label=entry.get("usage_label", "无法判定"),
             usage_verdict=entry.get("usage_verdict")
             or _verdict_from_label(entry.get("usage_label")),
+            usage_reason=entry.get("usage_reason", ""),
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
             advice=_advice_from_dict(entry.get("advice")),

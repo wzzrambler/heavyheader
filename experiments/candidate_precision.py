@@ -39,6 +39,7 @@ from heavyheader.scanner import (  # noqa: E402
     ScanOptions,
     _split_command,
     _strip_output_flag,
+    _strip_source_token,
     scan_project,
 )
 
@@ -101,6 +102,46 @@ def _compile(
         return len(parse_include_tree(proc.stderr, patched)), 0
 
 
+def _codegen_same(entry: dict, patch_line: int, compiler: str) -> str:
+    """第三条真值：删掉之后**程序**还是不是同一个。
+
+    前两条真值（编不编得过、少解析几个文件）都不回答这个问题。实测 zlib
+    ``zutil.c -> gzguts.h``：编译通过、少解析 15 个文件，按旧口径是「真有用」；
+    但汇编指纹从 ``aac1b5f8…`` 变成 ``9b6bde46…``——被激活的条件编译分支变了。
+    不看这一维，基准会把「静默改程序」的改动算成成功，然后逼着算法去追它。
+    """
+    from heavyheader.codegen import compare
+    from heavyheader.drivers.base import DriverOptions, detect_driver
+
+    target = Path(entry["file"])
+    argv = _strip_output_flag(_split_command(entry["command"]))
+    argv = _strip_source_token(argv, str(entry["file"]))
+    options = DriverOptions(extra_flags=argv[1:])
+
+    lines = target.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
+    patched_text = "".join(
+        "// " + line if i == patch_line else line
+        for i, line in enumerate(lines, 1)
+    )
+    with tempfile.TemporaryDirectory(prefix="hh-precision-cg-") as tmp:
+        work = Path(tmp)
+        holder = work / "patched"
+        holder.mkdir()
+        patched = holder / target.name
+        patched.write_text(patched_text, encoding="utf-8")
+        before, after = compare(
+            detect_driver(compiler),
+            target,
+            patched,
+            options,
+            Path(entry["directory"]),
+            work / "stage",
+        )
+    if not (before.ok and after.ok):
+        return "unknown"
+    return "same" if before.digest == after.digest else "changed"
+
+
 def precision_at(rows: list[dict], k: int) -> float:
     top = rows[:k]
     if not top:
@@ -145,6 +186,9 @@ def run(args) -> dict:
                 shrink = baseline[key] - after
         status = candidate.probe_status or "untested"
         compiles = status in {"compiles", "improved", "no-change"}
+        codegen: str | None = None
+        if compiles and (shrink or 0) > 0 and args.check_codegen and entry is not None:
+            codegen = _codegen_same(entry, candidate.line, args.compiler)
         rows.append(
             {
                 "tu": key,
@@ -157,8 +201,11 @@ def run(args) -> dict:
                 "status": status,
                 "truth_compiles": compiles,
                 "parse_shrink": shrink,
-                "useful": bool(compiles and (shrink or 0) > 0),
+                "codegen": codegen,
+                # 「有用」必须三条都成立：编得过、真少解析了文件、程序没变。
+                "useful": bool(compiles and (shrink or 0) > 0 and codegen != "changed"),
                 "vacuous": bool(compiles and shrink == 0),
+                "silent_change": bool(compiles and (shrink or 0) > 0 and codegen == "changed"),
             }
         )
 
@@ -180,12 +227,14 @@ def run(args) -> dict:
     matrix: dict[str, dict[str, int]] = {}
     for r in rows:
         bucket = matrix.setdefault(
-            r["usage"], {"useful": 0, "vacuous": 0, "rejected": 0}
+            r["usage"], {"useful": 0, "vacuous": 0, "silent_change": 0, "rejected": 0}
         )
         if r["useful"]:
             bucket["useful"] += 1
         elif r["vacuous"]:
             bucket["vacuous"] += 1
+        elif r.get("silent_change"):
+            bucket["silent_change"] += 1
         else:
             bucket["rejected"] += 1
 
@@ -193,10 +242,12 @@ def run(args) -> dict:
         "project": str(args.project),
         "compiler": args.compiler,
         "tus": len(scan.ok_tus),
+        "check_codegen": bool(args.check_codegen),
         "candidates": len(rows),
         "useful": sum(1 for r in rows if r["useful"]),
         "vacuous": sum(1 for r in rows if r["vacuous"]),
         "rejected": sum(1 for r in rows if not r["truth_compiles"]),
+        "silent_change": sum(1 for r in rows if r.get("silent_change")),
         "matrix": matrix,
         "metrics": {
             "rank": _metrics(by_rank),
@@ -232,19 +283,24 @@ def render(report: dict) -> str:
         f"- 编译单元：{report['tus']}；候选：{report['candidates']}",
         f"- **有用**（编得过且真少解析文件）：**{report['useful']}**；"
         f"空头承诺（编得过但差 0 个文件）：**{report['vacuous']}**；"
-        f"编不过：**{report['rejected']}**",
+        f"编不过：**{report['rejected']}**"
+        + (
+            f"；静默改程序（编得过、少解析了，但汇编不同）：**{report['silent_change']}**"
+            if report.get("check_codegen")
+            else ""
+        ),
         "",
         "## usage 判定 × 真值",
         "",
-        "| usage 判定 | 有用 | 空头承诺 | 编不过 | 有用率 |",
-        "|---|---:|---:|---:|---:|",
+        "| usage 判定 | 有用 | 空头承诺 | 静默改程序 | 编不过 | 有用率 |",
+        "|---|---:|---:|---:|---:|---:|",
     ]
     for verdict, counts in sorted(report["matrix"].items()):
-        total = counts["useful"] + counts["vacuous"] + counts["rejected"]
+        total = sum(counts.values())
         rate = counts["useful"] / total if total else 0.0
         lines.append(
             f"| {verdict} | {counts['useful']} | {counts['vacuous']} | "
-            f"{counts['rejected']} | {rate:.0%} |"
+            f"{counts['silent_change']} | {counts['rejected']} | {rate:.0%} |"
         )
     lines += [
         "",
@@ -276,6 +332,11 @@ def main() -> int:
     ap.add_argument("--tus", type=int, default=0)
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--include", dest="includes", action="append", default=[])
+    ap.add_argument(
+        "--check-codegen",
+        action="store_true",
+        help="对「编得过且少解析了文件」的候选再比一次汇编指纹（第三条真值）",
+    )
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 

@@ -306,6 +306,10 @@ class RemovalCandidate:
     #: ``unknown``）。排序用它，显示用 ``usage_label``——把中文标签当逻辑
     #: 键会让排序依赖翻译字符串，改一次文案就悄悄改掉一遍排序结果。
     usage_verdict: str = "unknown"
+    #: 一句话说明**为什么**得出这个 usage 判定（「副作用：…」「仅 #ifdef 判断」…
+    #: ）。判定本身只是个标签，读者要复核它得知道理由；以前理由只写在
+    #: ``notes`` 里、而 ``notes`` 只进 JSON，Markdown/HTML 报告上看不到。
+    usage_reason: str = ""
     #: Why we think it is (or is not) safe to remove.
     confidence: str = "unknown"
     notes: list[str] = field(default_factory=list)

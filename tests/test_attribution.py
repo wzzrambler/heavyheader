@@ -594,7 +594,11 @@ def test_usage_ignores_identifiers_too_common_to_be_evidence(tmp_path):
     signal = analyse_usage(source, aggregator, closure=closure)
 
     assert signal.verdict is UsageVerdict.UNKNOWN
-    assert set(signal.ambient_identifiers) >= {"config", "value", "move"}
+    # ``value`` / ``move`` 是环境噪音；``config`` 连噪音都不算了——它是源码
+    # 自己声明的局部变量（``int config = 1``），本文件就提供这个名字，压根
+    # 不进入命中判定（见 ``definitions_in``）。
+    assert set(signal.ambient_identifiers) >= {"value", "move"}
+    assert "config" in signal.self_provided
     assert not signal.shared_identifiers or set(signal.shared_identifiers) <= set(
         signal.ambient_identifiers
     )
@@ -632,8 +636,9 @@ def test_usage_still_flags_a_rare_identifier_as_real_use(tmp_path):
     assert signal.verdict is UsageVerdict.IN_USE
     assert "RARE_MACRO" in signal.shared_identifiers
     assert signal.provided_by == special
-    # 通用词仍然被单独标出来，不混进证据里。
-    assert "config" in signal.ambient_identifiers
+    # 通用词仍然被单独标出来，不混进证据里。``config`` 在这里是源码自己的
+    # 局部变量，所以走的是 ``self_provided`` 而不是 ``ambient_identifiers``。
+    assert "config" in signal.self_provided
 
 
 def test_relative_include_is_resolved_against_root_not_process_cwd(tmp_path, monkeypatch):

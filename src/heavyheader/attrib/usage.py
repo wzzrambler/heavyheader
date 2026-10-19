@@ -54,12 +54,17 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
+from ..includes import strip_comments
+
 __all__ = [
     "UsageVerdict",
     "UsageSignal",
     "IdentifierIndex",
     "analyse_usage",
     "identifiers_in",
+    "definitions_in",
+    "conditional_mentions",
+    "side_effects_in",
 ]
 
 
@@ -90,6 +95,25 @@ class UsageSignal:
     #: 实测（doctest，60 条候选）里旧的判定把 60/60 全算「正在使用」，而真值
     #: 有 48% 能编译通过——差别全在这一栏。
     cross_provided: tuple[str, ...] = ()
+    #: 命中了、但源码**自己就提供**的标识符（本文件定义的函数、宏、类型、
+    #: 以及这些函数的形参名）。这类命中不构成依赖：删掉头文件之后，名字是
+    #: 源码自己给出的，不是头文件给的。实测（zlib ``inffast.c -> inffast.h``）：
+    #: ``inflate_fast`` 与形参 ``start`` 都定义在本文件里，旧判定据此判「在用」，
+    #: 真值是删得掉。
+    self_provided: tuple[str, ...] = ()
+    #: 命中了、但源码只在 ``#ifdef`` / ``#ifndef`` / ``#if defined(...)``
+    #: 这类**存在性判断**里提到它。这类命中也不构成硬依赖：宏消失只会换一个
+    #: 分支被编译，不会凭空产生一个未声明的名字。实测（zlib
+    #: ``zutil.c -> gzguts.h``）：``NO_GZCOMPRESS`` 只出现在 ``#ifdef`` 里，
+    #: 删掉之后该分支被跳过，编译照样通过。
+    conditional_only: tuple[str, ...] = ()
+    #: 消失集合里的头文件在**名字空间作用域**执行的动作（不是声明）。
+    #: 这类 include 哪怕源码一个名字都没提到也不能删：它靠副作用起作用。
+    #: 实测（doctest ``context.cpp -> junit.h``）：``junit.h`` 末尾有一句
+    #: ``DOCTEST_REGISTER_REPORTER("junit", 0, JUnitReporter);``，删掉之后
+    #: 编译通过、少解析一个文件，但 JUnit reporter 的静态注册整个消失——
+    #: 汇编里 ``??__EDOCTEST_ANON_REPORTER_VAR_100`` 那段不见了。
+    side_effects: tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
@@ -127,8 +151,25 @@ _IGNORED = frozenset(
 #: 起了个别名，真正提供声明的仍然是 ``inffast.h``。实测（zlib）：删掉
 #: ``inffast.h`` 编译失败，但 ``zconf.h`` 里这行重命名让「另有供给者」成立，
 #: 于是把一条真依赖判成了「可删」。``#pragma map(inflate_fast, ...)`` 同理。
-_RENAME_DEFINE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+[A-Za-z_]\w*\s*$")
+_RENAME_DEFINE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+([A-Za-z_]\w*)\s*$")
 _RENAME_PRAGMA = re.compile(r"^\s*#\s*pragma\s+map\s*\(\s*([A-Za-z_]\w*)")
+
+#: 展开目标是这些词时，这一行**不是**重命名——它是在定义一个真正的宏。
+#:
+#: ``#define local static`` / ``#define FAR far`` 这类宏提供的就是宏名本身：
+#: 源码里写的 ``local`` 完全由它给出，别的头有没有声明 ``static`` 根本无关。
+#: 把宏名从供给集合里剥掉，等于说「这个头不提供 local」，于是唯一证据消失，
+#: 一条真依赖被判成可删（zlib ``zutil.c -> gzguts.h``：两个头都定义 ``local``，
+#: 剥掉之后它反而成了「唯一供给者」）。
+#:
+#: 对照真正的重命名 ``#define inflate_fast z_inflate_fast``：目标是**另一个
+#: 标识符**，别名不能证明目标在删除后还有声明——那种仍然要剥。
+_RENAME_TARGET_IS_A_MACRO = frozenset(
+    """
+    static extern inline const volatile register auto restrict
+    far near __inline __forceinline __stdcall __cdecl
+    """.split()
+)
 
 # 编译器内建：这些标识符**永远不由某个头文件提供**，而是编译器自己预定义，
 # 或者是语言扩展关键字。把它们算作「使用证据」会造成系统性假阴性。
@@ -261,6 +302,321 @@ def _declares_nothing(text: str) -> bool:
     return True
 
 
+# --------------------------------------------------------------------------
+# 源码自己提供了哪些名字 / 哪些名字只是被问了一句「在不在」
+# --------------------------------------------------------------------------
+#
+# 前两轮修的都是「供给方是谁」（另有供给者、重命名宏），这一轮修的是另一半：
+# 命中本身成不成立。命中只说明「源码里出现了这个名字」，但出现有两种截然
+# 不同的方式——源码**定义**它，或者源码**需要**它。只有后者才是依赖。
+#
+# 实测（zlib / doctest 两个工程共 6 条「判在用、实际删得掉」的保守误判）里，
+# 全部 6 条都属于下面两类之一，没有例外。
+#
+# ``_strip_noise`` 只保留代码本体：注释与字符串被抹成空格，``#include`` 行整行
+# 抹掉（否则 ``#include <regex>`` 自己会贡献 ``regex`` 这个命中）。
+_CONDITIONAL_DIRECTIVE = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef|elif)\b")
+
+_DEFINE_NAME = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)")
+_TAG_NAME = re.compile(r"^\s*(?:class|struct|union|enum)\s+([A-Za-z_]\w*)")
+_NAMESPACE_NAME = re.compile(r"^\s*namespace\s+([A-Za-z_]\w*)")
+_USING_ALIAS = re.compile(r"^\s*using\s+([A-Za-z_]\w*)\s*=")
+_TYPEDEF_NAME = re.compile(r"^\s*typedef\b[^;=]*?\b([A-Za-z_]\w*)\s*;")
+_BRACE_ALIAS = re.compile(r"^\s*\}\s*([A-Za-z_]\w*)\s*;")
+_ENUM_BODY = re.compile(r"\benum\b[^{;=]*\{([^}]*)\}", re.S)
+
+#: ``名字 (`` —— 可能是函数定义、函数声明，也可能只是一次调用。
+_CALL_OR_DEF = re.compile(r"\b([A-Za-z_]\w*)\s*\(")
+#: 定义/声明之前只允许出现「类型样式」的记号。这个限制是关键：``cond ? f(x) : g(y)``
+#: 里的 ``f(`` 前面有 ``?``，``p->m(`` 前面有 ``.``，都会被排除掉——把它们当成
+#: 定义会把真实的依赖误杀掉（方向错的那一边）。
+_TYPEISH_PREFIX = re.compile(r"^[A-Za-z_:<>~&*\s,\[\]]*$")
+#: 函数体 ``{``、构造函数初始化列表 ``:``、以及 ``const`` / ``noexcept`` / ``->`` /
+#: ``= 0`` / ``= delete`` 这些声明尾巴。
+_DEF_TAIL = re.compile(
+    r"\s*(?:\{|const\b|noexcept\b|override\b|final\b|requires\b|throw\b|volatile\b|->|=)"
+)
+
+#: 语句开头是这些词时，紧跟其后的标识符不是「类型 + 变量名」，不能算定义。
+#: ``return g_cs;`` 是最典型的反例：漏掉这张表会把一次「使用」误判成「定义」，
+#: 于是把真依赖放过了——那正是我们要修的反方向错误。
+_NOT_A_TYPE = frozenset(
+    """
+    return if while for switch case else do goto break continue sizeof
+    new delete throw catch using namespace typedef template typename class
+    struct enum union operator public private protected try default alignas
+    alignof static_assert constexpr consteval constinit decltype noexcept
+    static const inline extern register volatile mutable thread_local auto
+    and or not xor bitand bitor compl typeid dynamic_cast static_cast
+    const_cast reinterpret_cast co_return co_await co_yield this nullptr
+    true false
+    """.split()
+)
+
+_OBJECT_DECL = re.compile(
+    r"(?:^|[;{}])[\s;{}]*"
+    r"(?:(?:const|volatile|static|extern|register|inline|constexpr|constinit"
+    r"|thread_local|mutable|unsigned|signed|struct|enum|union)\s+)*"
+    r"([A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)*(?:\s*<[^;{}()]*>)?)"
+    r"[ \t\*&]+"
+    r"([A-Za-z_]\w*)"
+    r"[ \t]*(?:\[[^\]]*\])*"
+    r"[ \t]*(?:=|;|,|\(|\{|\))",
+    re.M,
+)
+
+
+def _matching_paren(text: str, start: int) -> int:
+    """``start`` 处是 ``(``，返回与之配对的 ``)`` 的下标；找不到返回 -1。"""
+    depth = 0
+    for index in range(start, len(text)):
+        char = text[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return index
+    return -1
+
+
+def _split_params(text: str) -> list[str]:
+    """按顶层逗号切分形参表——嵌套的括号与模板尖括号不切。"""
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    angle = 0
+    for char in text:
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "<":
+            angle += 1
+        elif char == ">":
+            angle -= 1
+        if char == "," and depth == 0 and angle == 0:
+            parts.append("".join(buf))
+            buf = []
+            continue
+        buf.append(char)
+    parts.append("".join(buf))
+    return parts
+
+
+def definition_offsets(text: str) -> dict[str, int]:
+    """同 :func:`definitions_in`，但给出每个名字**最早的定义位置**（字符下标）。
+
+    位置不是可选项。doctest 的 ``exception_translator.cpp`` 在第 19、24 行定义
+    ``getExceptionTranslators`` / ``translateActiveException``，却在**第 14 行**
+    就用到了它们——那两处使用必须靠头文件里的声明才编得过。只看「有没有定义」
+    会把这条真依赖判成可删（实测：删掉 ``#include "exception_translator.h"``
+    后报 ``use of undeclared identifier``）。
+
+    所以调用方要拿这个位置和「首次出现的位置」比：定义晚于首次使用，说明
+    那个名字在使用点上还没有声明，头文件不能删。
+    """
+    stripped = _strip_noise(text)
+    out: dict[str, int] = {}
+
+    def add(name: str, offset: int) -> None:
+        if name not in out or offset < out[name]:
+            out[name] = offset
+
+    offset = 0
+    for line in stripped.splitlines(keepends=True):
+        for pattern in (
+            _DEFINE_NAME,
+            _TAG_NAME,
+            _NAMESPACE_NAME,
+            _USING_ALIAS,
+            _TYPEDEF_NAME,
+            _BRACE_ALIAS,
+        ):
+            match = pattern.match(line)
+            if match:
+                add(match.group(1), offset + match.start(1))
+        offset += len(line)
+
+    for match in _ENUM_BODY.finditer(stripped):
+        for piece in match.group(1).split(","):
+            names = _IDENTIFIER.findall(piece)
+            if names:
+                add(names[0], match.start(1))
+
+    for match in _OBJECT_DECL.finditer(stripped):
+        if match.group(1) in _NOT_A_TYPE:
+            continue
+        add(match.group(2), match.start(2))
+
+    for match in _CALL_OR_DEF.finditer(stripped):
+        name = match.group(1)
+        start = max(stripped.rfind(char, 0, match.start()) for char in ";{}\n")
+        prefix = stripped[start + 1 : match.start()]
+        # 前缀不能为空：``TEST_CASE(one) {`` 这种宏调用展开后就是函数定义，
+        # 但宏名是**头文件给的**——把它认成定义会把真依赖误杀（``compat.h``
+        # 往下拉出 ``#define TEST_CASE``，删掉它就编不过了）。
+        if not prefix.strip() or "#" in prefix or not _TYPEISH_PREFIX.match(prefix):
+            continue
+        open_paren = match.end() - 1
+        close = _matching_paren(stripped, open_paren)
+        if close < 0:
+            continue
+        tail = stripped[close + 1 : close + 40]
+        if not (_DEF_TAIL.match(tail) or tail.lstrip().startswith(":")):
+            continue
+        add(name, match.start(1))
+        # 形参名也算本文件提供：``unsigned start`` 里的 ``start`` 与头文件无关。
+        # 只取每段最后一个标识符（``const std::exception& e`` → ``e``），避免把
+        # 形参的**类型名**误当成自供给。
+        for piece in _split_params(stripped[open_paren + 1 : close]):
+            names = _IDENTIFIER.findall(piece)
+            if names:
+                add(names[-1], match.start(1))
+
+    return out
+
+
+def definitions_in(text: str) -> set[str]:
+    """源码自身**提供**的标识符：本文件定义的宏、类型、函数，以及函数的形参名。
+
+    这些名字不是依赖的证据。头文件里也声明 ``inflate_fast`` 说明不了什么——
+    ``inffast.c`` 自己就在定义它；删掉 ``#include "inffast.h"`` 之后，名字由
+    定义本身给出，编译器不需要那条声明。同理 ``wildcmp``、``matchesAny`` 在
+    ``filters.cpp`` 里是定义，``filters`` / ``caseSensitive`` 是它的形参名，
+    而旧判定把这六个名字全当成了「删掉就缺东西」的证据。
+
+    判据刻意保守：只在形态明确时才认作定义（``名(...) {``、``#define``、
+    ``typedef``、``struct/enum/class``、``类型 名字;``）。一次调用
+    ``foo(a);`` 后面跟的是 ``;``，不会被认成定义；``cond ? f(x) : g(y)``
+    里的 ``f`` 因为前缀含 ``?`` 也被排除。宁可少认一个定义，也不要把真依赖
+    误判成「自己有」——那个方向的错误会让用户删掉一行真的在用的 include。
+    """
+    return set(definition_offsets(text))
+
+
+def _first_occurrence(text: str) -> dict[str, int]:
+    """每个标识符在源码里**第一次出现**的位置（字符下标）。"""
+    first: dict[str, int] = {}
+    for match in _IDENTIFIER.finditer(_strip_noise(text)):
+        name = match.group(0)
+        if name not in first:
+            first[name] = match.start()
+    return first
+
+
+def conditional_mentions(text: str) -> set[str]:
+    """只在 ``#if`` / ``#ifdef`` / ``#ifndef`` / ``#elif`` 里被提到的标识符。
+
+    这类「命中」问的是「这个宏在不在」，不是「这个宏的值是什么」。宏随头文件
+    一起消失时，编译器只是换一个分支编译——不会产生一个未声明的名字。zlib 的
+    ``zutil.c`` 只在这种位置提到 ``NO_GZCOMPRESS``。
+
+    注意「编得过」不等于「可以删」：换掉被激活的分支会**静默改变程序**
+    （``zutil.c`` 删掉 ``gzguts.h`` 后汇编指纹确实变了）。所以调用方只把它
+    当成「理由不同」的标记，不据此放行。
+
+    只有在**全部**出现位置都是条件判断时才算：宏一旦在别处被真正用到
+    （展开成代码），就仍然是硬依赖。
+    """
+    conditional: set[str] = set()
+    elsewhere: set[str] = set()
+    for line in _strip_noise(text).splitlines():
+        names = identifiers_in(line)
+        if _CONDITIONAL_DIRECTIVE.match(line):
+            conditional |= names
+        else:
+            elsewhere |= names
+    return conditional - elsewhere
+
+
+#: 名字空间作用域里「会做事情」的语句：``NAME(...);`` 这种没有返回类型前缀的
+#: 调用/宏展开。``void f(int);`` 有前缀 ``void``，是声明，不算。
+_SIDE_EFFECT_CALL = re.compile(r"^([A-Za-z_]\w*)\s*\(")
+#: 这些宏只影响编译器的诊断行为，不改变生成的代码。把它们算成副作用会把一批
+#: 本来可以删的 include 永久锁死——方向错的保守和不保守一样没用。
+_NOT_A_SIDE_EFFECT = re.compile(
+    r"SUPPRESS|WARNING|PRAGMA|IGNORE|DEPRECATED|PUSH$|POP$|CLANG|GCC|MSVC", re.I
+)
+#: 带初始化的对象定义（``int counter = 0;``）。``const`` / ``constexpr`` 不算：
+#: 它们编译期就定了，删掉不改变程序。
+_OBJECT_DEFINITION = re.compile(
+    r"^(?!const\b|constexpr\b|static\s+const\b|static\s+constexpr\b|typedef\b|using\b)"
+    r"[A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)*(?:\s*<[^;{}()]*>)?"
+    r"(?:\s*(?:const|volatile|static|extern|unsigned|signed|struct|enum|union)\b)*"
+    r"[\s\*&]*[A-Za-z_]\w*\s*=(?!=)"
+)
+
+
+_NAMESPACE_OPEN = re.compile(r"\bnamespace\b[^;{]*\Z")
+
+
+def _top_level_statements(text: str) -> list[str]:
+    """名字空间作用域里以 ``;`` 结尾的语句。
+
+    「名字空间作用域」不等于「大括号深度 0」：``namespace doctest { ... }``
+    本身带一层括号，而 doctest 的注册宏正是写在命名空间**内部**的——按深度 0
+    取会一条都取不到（第一版就是这样，junit.h 的
+    ``DOCTEST_REGISTER_REPORTER("junit", 0, JUnitReporter);`` 直接漏掉）。
+    所以只把**非** namespace 的括号当成块。
+    """
+    out: list[str] = []
+    buf: list[str] = []
+    stack: list[bool] = []  # True = 这一层是 namespace
+    for line in text.splitlines():
+        if line.lstrip().startswith("#"):
+            continue  # 预处理指令自己不是语句
+        for char in line:
+            if char == "{":
+                stack.append(_NAMESPACE_OPEN.search("".join(buf)) is not None)
+                buf = []
+                continue
+            if char == "}":
+                if stack:
+                    stack.pop()
+                buf = []
+                continue
+            if char == ";" and all(stack):
+                out.append("".join(buf))
+                buf = []
+                continue
+            buf.append(char)
+        buf.append(" ")
+    return out
+
+
+def side_effects_in(text: str) -> tuple[str, ...]:
+    """头文件在名字空间作用域里**执行**的动作——不是声明，是副作用。
+
+    为什么必须有这一项：usage 判定问的是「源码有没有提到这个头里的名字」，
+    而有一类 include 从头到尾不提供任何被提到的名字，它靠**执行**起作用。
+    doctest 的 ``reporters/junit.h`` 末尾一句
+    ``DOCTEST_REGISTER_REPORTER("junit", 0, JUnitReporter);`` 就属于这一类：
+    删掉它编译通过、还真的少解析一个文件，看起来是一条干净的胜利——直到
+    汇编对比显示 ``??__EDOCTEST_ANON_REPORTER_VAR_100``（JUnit reporter 的
+    静态注册）整段消失。旧口径把它排在候选第 1 位。
+
+    判据：
+    * 语句以 ``名字(`` 开头且**没有**返回类型前缀 → 宏调用/函数调用；
+    * 带 ``=`` 初始化的非 const 对象定义 → 真定义了一个东西。
+    """
+    found: list[str] = []
+    # 只抹注释、保留字符串字面量：报告里要原样显示这句做了什么
+    # （``DOCTEST_REGISTER_REPORTER("junit", 0, JUnitReporter);`` 比
+    # ``DOCTEST_REGISTER_REPORTER( , 0, JUnitReporter);`` 有用得多）。
+    for statement in _top_level_statements(strip_comments(text)):
+        code = statement.strip()
+        if not code:
+            continue
+        call = _SIDE_EFFECT_CALL.match(code)
+        if call and not _NOT_A_SIDE_EFFECT.search(call.group(1)):
+            found.append(code[:70])
+            continue
+        if _OBJECT_DEFINITION.match(code):
+            found.append(code[:70])
+    return tuple(found[:3])
+
+
 class IdentifierIndex:
     """Per-scan cache of ``path -> identifiers``.
 
@@ -275,13 +631,26 @@ class IdentifierIndex:
     broken header cannot make a scan quadratic.
     """
 
-    __slots__ = ("_headers", "_sources", "_providers", "_renamed")
+    __slots__ = (
+        "_headers",
+        "_sources",
+        "_providers",
+        "_renamed",
+        "_defined",
+        "_supplied",
+        "_conditional",
+        "_sidefx",
+    )
 
     def __init__(self) -> None:
         self._headers: dict[Path, frozenset[str]] = {}
         self._sources: dict[Path, frozenset[str]] = {}
         self._providers: dict[Path, frozenset[str]] = {}
         self._renamed: dict[Path, frozenset[str]] = {}
+        self._defined: dict[Path, frozenset[str]] = {}
+        self._supplied: dict[Path, frozenset[str]] = {}
+        self._conditional: dict[Path, frozenset[str]] = {}
+        self._sidefx: dict[Path, tuple[str, ...]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
         cached = self._headers.get(path)
@@ -320,8 +689,13 @@ class IdentifierIndex:
         text = _read(path) or ""
         names: set[str] = set()
         for line in _strip_noise(text).splitlines():
-            match = _RENAME_DEFINE.match(line) or _RENAME_PRAGMA.match(line)
-            if match:
+            match = _RENAME_DEFINE.match(line)
+            if match and match.group(2) in _RENAME_TARGET_IS_A_MACRO:
+                continue  # ``#define local static``：这是宏定义，不是别名
+            pragma = _RENAME_PRAGMA.match(line)
+            if pragma:
+                names.add(pragma.group(1))
+            elif match:
                 names.add(match.group(1))
         frozen = frozenset(names)
         self._renamed[path] = frozen
@@ -343,6 +717,66 @@ class IdentifierIndex:
         ids = frozenset(identifiers_in(_strip_noise(text)))
         self._sources[path] = ids
         return ids
+
+    def header_side_effects(self, path: Path) -> tuple[str, ...]:
+        """这个头在名字空间作用域里执行的动作（见 :func:`side_effects_in`）。"""
+        cached = self._sidefx.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        effects = side_effects_in(text) if text is not None else ()
+        self._sidefx[path] = effects
+        return effects
+
+    def source_defined_ids(self, path: Path) -> frozenset[str]:
+        """源码自己提供的名字（见 :func:`definitions_in`）。"""
+        cached = self._defined.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        defined = (
+            frozenset(definitions_in(text)) if text is not None else frozenset()
+        )
+        self._defined[path] = defined
+        return defined
+
+    def source_self_supplied_ids(self, path: Path) -> frozenset[str]:
+        """源码**自己就给得出**、且给的位置不晚于首次使用的名字。
+
+        比 :meth:`source_defined_ids` 多一道位置判据：定义在**使用之后**时，
+        使用点上这个名字还没有声明，头文件仍然是必需的（doctest
+        ``exception_translator.cpp`` 第 14 行先用、第 19 行才定义
+        ``getExceptionTranslators``）。少了这道判据，那条候选被判「疑似未使用」，
+        实测删掉后 ``use of undeclared identifier``。
+        """
+        cached = self._supplied.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        if text is None:
+            supplied: frozenset[str] = frozenset()
+        else:
+            offsets = definition_offsets(text)
+            first = _first_occurrence(text)
+            supplied = frozenset(
+                name
+                for name, where in offsets.items()
+                if first.get(name, where) >= where
+            )
+        self._supplied[path] = supplied
+        return supplied
+
+    def source_conditional_ids(self, path: Path) -> frozenset[str]:
+        """源码只在条件编译判断里提到的名字（见 :func:`conditional_mentions`）。"""
+        cached = self._conditional.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        names = (
+            frozenset(conditional_mentions(text)) if text is not None else frozenset()
+        )
+        self._conditional[path] = names
+        return names
 
 
 def analyse_usage(
@@ -380,6 +814,12 @@ def analyse_usage(
     if source_ids is None:
         return UsageSignal(verdict=UsageVerdict.UNKNOWN)
 
+    # 源码自己定义的名字不算依赖证据：删掉头文件之后，这些名字由源码自己给出。
+    # 不加这一步，``inffast.c`` 因为自己定义了 ``inflate_fast`` 而永远判「在用」
+    # ——它的每一行实现都在提醒判定「这个头被用着」。
+    self_provided = index.source_self_supplied_ids(source)
+    wanted_ids = source_ids - self_provided
+
     extra = [Path(p) for p in (closure or ()) if Path(p) != header]
     # Header first: when several files in the set declare the same name, the
     # candidate itself is the most useful thing to name in the report.
@@ -390,6 +830,11 @@ def analyse_usage(
     # name -> (declaring header, how many headers of this set declare it)
     hits: dict[str, tuple[Path, int]] = {}
     headers_with_text = 0
+    #: 命中了、但源码自己就提供的名字。留着写进结论，读者才知道判定为什么
+    #: 没把它们算成依赖。
+    self_hits: set[str] = set()
+    #: (头文件, 语句) —— 消失集合里靠副作用起作用的头。
+    effects: list[tuple[Path, str]] = []
 
     for path in ordered:
         # 闭包一侧用**完整** header_ids：这里的头是要被删掉的，``#define X Y``
@@ -406,11 +851,27 @@ def analyse_usage(
         total += len(ids)
         if first_nonempty is None:
             first_nonempty = path
-        for name in ids & source_ids:
+        self_hits |= ids & source_ids & self_provided
+        for statement in index.header_side_effects(path):
+            effects.append((path, statement))
+        for name in ids & wanted_ids:
             # 第一次见到的声明者先记下；次数在整轮遍历完后才算得准。
             hits.setdefault(name, (path, 0))
             provider, count = hits[name]
             hits[name] = (provider, count + 1)
+
+    if effects:
+        # **副作用压过一切文本证据**：这个头靠「被包含时执行了什么」起作用，
+        # 源码提不提到它的名字都无关。它必须留在候选之外——删掉之后编译照样
+        # 通过，程序却悄悄少了一块（doctest 的 junit.h / xml.h / console.h
+        # 三条 ``DOCTEST_REGISTER_REPORTER`` 就是全部候选里排最前的三条）。
+        return UsageSignal(
+            verdict=UsageVerdict.IN_USE,
+            header_identifier_count=total,
+            provided_by=effects[0][0],
+            side_effects=tuple(text for _path, text in effects[:3]),
+            self_provided=tuple(sorted(self_hits)[:8]),
+        )
 
     if hits:
         # **供给者唯一性**：命中一个标识符只说明 TU 用到它，不说明它来自
@@ -449,6 +910,24 @@ def analyse_usage(
             for name, (provider, count) in sole.items()
             if count <= threshold
         }
+
+        # **存在性判断仍然是依赖**，只是理由不同：宏只出现在 ``#ifdef`` /
+        # ``#ifndef`` / ``#if defined(...)`` 里时，问的是「它在不在」。宏随头
+        # 一起消失后编译器**照样编得过**——它只是换一个分支。所以这里没有把
+        # 它降级成「疑似未使用」：那样做会让工具推荐一批「编译通过、但悄悄编
+        # 了另一个程序」的改动。
+        #
+        # 实测（zlib ``zutil.c -> gzguts.h``）：``NO_GZCOMPRESS`` 只出现在
+        # ``#ifdef`` 里，删除后编译通过、少解析 15 个文件，看起来是一条完美
+        # 的优化——但汇编指纹从 ``aac1b5f8…`` 变成 ``9b6bde46…``：被激活的分支
+        # 变了，``zlibCompileFlags()`` 的返回值随之改变。先按「可删」处理过一
+        # 版，正是代码等价闸门把这个改动拦下来的。
+        #
+        # 所以：判定不变（IN_USE），但把这件事单独记进 ``conditional_only``
+        # 并在报告里写明——读者至少知道这一条的理由是「换分支」，不是「缺声明」。
+        conditional = index.source_conditional_ids(source)
+        weak = tuple(sorted(n for n in specific if n in conditional)[:8])
+
         if specific:
             # 具体的命中：按声明者路径排序，保证输出稳定可复现。
             name = sorted(specific)[0]
@@ -465,6 +944,8 @@ def analyse_usage(
                     )[:8]
                 ),
                 cross_provided=tuple(sorted(cross)[:8]),
+                self_provided=tuple(sorted(self_hits)[:8]),
+                conditional_only=weak,
             )
         if sole:
             # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
@@ -474,6 +955,7 @@ def analyse_usage(
                 header_identifier_count=total,
                 ambient_identifiers=tuple(sorted(sole)[:8]),
                 cross_provided=tuple(sorted(cross)[:8]),
+                self_provided=tuple(sorted(self_hits)[:8]),
             )
         # 命中的每一个名字，在保留下来的头文件里都还有供给——删掉这条
         # include 之后它们照样存在。这不是「证据不足」，是证据指向删除；
@@ -483,6 +965,7 @@ def analyse_usage(
             shared_identifiers=tuple(sorted(cross)[:8]),
             header_identifier_count=total,
             cross_provided=tuple(sorted(cross)[:8]),
+            self_provided=tuple(sorted(self_hits)[:8]),
         )
 
     if total == 0:
@@ -502,4 +985,5 @@ def analyse_usage(
     return UsageSignal(
         verdict=UsageVerdict.PLAUSIBLY_UNUSED,
         header_identifier_count=total,
+        self_provided=tuple(sorted(self_hits)[:8]),
     )

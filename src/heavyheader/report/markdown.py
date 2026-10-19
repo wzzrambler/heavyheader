@@ -604,8 +604,10 @@ def render_markdown(scan: ProjectScan) -> str:
             "没测过就下判断是编造。"
         )
         lines.append("")
-        lines.append("| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 | 使用状态 | 结论 |")
-        lines.append("|---|---|---:|---:|---:|---|---|")
+        lines.append(
+            "| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 | 使用状态 | 判据 | 结论 |"
+        )
+        lines.append("|---|---|---:|---:|---:|---|---|---|")
         for candidate in scan.candidates_by_estimate()[:20]:
             lines.append(
                 f"| `{_rel(candidate.tu, root)}` "
@@ -614,6 +616,7 @@ def render_markdown(scan: ProjectScan) -> str:
                 f"| {_fmt_int(candidate.estimated_lines_saved)} "
                 f"| {candidate.estimated_percent:.1f}% "
                 f"| {candidate.usage_label} "
+                f"| {candidate.usage_reason or '—'} "
                 f"| {_verdict_cell(candidate)} |"
             )
         lines.append("")

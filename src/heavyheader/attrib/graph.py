@@ -478,6 +478,17 @@ def find_removal_candidates(
             for other in directs:
                 if other == header:
                     continue
+                # ``other`` 本身也要算进去：它是**直接包含**，删掉这一条
+                # include 并不影响它被解析。``closure_of`` 按定义不含起点，
+                # 少了这一行，凡是「候选的下游里还挂着另一个直接包含的头」
+                # 的情形，那个头会被算成「删了就没了」。
+                #
+                # 实测（zlib ``zutil.c -> gzguts.h``）：``gzguts.h`` 的下游含
+                # ``zutil.h``，而 ``zutil.h`` 是 zutil.c 的另一条直接 include。
+                # 旧代码把 ``zutil.h`` 算进消失集合，于是 ``local``（两个头都
+                # 定义了这个宏）的供给者全落在消失集合里，判成「唯一供给 →
+                # 在用」；真值是删掉照样编（少解析 15 个文件）。
+                shared.add(other)
                 shared |= analysis.closures.get(other, set())
             # The source file itself is always parsed; its own text is never
             # attributable to an include.
@@ -544,6 +555,7 @@ def find_removal_candidates(
                     verified=False,
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
+                    usage_reason=_usage_reason(signal),
                     confidence=_confidence(exclusive, analysis, signal.verdict),
                     notes=_notes(tu, header, exclusive, sizes, signal)
                     + (
@@ -626,6 +638,32 @@ def _ambiguous_include_lines(tu: TranslationUnit, header: Path) -> tuple[int, ..
     return tuple(find_include_lines(text, header))
 
 
+def _usage_reason(signal) -> str:
+    """一句话说明 usage 判定的依据（按证据强度从强到弱取第一条）。
+
+    排序是有讲究的：副作用 > 硬依赖 > 仅条件判断 > 自供给。前一条成立时后面
+    的都不足以改变结论，报告里也不该让读者先看弱的那个。
+    """
+    if signal is None:
+        return ""
+    if signal.side_effects:
+        return f"副作用：{signal.side_effects[0]}"
+    if signal.provided_by is not None and signal.shared_identifiers:
+        owner = signal.provided_by.name
+        names = "、".join(signal.shared_identifiers[:2])
+        return f"{names} 由 {owner} 提供"
+    if signal.conditional_only:
+        names = "、".join(signal.conditional_only[:2])
+        return f"{names} 仅用于 #ifdef 判断（删除会换分支）"
+    if signal.self_provided:
+        names = "、".join(signal.self_provided[:2])
+        return f"{names} 由本文件自己定义"
+    if signal.cross_provided:
+        names = "、".join(signal.cross_provided[:2])
+        return f"{names} 另有供给者"
+    return ""
+
+
 def _confidence(exclusive: set[Path], analysis: _TuAnalysis, verdict) -> str:
     """How confident are we that removal is a *win*?
 
@@ -675,6 +713,28 @@ def _notes(
         notes.append(
             f"源码提到的 {names} 在保留下来的头文件里另有供给，"
             "删掉这条不会缺声明（文本层判断，最终以实测为准）"
+        )
+    if signal is not None and signal.side_effects:
+        # 副作用必须写出来：它是「这个 include 一个名字都没被用到，但删了会
+        # 改变程序」的唯一解释。读者看到这句才知道为什么不建议删。
+        shown = "；".join(signal.side_effects[:2])
+        owner = signal.provided_by.name if signal.provided_by else "该头文件"
+        notes.append(
+            f"{owner} 在名字空间作用域执行了 {shown} ——"
+            "删除不会编译失败，但会静默改变程序行为（副作用型 include）"
+        )
+    if signal is not None and signal.conditional_only:
+        # 「命中了但它只是被问了一句在不在」必须写出来，否则读者看到
+        # 「疑似未使用」会以为判定什么都没找到。
+        names = "、".join(signal.conditional_only[:3])
+        notes.append(
+            f"{names} 只在 #ifdef / #ifndef 里被问「在不在」，"
+            "删除只会改变条件编译的分支，不是硬依赖（该分支能否编过仍需实测）"
+        )
+    if signal is not None and signal.self_provided:
+        names = "、".join(signal.self_provided[:3])
+        notes.append(
+            f"{names} 由本文件自己定义，删掉头文件后名字仍由源码给出，不算依赖"
         )
     if signal is not None and signal.provided_by is not None and signal.provided_by != header:
         # 说清符号到底由谁提供。只写「这个 include 在被用」，用户还是不知道

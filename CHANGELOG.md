@@ -6,6 +6,30 @@
 
 ### 变更
 
+- **候选精度第二轮：先把尺子修对，再改算法**（对照见
+  [`experiments/candidate-precision-round2-20261019.md`](experiments/candidate-precision-round2-20261019.md)）。
+  * **基准加第三条真值轴**（`--check-codegen`，汇编指纹）。原来只有「编不编得过」
+    与「少解析几个文件」，两条都不回答「编出来的是不是同一个程序」。加上之后立刻
+    抓到 3 条被旧基准算作「真有用」、实际上**静默改程序**的改动：zlib
+    `zutil.c -> gzguts.h`（激活的条件编译分支变了）、doctest
+    `context.cpp -> junit.h` / `xml.h`（`DOCTEST_REGISTER_REPORTER` 的静态注册整段消失）。
+    doctest 那两条当时还排在第 1、2 位。两个工程「有用」的计数因此 6→4、2→1——
+    减少的 3 条本来就不该删。
+  * **对照（同一把尺子，改前 = a85f087）**：doctest P@5 **0% → 60%**、P@10
+    0% → 30%、首条真有用第 **19 → 1** 位、`plausibly_unused` 有用率
+    **0% → 100%（3/3）**；zlib P@5 0% → 20%、首条真有用第 40 → 1 位。
+  * 四处根因：① 消失集合漏排除「其它直接 include 的头本身」（`closure_of` 不含起点）；
+    ② **源码自己定义的名字**不算依赖（新增 `usage.definitions_in`；定义前必须有
+    类型样式前缀，所以 `TEST_CASE(one) {` 不会被误认成定义）；
+    ③ **定义晚于使用时声明仍然必需**（新增位置判据；doctest
+    `exception_translator.cpp` 第 14 行先用、第 19 行才定义）；
+    ④ `#define local static` 是宏定义不是别名（展开目标是关键字时提供的是宏名本身）。
+  * **新增副作用型 include 检测**（`usage.side_effects_in`）：头文件在名字空间作用域
+    执行的动作（无类型前缀的 `NAME(...)`、带初始化的非 const 对象定义）命中即判
+    「在用」，并把那句语句原样写进报告。这类依赖文本层本来完全看不见。
+  * **一处差点改错的改动已回退**：曾把「只出现在 `#ifdef` 里的宏」降级成不算依赖，
+    基准数字变好看了，但代码等价闸门显示汇编变了——那会推荐出一个静默改程序的编辑。
+    判定保持 `in_use`，理由单独记进 `conditional_only` 并写进报告。
 - **候选识别精度**（对照见
   [`experiments/candidate-precision-20261019.md`](experiments/candidate-precision-20261019.md)）：
   doctest 24 TU 上，空头承诺（编得过但一个文件都没少）从 **23/60 降到 1/38**，

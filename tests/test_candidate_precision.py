@@ -105,9 +105,11 @@ def test_rename_define_in_surviving_header_is_not_a_provider(tmp_path):
     """
     zconf = _write(tmp_path / "zconf.h", "#define inflate_fast z_inflate_fast\n")
     inffast = _write(tmp_path / "inffast.h", "void z_inflate_fast(void);\n")
+    # 源码**调用**而不是定义：定义本身就会提供这个名字（见 definitions_in），
+    # 那样测不到「幸存头一侧剥不剥别名」这件事。
     src = _write(
         tmp_path / "inffast.c",
-        '#include "zconf.h"\n#include "inffast.h"\nvoid z_inflate_fast(void) {}\n',
+        '#include "zconf.h"\n#include "inffast.h"\nvoid run(void) { z_inflate_fast(); }\n',
     )
 
     index = IdentifierIndex()
@@ -127,6 +129,119 @@ def test_rename_define_in_surviving_header_is_not_a_provider(tmp_path):
     )
     assert signal.verdict is UsageVerdict.IN_USE
     assert signal.provided_by == inffast
+
+
+def test_directly_included_header_never_disappears(tmp_path):
+    """候选下游里的另一个**直接包含**不能算进消失集合。
+
+    ``closure_of`` 按定义不含起点，所以「别的直接 include 的头」只有被显式
+    加进 ``shared`` 才会被排除。漏掉这一步时，zlib ``zutil.c -> gzguts.h``
+    把 ``zutil.h``（另一条直接 include）算成会消失，于是两个头都定义的
+    ``local`` 被判成「消失集合唯一提供 → 在用」；真值是删掉照样编。
+    """
+    _write(tmp_path / "zutil.h", "#define local static\n")
+    guts = _write(tmp_path / "gzguts.h", '#include "zutil.h"\n#define local static\n')
+    src = _write(
+        tmp_path / "zutil.c",
+        '#include "zutil.h"\n#include "gzguts.h"\nlocal int counter = 0;\n',
+    )
+
+    # 消失集合里只剩 gzguts.h：zutil.h 是直接 include，删不掉
+    signal = analyse_usage(
+        src,
+        guts,
+        closure=[guts],
+        index=IdentifierIndex(),
+        # zutil.h（幸存）+ gzguts.h 都提供 local → 2 > 1 → 另有供给
+        reachable_counts={"local": 2},
+    )
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+    assert "local" in signal.cross_provided
+
+
+def test_source_defined_function_is_not_a_dependency(tmp_path):
+    """源码自己定义的函数与形参名，不是「头文件被使用」的证据。
+
+    zlib ``inffast.c`` 定义了 ``inflate_fast(strm, start)``，而 ``inffast.h``
+    只是声明它。旧判定看到源码里满是这两个名字就判「在用」——真值是删掉
+    ``#include "inffast.h"`` 之后编译通过、且真的少解析一个文件。
+    """
+    header = _write(tmp_path / "inffast.h", "void inflate_fast(unsigned start);\n")
+    src = _write(
+        tmp_path / "inffast.c",
+        '#include "inffast.h"\nvoid inflate_fast(unsigned start) {}\n',
+    )
+
+    signal = analyse_usage(
+        src,
+        header,
+        closure=[header],
+        index=IdentifierIndex(),
+        reachable_counts={"inflate_fast": 1, "start": 1},
+    )
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+    assert {"inflate_fast", "start"} <= set(signal.self_provided)
+
+
+def test_macro_call_that_looks_like_a_definition_is_still_a_use(tmp_path):
+    """``MACRO(x) {`` 展开出来像函数定义，但宏名是头文件给的。
+
+    要求定义前有「类型样式」的前缀正是为了这个：``TEST_CASE(one) {`` 前面
+    什么都没有，不能被认成定义——否则删掉提供该宏的头就编不过了。
+    """
+    deep = _write(tmp_path / "deep.h", "#define TEST_CASE(name) void name()\n")
+    compat = _write(tmp_path / "compat.h", '#include "deep.h"\n')
+    src = _write(
+        tmp_path / "main.cpp",
+        '#include "compat.h"\nTEST_CASE(one) {}\n',
+    )
+
+    signal = analyse_usage(src, compat, closure=[compat, deep], index=IdentifierIndex())
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert "TEST_CASE" in signal.shared_identifiers
+
+
+def test_define_expanding_to_a_keyword_is_a_macro_not_an_alias(tmp_path):
+    """``#define local static`` 是**定义宏**，不是给 ``static`` 起别名。
+
+    把它当重命名剥掉之后，``local`` 从供给集合里消失，反而让唯一证据被抹掉。
+    zlib 里 ``zutil.h`` 与 ``gzguts.h`` 都这么定义 ``local``。
+    """
+    other = _write(tmp_path / "other.h", "#define local static\n")
+    index = IdentifierIndex()
+    assert "local" in index.header_provider_ids(other)
+
+    # 真正的重命名仍然要剥：目标是另一个标识符，别名不能证明目标有声明
+    alias = _write(tmp_path / "alias.h", "#define inflate_fast z_inflate_fast\n")
+    assert "inflate_fast" not in IdentifierIndex().header_provider_ids(alias)
+
+
+def test_macro_used_only_in_ifdef_stays_in_use(tmp_path):
+    """只出现在 ``#ifdef`` 里的宏**仍然判在用**——不能为了召回率降级。
+
+    删掉定义它的头之后编译照样通过，它只是换了一个分支被编译。zlib
+    ``zutil.c -> gzguts.h`` 就是这样：编译通过、少解析 15 个文件，看起来是
+    一条完美的优化，但汇编指纹从 ``aac1b5f8…`` 变成 ``9b6bde46…``——被激活的
+    分支变了，``zlibCompileFlags()`` 的返回值随之改变。判定必须挡住它，并
+    把「理由是换分支而不是缺声明」单独记下来。
+    """
+    guts = _write(tmp_path / "gzguts.h", "#define NO_GZCOMPRESS\n")
+    src = _write(
+        tmp_path / "zutil.c",
+        '#include "gzguts.h"\nlong f(void) {\n'
+        "    long flags = 0;\n#ifdef NO_GZCOMPRESS\n    flags += 1L << 16;\n#endif\n"
+        "    return flags;\n}\n",
+    )
+
+    signal = analyse_usage(
+        src,
+        guts,
+        closure=[guts],
+        index=IdentifierIndex(),
+        reachable_counts={"NO_GZCOMPRESS": 1},
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert "NO_GZCOMPRESS" in signal.conditional_only
 
 
 def test_guarded_re_include_becomes_a_potential_edge(tmp_path):

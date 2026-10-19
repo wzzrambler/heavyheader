@@ -137,6 +137,12 @@ class TranslationUnit:
         ``-ftime-report`` phases overlap (``preprocessing`` is a subset of
         ``phase parsing``), so summing them double-counts.
 
+        Preference order: the row named exactly ``TOTAL`` (Clang's
+        ``Total Execution Time`` trailer -- authoritative), then any
+        ``total``-ish row (GCC's ``TOTAL``; Clang pass groups also print
+        ``Total`` and those are not the compile's total, which is why the
+        exact-name row must win).
+
         When the compiler's ``TOTAL`` row is missing or was discarded by the
         sanity check (GCC on MinGW prints impossible values for some
         headers), the driver substitutes the wall clock it measured around
@@ -144,6 +150,9 @@ class TranslationUnit:
         "never compiled", not "compiled in zero time"; callers that need to
         tell the two apart should check :attr:`timings` directly.
         """
+        for timing in self.timings:
+            if timing.name.strip() == "TOTAL":
+                return timing.wall_seconds
         for timing in self.timings:
             if timing.is_total:
                 return timing.wall_seconds

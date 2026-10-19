@@ -69,23 +69,34 @@ def run(args) -> dict:
         )
     )
     aggregate = aggregate_baseline(args.db, args.compiler)
-    noise = aggregate * args.noise_fraction
-    print(f"聚合基线 {aggregate:.2f}s → 噪声线 {noise:.3f}s（{args.noise_fraction:.0%}）")
+    print(f"全工程聚合基线 {aggregate:.2f}s（仅作背景；预筛用各候选自己单元的"
+          f" {args.noise_fraction:.0%} 噪声线）")
 
     by_key = {(str(c.tu).lower(), c.header.name, c.line): c for c in scan.candidates}
+    tu_total = {
+        str(t.source).lower(): t.total_wall_seconds() for t in scan.ok_tus
+    }
     pool = []
-    skipped = {"sub-noise": 0, "not-proven": 0, "missing": 0}
+    skipped = {"sub-noise": 0, "not-proven": 0, "missing": 0, "no-estimate": 0}
     for row in precision["rows_by_rank"]:
         if not row.get("useful"):
             skipped["not-proven"] += 1
-            continue
-        if (row.get("seconds_saved") or 0.0) < noise:
-            skipped["sub-noise"] += 1
             continue
         key = (row["tu"].lower(), Path(row["header"]).name, row["line"])
         candidate = by_key.get(key)
         if candidate is None:
             skipped["missing"] += 1
+            continue
+        # 预估与噪声线同 scale：都按「受影响单元自己的编译时长」算。TU 级候选
+        # 的 reach 是 1，噪声线 = 该单元总时长 × 噪声比例；拿全工程聚合当分母
+        # 会把所有单 TU 候选全部误判为「不可分辨」。
+        estimate = candidate.estimated_seconds_saved
+        if estimate is None:
+            skipped["no-estimate"] += 1
+            continue
+        noise = (tu_total.get(str(candidate.tu).lower()) or 0.0) * args.noise_fraction
+        if estimate < noise:
+            skipped["sub-noise"] += 1
             continue
         pool.append(
             replace(
@@ -128,7 +139,7 @@ def run(args) -> dict:
     return {
         "project": str(args.project),
         "aggregate_seconds": round(aggregate, 3),
-        "noise_line_seconds": round(noise, 4),
+        "noise_fraction": args.noise_fraction,
         "pool": len(pool),
         "compiled": len(compiled),
         "improved": len(improved),

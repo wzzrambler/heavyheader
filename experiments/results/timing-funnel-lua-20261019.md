@@ -70,3 +70,35 @@ python experiments/timing_funnel.py \
 ```
 
 数据：`experiments/results/timing-funnel-lua-20261019.json`。
+
+---
+
+## 2026-10-20 修复后重跑：采纳率 1/13（8%）→ 5/20（25%）
+
+根因定位到上游后当天修复（commit 见 CHANGELOG）：
+
+1. **clang 的 `-ftime-report` 从来没被解析过**——解析正则只认 GCC 的
+   `name :` 形态，clang 是「数字列在前、阶段名在后」。所有 clang 扫描一直走
+   「TOTAL 缺失 → 驱动实测墙钟」兜底，而扫描并行，墙钟被争抢虚高。
+2. **预估锚从「总时长」改为「前端（Front end）耗时」**——删 include 只省解析，
+   不省代码生成。
+
+两处都修完后同一脚本重跑（`timing-funnel-lua-fixed-20261020.json`）：
+
+| | 修复前 | 修复后 |
+|---|---:|---:|
+| 送测池 | 13 | 20 |
+| 编译通过 | 13 | 20 |
+| improved | 1 | **5** |
+| 池内采纳率 | 8% | **25%** |
+| lgc.c→stdio.h 预估 | 0.339s | 0.0113s（实测 7.6ms，1.5×） |
+
+5 条确认采纳全部 +2.6~3.3% 且过复测：`lgc.c→stdio.h`、`liolib.c→stdlib.h`、
+`lmathlib.c→stdlib.h`、`lcode.c→stdlib.h`、`ltm.c→string.h`。池从 13 涨到 20
+是因为噪声线改用**每候选自己受影响单元**的尺度（TU 级候选 reach=1，用全工程
+聚合当分母会把 4–9ms 的真实收益全部误判为不可分辨）——口径修正，不是放宽：
+20 条依旧全部先过三真值（编过 + 少解析 + 程序没变）才送计时。
+
+修复的影响面不止漏斗：所有 clang 扫描（doctest / zlib / spdlog / Lua）的
+TU 总时长此前都是墙钟兜底，预估与排序同源受益。已实测的计时数字
+（−3.01%、−2.125%、−77.8% 等）不受影响——那些是 verify 独立测量的。

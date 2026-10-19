@@ -653,6 +653,18 @@ def find_removal_candidates(
     return candidates
 
 
+def _front_end_seconds(tu: TranslationUnit) -> float:
+    """编译器自报的**前端**（解析 + 预处理）耗时，0 表示拿不到。
+
+    Clang 的 ``-ftime-report`` 有一条 ``Front end`` 行。为什么需要它：删掉一条
+    include 省掉的只是解析，**后端（代码生成）一行代码都没少**。拿总时长当锚
+    会把后端成本按行数比例摊到解析上——实测（Lua ``lgc.c -> stdio.h``）总时长
+    锚把 7ms 的真实收益估成 0.339s，虚高约 50 倍；改用前端锚后预估 0.011s，
+    与实测差 1.6 倍。虚高的预估会把噪声线预筛、排序和计时预算全部带偏。
+    """
+    return tu.phase_seconds("Front end")
+
+
 def _estimate_seconds(tu: TranslationUnit, processed_lines: int, saved: int) -> float | None:
     """Expected compile-time saving for this unit, in seconds.
 
@@ -660,7 +672,12 @@ def _estimate_seconds(tu: TranslationUnit, processed_lines: int, saved: int) -> 
     ``-ftime-report`` for *this* unit, so the share below is anchored in a
     measurement instead of a guess::
 
-        seconds_saved  ~=  tu_total  *  exclusive_lines / tu_processed_lines
+        seconds_saved  ~=  anchor  *  exclusive_lines / tu_processed_lines
+
+    The anchor is the **front-end** time when the compiler reports one
+    (``_front_end_seconds``): removing an include cannot save code
+    generation, so the backend share of the total must not enter the
+    estimate.  Falls back to the total when no front-end row exists.
 
     The known, documented bias: lines are not equally expensive.  Standard
     library headers are template-dense and cost more per line than project
@@ -674,7 +691,8 @@ def _estimate_seconds(tu: TranslationUnit, processed_lines: int, saved: int) -> 
     total = tu.total_wall_seconds()
     if total <= 0 or processed_lines <= 0:
         return None
-    return round(total * (saved / processed_lines), 4)
+    anchor = _front_end_seconds(tu) or total
+    return round(anchor * (saved / processed_lines), 4)
 
 
 

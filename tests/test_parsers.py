@@ -192,3 +192,101 @@ def test_summarise_buckets_phases():
 def test_summarise_keeps_total_when_phases_are_missing():
     timings = parse_time_report(" TOTAL : 1.5\n")
     assert summarise(timings)["total"] == 1.5
+
+
+# --------------------------------------------------------------------------
+# Clang's -ftime-report dialect (2026-10-20): numbers first, name last
+# --------------------------------------------------------------------------
+
+CLANG_REPORT = """\
+===-------------------------------------------------------------------------===
+                               Clang time report
+===-------------------------------------------------------------------------===
+  Total Execution Time: 0.0469 seconds (0.0395 wall clock)
+
+   --System Time--   --User+System--   ---Wall Time---  --- Name ---
+   0.0469 (100.0%)   0.0469 (100.0%)   0.0395 (100.0%)  Front end
+   0.0469 (100.0%)   0.0469 (100.0%)   0.0395 (100.0%)  Total
+
+===-------------------------------------------------------------------------===
+                           ... Pass execution timing report ...
+===-------------------------------------------------------------------------===
+   0.0003 ( 63.4%)  Global Splitting
+   0.0001 ( 18.7%)  Seed Live Regs
+   0.0004 (100.0%)  Total
+"""
+
+
+def test_clang_time_report_rows_are_parsed():
+    """Clang 的计时表是「数字列在前、阶段名在后」，与 GCC 相反。
+
+    旧版解析器只认 GCC 的 ``name :`` 形态，于是 clang 的行**从来没被解析过**：
+    每次扫描都落到「TOTAL 缺失 → 驱动实测墙钟」兜底，而扫描是并行的，墙钟被
+    多个编译进程争抢——预估锚点因此虚高。实测 lgc.c 上虚高约 5 倍，叠加
+    代码生成占大头后总偏差约 50 倍（见 experiments 的计时漏斗报告）。
+    """
+    timings = parse_time_report(CLANG_REPORT)
+    by_name = {t.name: t for t in timings}
+    assert "Front end" in by_name
+    assert by_name["Front end"].wall_seconds == pytest.approx(0.0395)
+    assert "Global Splitting" in by_name
+    assert by_name["Global Splitting"].wall_seconds == pytest.approx(0.0003)
+    # pass 组的 Total 也在（它只是组内汇总，不是整个编译的总计）
+    assert sum(1 for t in timings if t.name == "Total") == 2
+
+
+def test_clang_total_execution_time_trailer_wins():
+    """"Total Execution Time" 的墙钟（括号里那个）才是权威总计。
+
+    pass 组自己的 ``Total`` 不是编译总计；``total_wall_seconds`` 必须取到
+    0.0395 而不是任何 pass 组的小数。GCC 的 ``TOTAL`` 行（大写）同样优先。
+    """
+    timings = parse_time_report(CLANG_REPORT)
+    tu = _tu_with(timings)
+    assert tu.total_wall_seconds() == pytest.approx(0.0395)
+
+
+def test_clang_total_prefers_exact_total_over_pass_group_total():
+    tu = _tu_with(
+        [
+            _timing("Total", 0.5),      # pass 组汇总
+            _timing("Front end", 0.2),
+            _timing("TOTAL", 0.04),     # 权威总计
+        ]
+    )
+    assert tu.total_wall_seconds() == pytest.approx(0.04)
+
+
+def test_estimate_uses_the_front_end_anchor():
+    """删 include 只省解析，不省代码生成——锚必须用前端耗时。
+
+    总时长 1.0s 里前端 0.2s：删掉一半的行数，旧公式估 0.5s（把后端成本按行数
+    比例摊进来），新公式估 0.1s。实测（Lua lgc.c->stdio.h）旧锚把 7.6ms 估成
+    0.339s，前端锚估 0.011s。
+    """
+    from heavyheader.attrib.graph import _estimate_seconds
+
+    tu = _tu_with([_timing("TOTAL", 1.0), _timing("Front end", 0.2)])
+    assert _estimate_seconds(tu, processed_lines=1000, saved=500) == pytest.approx(0.1)
+    # 没有前端行时退回总时长（GCC 等没有该行的工具链）
+    tu_total_only = _tu_with([_timing("TOTAL", 1.0)])
+    assert _estimate_seconds(
+        tu_total_only, processed_lines=1000, saved=500
+    ) == pytest.approx(0.5)
+
+
+def _timing(name: str, seconds: float):
+    from heavyheader.models import PhaseTiming
+
+    return PhaseTiming(name=name, wall_seconds=seconds, wall_percent=100.0)
+
+
+def _tu_with(timings):
+    from heavyheader.models import TranslationUnit
+
+    return TranslationUnit(
+        source=Path("main.c"),
+        dependencies=[],
+        include_events=[],
+        timings=list(timings),
+    )

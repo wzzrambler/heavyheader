@@ -55,9 +55,64 @@ _ROW = re.compile(
     r"\s*$"
 )
 
+#: Clang 的行是**数字在前、名字在后**（GCC 相反），且带 1–3 个数字列
+#: （system / user+sys / wall）。形如::
+#:
+#:     0.0469 (100.0%)   0.0469 (100.0%)   0.0395 (100.0%)  Front end
+#:     0.0003 ( 63.4%)  Global Splitting
+#:
+#: 旧版只认 GCC 的 ``name :`` 形态，于是 clang 的 -ftime-report **从来没被
+#: 解析过**：每次扫描都走「TOTAL 缺失 → 驱动实测墙钟」兜底，而扫描是并行的，
+#: 墙钟被 N 个编译进程争抢——预估锚点因此虚高（实测 lgc.c 上虚高 5 倍，叠加
+#: 代码生成占大头后总偏差 ~50 倍）。
+_CLANG_ROW = re.compile(
+    r"^\s*(?:\d+(?:\.\d+)?\s*\(\s*\d+(?:\.\d+)?%\s*\)\s+)+"
+    r"(?P<name>\S.*?)\s*$"
+)
+
+#: Clang 报告结尾的权威总计::
+#:
+#:     Total Execution Time: 0.0469 seconds (0.0395 wall clock)
+#:
+#: 括号里那个才是进程墙钟；第一个数字是 CPU 时间（可能远大于墙钟）。
+_CLANG_TOTAL = re.compile(
+    r"^\s*Total Execution Time:\s*"
+    r"(?P<cpu>\d+(?:\.\d+)?)\s*seconds?\s*"
+    r"\((?P<wall>\d+(?:\.\d+)?)\s*wall clock\)",
+    re.IGNORECASE,
+)
+
 _HEADER = re.compile(r"^\s*Time variable\b", re.IGNORECASE)
 
 _MEM_MULTIPLIER = {"": 1, "k": 1024, "M": 1024**2, "G": 1024**3}
+
+
+#: clang 计时表的一个数字列：``0.0395 (100.0%)``。
+_CLANG_COLUMN = re.compile(
+    r"(?P<num>\d+(?:\.\d+)?)\s*\(\s*\d+(?:\.\d+)?%\s*\)\s*"
+)
+
+
+def _parse_clang_row(line: str) -> tuple[float, str] | None:
+    """解析 clang 形态的一行，返回 ``(墙钟秒, 阶段名)``。
+
+    clang 的表可能有 1–3 个数字列（system / user+sys / wall），**最后一列才是
+    墙钟**。单列形态（LLVM pass 计时器）那一列就是墙钟。
+    """
+    position = 0
+    wall: float | None = None
+    body = line.lstrip()  # clang 的表有前导缩进，数字列必须从行首开始才算
+    for match in _CLANG_COLUMN.finditer(body, position):
+        if match.start() != position:
+            return None  # 数字列必须连续顶格，中间有别的内容就不是计时行
+        wall = float(match.group("num"))
+        position = match.end()
+    if wall is None or position >= len(body):
+        return None
+    name = body[position:].strip()
+    if not name:
+        return None
+    return wall, name
 
 
 def parse_time_report(stderr_text: str) -> list[PhaseTiming]:
@@ -66,30 +121,52 @@ def parse_time_report(stderr_text: str) -> list[PhaseTiming]:
     Rows that do not match (blank lines, the ``Time variable`` header,
     unrelated diagnostics) are skipped rather than treated as errors: the
     report is a diagnostic channel and other tools may write to it too.
+
+    Handles both dialects: GCC's ``name : wall (pct%) mem`` and Clang's
+    ``wall (pct%) [wall (pct%) [wall (pct%)]] name``.  Clang's
+    ``Total Execution Time: … (… wall clock)`` trailer becomes the row named
+    ``TOTAL`` -- it is emitted **first** because every Clang pass group also
+    prints its own ``Total`` and those are *not* the compile's total.
     """
     timings: list[PhaseTiming] = []
     for raw_line in stderr_text.splitlines():
         line = raw_line.rstrip("\r")
+        trailer = _CLANG_TOTAL.match(line)
+        if trailer is not None:
+            # 整份报告只有一个总汇总行；重复出现时以第一处为准。
+            if not any(t.name == "TOTAL" for t in timings):
+                timings.append(
+                    PhaseTiming(
+                        name="TOTAL",
+                        wall_seconds=float(trailer.group("wall")),
+                        wall_percent=100.0,
+                    )
+                )
+            continue
         if not line.strip() or _HEADER.match(line):
             continue
         match = _ROW.match(line)
-        if match is None:
-            continue
-        wall = float(match.group("wall"))
-        wall_pct = match.group("wall_pct")
-        mem = match.group("mem")
-        memory_bytes: int | None = None
-        if mem is not None:
-            unit = match.group("mem_unit") or ""
-            memory_bytes = int(float(mem) * _MEM_MULTIPLIER[unit])
-        timings.append(
-            PhaseTiming(
-                name=match.group("name").strip(),
-                wall_seconds=wall,
-                wall_percent=float(wall_pct) if wall_pct is not None else None,
-                memory_bytes=memory_bytes,
+        if match is not None:
+            wall = float(match.group("wall"))
+            wall_pct = match.group("wall_pct")
+            mem = match.group("mem")
+            memory_bytes: int | None = None
+            if mem is not None:
+                unit = match.group("mem_unit") or ""
+                memory_bytes = int(float(mem) * _MEM_MULTIPLIER[unit])
+            timings.append(
+                PhaseTiming(
+                    name=match.group("name").strip(),
+                    wall_seconds=wall,
+                    wall_percent=float(wall_pct) if wall_pct is not None else None,
+                    memory_bytes=memory_bytes,
+                )
             )
-        )
+            continue
+        clang_row = _parse_clang_row(line)
+        if clang_row is not None:
+            wall, name = clang_row
+            timings.append(PhaseTiming(name=name, wall_seconds=wall))
 
     if not timings:
         raise TimeReportError(

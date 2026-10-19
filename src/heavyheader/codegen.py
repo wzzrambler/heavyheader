@@ -19,12 +19,14 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import os
 import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
 from .drivers.base import CompilerDriver, DriverOptions
+from .models import CompilerFamily
 
 #: 与 ``-S`` 冲突或会让它失效的参数：``-c`` 让编译器停在汇编之前，
 #: ``-fsyntax-only`` 连代码生成都不做。两者都必须去掉才能比代码。
@@ -54,6 +56,16 @@ class Fingerprint:
         return self.ok and other.ok and self.digest == other.digest
 
 
+def supported(driver: CompilerDriver) -> bool:
+    """这台编译器能不能做汇编指纹比对。
+
+    ``-S`` / ``-g0`` 是 GCC 与 Clang 的参数；MSVC 的对应写法不同（``/FA``），
+    没有实现。不判能力就直接开闸门，MSVC 上会「编译失败 → 判为代码变了」，
+    把每个候选都误报成危险改动——这比不开闸门更糟。
+    """
+    return driver.family in (CompilerFamily.GCC, CompilerFamily.CLANG)
+
+
 def assembly_argv(
     driver: CompilerDriver, source: Path, options: DriverOptions, asm_path: Path
 ) -> list[str]:
@@ -69,7 +81,11 @@ def assembly_argv(
         )
         if token not in _CONFLICTING
     ]
-    argv.append("-S")
+    # ``-g0`` 压掉调试信息：它记录的是**读过哪些文件、行号映射到哪**，
+    # 删掉一条 include 就会变，但代码一字未动。实测（doctest，带 -g 的 Debug 构建）
+    # 不压掉会让闸门把全部候选判成「代码变了」——差异全在 ``.cv_file`` /
+    # ``.cv_loc`` / ``.debug$S`` 的路径字符串里。放在最后，覆盖命令行里已有的 -g。
+    argv.extend(["-g0", "-S"])
     return argv
 
 
@@ -129,8 +145,13 @@ def fingerprint(
     kept = [line for line in text.splitlines() if not _NOISE_LINE.match(line)]
     text = canonicalise("\n".join(kept))
     for prefix in mask:
-        if prefix:
-            text = text.replace(prefix, "<path>")
+        if not prefix:
+            continue
+        # 路径在汇编里可能是**双反斜杠**（Windows 目标会把 `\` 转义成 `\\`），
+        # 只替换一种形式等于没掩——实测因此漏掉，误报了一整轮。
+        forms = {prefix, prefix.replace(os.sep, os.sep * 2), prefix.replace(os.sep, "/")}
+        for form in forms:
+            text = text.replace(form, "<path>")
     return Fingerprint(ok=True, digest=hashlib.sha256(text.encode("utf-8")).hexdigest())
 
 
@@ -145,12 +166,22 @@ def compare(
 ) -> tuple[Fingerprint, Fingerprint]:
     """分别给原始与打补丁后的源码取指纹。
 
-    两次必须用**同一个输出路径**（``unit.s``）：汇编里嵌的输出文件名是字节的一部分，
-    换成 ``original.s`` / ``patched.s`` 会让两份永远不同。覆盖没关系——每次编完
-    立刻读出来算哈希。源码目录用 ``mask`` 抹平。
+    三条约束，全部是踩出来的：
+
+    * **同一个输出路径**（``unit.s``）——汇编里嵌着输出文件名，换名字就变字节；
+    * **同一个源码路径**——两份源码都先落到 ``workdir/<原文件名>`` 再编。源码里出现
+      ``__FILE__`` 时（doctest 的错误信息就带着它），两份的路径不同会让字符串常量、
+      进而连它的符号名都不同，闸门于是把安全删除判成「代码变了」。实测因此误报过一次。
+    * ``-g0``（见 :func:`assembly_argv`）——调试信息里的行表与文件名不是代码。
     """
     asm_path = workdir / "unit.s"
-    mask = (str(original.parent), str(patched.parent))
-    before = fingerprint(driver, original, options, cwd, asm_path, timeout, mask)
-    after = fingerprint(driver, patched, options, cwd, asm_path, timeout, mask)
+    staged = workdir / original.name
+    workdir.mkdir(parents=True, exist_ok=True)
+    before_text = original.read_text(encoding="utf-8", errors="replace")
+    after_text = patched.read_text(encoding="utf-8", errors="replace")
+
+    staged.write_text(before_text, encoding="utf-8")
+    before = fingerprint(driver, staged, options, cwd, asm_path, timeout)
+    staged.write_text(after_text, encoding="utf-8")
+    after = fingerprint(driver, staged, options, cwd, asm_path, timeout)
     return before, after

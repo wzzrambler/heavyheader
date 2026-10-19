@@ -893,6 +893,9 @@ def verify_candidates(
     probe_errors: dict[int, str | None] = {}
     #: 代码等价校验的结果（仅 codegen_check 开启时填充）
     probe_codegen: dict[int, tuple[object, object]] = {}
+    #: 闸门是否真的可用：MSVC 没有 ``-S``/``-g0`` 这套写法，硬开会把每个候选
+    #: 都误报成「代码变了」。能力不够时直接不跑，报告也不许声称做过校验。
+    codegen_ok = verify.codegen_check and codegen.supported(driver)
 
     def _probe_one(index: int, source_path: Path, line_number: int) -> None:
         candidate, source_path, line_number = pending[index]
@@ -914,7 +917,7 @@ def verify_candidates(
                 verify.probe_runs,
                 verify.timeout,
             )
-            if error is None and verify.codegen_check:
+            if error is None and codegen_ok:
                 # 比的是「同一个源文件、去掉那一行之后，编出来的汇编是否一字不差」。
                 # 两次用同一份 options、同一个输出路径；源码目录由 codegen.compare 掩平。
                 probe_codegen[index] = codegen.compare(

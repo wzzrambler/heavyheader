@@ -26,7 +26,7 @@ import datetime as _dt
 import sys
 from pathlib import Path
 
-from . import __version__
+from . import __version__, codegen
 from .attrib.edgecost import aggregate_edge_costs
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
@@ -274,10 +274,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     verify.add_argument(
         "--check-codegen",
+        dest="check_codegen",
         action="store_true",
+        default=True,
         help=(
-            "代码等价校验：删除后用汇编哈希比对，确认编出来的还是同一个程序"
-            "（多两次编译，约等于一次探针的成本）"
+            "代码等价校验（默认开）：删除后用汇编哈希比对，确认编出来的还是同一个程序"
+            "（每个候选多两次编译，实测约 +12%% 耗时）"
+        ),
+    )
+    verify.add_argument(
+        "--no-check-codegen",
+        dest="check_codegen",
+        action="store_false",
+        help=(
+            "关掉代码等价校验，只判「能编过」。更快，但「能编过」不等于「代码没变」"
         ),
     )
 
@@ -714,6 +724,13 @@ def _cmd_verify(args) -> int:
         return 0
 
     driver = detect_driver(args.compiler)
+    if getattr(args, "check_codegen", False) and not codegen.supported(driver):
+        # 不静默降级：读者必须知道这一轮的「建议删除」只代表「能编过」。
+        print(
+            f"注意：{driver.family.value} 上暂无汇编指纹比对（-S/-g0 是 GCC/Clang 写法），"
+            "本轮未做代码等价校验。",
+            file=sys.stderr,
+        )
     options = _scan_options_from_args(args).driver_options()
     backend = _build_semantic_backend(args)
     results = verify_candidates(

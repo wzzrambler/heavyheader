@@ -640,9 +640,11 @@ def scan_project(
             "--probe-compile 与 --probe 同时给出，前者被后者覆盖（--probe 已含探测阶段）"
         )
     if options.probe:
+        from . import codegen
         from .verify import VerifyOptions, verify_candidates
 
         scan.probe_mode = "probe"
+        scan.codegen_checked = options.check_codegen and codegen.supported(driver)
         scan.probe_results = verify_candidates(
             scan,
             driver,
@@ -658,9 +660,11 @@ def scan_project(
             build_path=options.semantic_build_path,
         )
     elif options.probe_compile:
+        from . import codegen
         from .verify import VerifyOptions, verify_candidates
 
         scan.probe_mode = "probe-compile"
+        scan.codegen_checked = options.check_codegen and codegen.supported(driver)
         scan.probe_results = verify_candidates(
             scan,
             driver,

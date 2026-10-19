@@ -76,9 +76,12 @@ $ heavyheader scan ./src --format html -o report.html
 `scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
 前向声明的 include。两者都是估算，报告内附限制说明。
 
-`scan --probe` 与 `verify` 支持 `--check-codegen`：删除后额外比对汇编指纹，
-拦住「编译通过但生成代码变了」的候选（例如删掉 `<iomanip>` 后重载解析改变）。
-这类改动在别的工具眼里是「可以删」，在本工具里是「需人工判断、不计收益」。
+`verify` **默认**做代码等价校验（`--no-check-codegen` 可关），`scan --probe` 需显式
+加 `--check-codegen`：删除后额外比对汇编指纹，拦住「编译通过但生成代码变了」的候选
+（例如删掉 `<iomanip>` 后重载解析改变）。这类改动在别的工具眼里是「可以删」，
+在本工具里是「需人工判断、不计收益」。成本实测：`verify` +12%，批量探测 +30%
+（见 `experiments/codegen-gate-cost-20261019.md`）。MSVC 无 `-S`/`-g0` 等价写法，
+该校验会跳过并在报告里写明——不会假装做过。
 
 `edge-cost` 与它们的分工：它回答「每条 `#include` 删掉后少解析多少」——按**边**
 而不是按头文件归因，因为开发者能删的是源文件里的那一行。它算的是**预测**，

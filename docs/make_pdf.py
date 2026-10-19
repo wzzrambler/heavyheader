@@ -121,6 +121,14 @@ S = {
     ),
 }
 
+# reportlab 默认按空格断行，而中文句子里没有空格——整段会被当成一个不可断的
+# 「单词」，两端对齐只能靠少数几个 ASCII 与中文之间的空格硬撑，印刷出来就是
+# 一行里几处巨大的字缝（实测第 4、10 页）。wordWrap="CJK" 打开按字断行，
+# 对齐才恢复正常。代码块例外：它靠显式换行与缩进，不需要按字断。
+for _style_name, _style in S.items():
+    if _style_name != "code":
+        _style.wordWrap = "CJK"
+
 
 def P(text: str, style: str = "body") -> Paragraph:
     return Paragraph(text, S[style])

@@ -110,6 +110,13 @@ _style("abstract_title", fontName=_FONT_BOLD, fontSize=19, leading=26,
        textColor=INK, spaceAfter=12)
 
 
+# 与作品介绍文档同理：中文没有空格，不打开 CJK 断行会被整段当成一个词，
+# 两端对齐就变成一行里几个大字缝。代码块除外。
+for _style_name, _style in S.items():
+    if _style_name != "code":
+        _style.wordWrap = "CJK"
+
+
 def P(text, style="body"):
     return Paragraph(text, S[style])
 
@@ -540,28 +547,44 @@ def build(path: str) -> None:
     story.append(P("现有工具回答的是另一个问题", "h2"))
     story.append(
         P(
-            "围绕 include 治理已有不少工具，但它们共同缺席了一个问题：成本量化。下表按「能做什么 / "
-            "不能做什么」逐项核对。"
+            "围绕 include 治理已有不少工具，而且比想象中密：成本排序、逐头文件耗时、结构建议、"
+            "注释后重编各有人做。下表按「答到哪一句为止」逐项核对——事实核实日期与逐格证据等级"
+            "见仓库 docs/competitors.md 与 docs/competitor-matrix.md。"
         )
     )
     story.append(
         TABLE(
             ["工具", "能做什么", "不能做什么"],
             [
-                ["include-what-you-use",
-                 "基于 AST 判断 include 是否必需",
+                ["Header Hero（2011）",
+                 "谁可能贵：行数 × 被包含次数的成本排序",
+                 "只排序；正则解析漏宏；不验证、不量化删后收益"],
+                ["ClangBuildAnalyzer",
+                 "现在谁花了多少：逐头文件累计 ms",
+                 "只描述现状；仅 Clang；无基线、无门禁"],
+                ["CompileScore",
+                 "同一数据源 + VS 内可视化（TU 时间线、includers 图）",
+                 "无反事实、无决策；Windows / VS 为主"],
+                ["MSVC Build Insights",
+                 "MSVC 侧官方答案：include 树、PCH 建议",
+                 "删后量化、三态结论、按净收益的门禁均不提供"],
+                ["IncludeGuardian",
+                 "该改什么结构：七类建议",
+                 "不编译、不实测（token 口径估算）"],
+                ["deheader（2010）",
+                 "删了还能编吗：注释掉再编译",
+                 "二值结论，不量化收益"],
+                ["IWYU / clang-include-cleaner",
+                 "该不该包含：AST 级必需性判定",
                  "不给成本量化，无法排序优先级"],
-                ["cpp-dependencies",
-                 "分析模块间依赖关系",
-                 "面向架构评审，不回答构建耗时"],
-                ["include-gardener",
-                 "可视化 include 关系图",
-                 "只展示结构，不给归因"],
-                ["IDE 的「Include Graph」",
-                 "查看单个文件的包含树",
-                 "手动、单文件、无项目级视图"],
+                ["Include-Wrangler / clang-build-profiler / include-what-costs",
+                 "按边数文件、呈现逐边耗时、逐头实测",
+                 "分别停在文件数 / 呈现 / 节点级，都不算「删了省多少」"],
+                ["HeavyHeader（本项目）",
+                 "删了的净收益是多少、有多大把握",
+                 "候选池精度不如 AST（222 个候选里 187 个编译不过）"],
             ],
-            widths=[42 * mm, 62 * mm, 66 * mm],
+            widths=[52 * mm, 58 * mm, 60 * mm],
         )
     )
     story.append(SP(4))
@@ -570,7 +593,7 @@ def build(path: str) -> None:
             "缺少成本量化的直接后果是：治理工作没有优先级——几百条 include 里先动哪一条？删错一条"
             "省不了一秒，删对一条可能省掉百分之几十；同时治理成果无法沉淀为约束——今天清干净的头文件，"
             "明天一个 PR 又把它拖回原样，没有门禁守着。本课题据此把「成本归因 + 实测验证 + 门禁防回归」"
-            "作为需要同时交付的三件事。R4：include-what-you-use 项目页"
+            "作为需要同时交付的三件事。出处与复核清单见 R1–R16。"
         )
     )
     story.append(P("面向的用户与代表任务", "h2"))
@@ -1195,15 +1218,29 @@ def build(path: str) -> None:
                "<font color='#1a66b0'>https://learn.microsoft.com/cpp/build/reference/showincludes-list-include-files</font>"),
         ("R4", "include-what-you-use 项目主页。"
                "<font color='#1a66b0'>https://include-what-you-use.org/</font>"),
-        ("R5", "tomtom-international/cpp-dependencies 仓库。"
-               "<font color='#1a66b0'>https://github.com/tomtom-international/cpp-dependencies</font>"),
-        ("R6", "fedorbondarczyk/include-gardener 仓库。"
-               "<font color='#1a66b0'>https://github.com/fedorbondarczyk/include-gardener</font>"),
-        ("R7", "nlohmann/json 仓库（基准对象之一）。"
+        ("R5", "Header Hero（Bitsquid, 2011）：归因行数与 Blowup Factor 的出处。"
+               "<font color='#1a66b0'>https://bitsquid.blogspot.com/2011/10/caring-by-sharing-header-hero.html</font>"),
+        ("R6", "aras-p/ClangBuildAnalyzer：逐头文件累计耗时（-ftime-trace）。"
+               "<font color='#1a66b0'>https://github.com/aras-p/ClangBuildAnalyzer</font>"),
+        ("R7", "Viladoman/CompileScore：同一数据源的 VS 内可视化。"
+               "<font color='#1a66b0'>https://github.com/Viladoman/CompileScore</font>"),
+        ("R8", "Microsoft C++ Build Insights：include 树与 PCH 建议。"
+               "<font color='#1a66b0'>https://learn.microsoft.com/cpp/build-insights/get-started-with-cpp-build-insights</font>"),
+        ("R9", "IncludeGuardian：七类结构建议。"
+               "<font color='#1a66b0'>https://includeguardian.io</font>"),
+        ("R10", "deheader（Eric S. Raymond）：注释掉再编译。"
+               "<font color='#1a66b0'>https://catb.org/~esr/deheader/</font>"),
+        ("R11", "lukedodd/include-wrangler（2012）：按文件数的边级边际成本。"
+               "<font color='#1a66b0'>https://github.com/lukedodd/include-wrangler</font>"),
+        ("R12", "DmitriBogdanov/clang-build-profiler：include 树逐边解析耗时。"
+               "<font color='#1a66b0'>https://github.com/DmitriBogdanov/clang-build-profiler</font>"),
+        ("R13", "chrisburr/include-what-costs：逐头文件实测耗时与内存。"
+               "<font color='#1a66b0'>https://github.com/chrisburr/include-what-costs</font>"),
+        ("R14", "nlohmann/json 仓库（基准对象之一）。"
                "<font color='#1a66b0'>https://github.com/nlohmann/json</font>"),
-        ("R8", "yhirose/cpp-httplib 仓库（基准对象之一）。"
+        ("R15", "yhirose/cpp-httplib 仓库（基准对象之一）。"
                "<font color='#1a66b0'>https://github.com/yhirose/cpp-httplib</font>"),
-        ("R9", "开放原子开源基金会，开放原子大赛信息页。"
+        ("R16", "开放原子开源基金会，开放原子大赛信息页。"
                "<font color='#1a66b0'>https://www.openatom.org</font>"),
     ]
     for tag, txt in refs:

@@ -114,6 +114,17 @@ class UsageSignal:
     #: 编译通过、少解析一个文件，但 JUnit reporter 的静态注册整个消失——
     #: 汇编里 ``??__EDOCTEST_ANON_REPORTER_VAR_100`` 那段不见了。
     side_effects: tuple[str, ...] = ()
+    #: 消失集合提供的名字里，有可能被 ``##`` **拼出来**的那几个。
+    #: 源码写的是 ``MANT_DIG``，头文件提供的是 ``DBL_MANT_DIG``，中间靠
+    #: ``#define l_floatatt(n) (DBL_##n)`` 接上——两边文本里都不存在
+    #: ``DBL_MANT_DIG`` 这个词，只有编译器拼得出来。
+    pasted: tuple[str, ...] = ()
+    #: 命中了、但**可达集里没有任何头**以任何形态（声明、定义、别名）提供
+    #: 的名字。它们来自编译命令行（``-DDOCTEST_CONFIG_DISABLE``）或源码之外
+    #: 的世界——删除任何一条 include 都带不走它们，所以不构成保留证据。
+    #: doctest 实测：``handler.cpp`` 的候选此前全靠这种幻影命中判「在用」，
+    #: 真值是 4 条全可删。
+    unprovided: tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
@@ -356,7 +367,13 @@ _NOT_A_TYPE = frozenset(
 _OBJECT_DECL = re.compile(
     r"(?:^|[;{}])[\s;{}]*"
     r"(?:(?:const|volatile|static|extern|register|inline|constexpr|constinit"
-    r"|thread_local|mutable|unsigned|signed|struct|enum|union)\s+)*"
+    r"|thread_local|mutable|unsigned|signed|struct|enum|union"
+    # 宏名当类型限定符：``local const ct_data static_ltree[] = …``（zlib
+    # trees.h）、``DOCTEST_THREAD_LOCAL std::vector<…> g_cs;``（doctest）。
+    # 不认这一形态，trees.h / crc32.h 里整批表定义就没有声明者，四条真依赖
+    # 被判成「另有供给 → 疑似未使用」。正则靠回溯保证最后一个标识符落在
+    # 声明名的位置；``return y;`` 这类语句由 _NOT_A_TYPE 拦住。
+    r"|[A-Za-z_]\w*)\s+)*"
     r"([A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)*(?:\s*<[^;{}()]*>)?)"
     r"[ \t\*&]+"
     r"([A-Za-z_]\w*)"
@@ -404,8 +421,124 @@ def _split_params(text: str) -> list[str]:
     return parts
 
 
-def definition_offsets(text: str) -> dict[str, int]:
+_PASTE_PREFIX = re.compile(r"([A-Za-z_]\w*)\s*##")
+_PASTE_SUFFIX = re.compile(r"##\s*([A-Za-z_]\w*)")
+_DEFINE_HEAD = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s*(\(([^)]*)\))?")
+_CONDITIONAL_IFDEF = re.compile(r"^\s*#\s*ifdef\s+([A-Za-z_]\w*)")
+_CONDITIONAL_IFNDEF = re.compile(r"^\s*#\s*ifndef\s+([A-Za-z_]\w*)")
+_COMPLEX_IF = re.compile(r"^\s*#\s*if\b")
+_CONDITIONAL_END = re.compile(r"^\s*#\s*(?:endif|else|elif)\b")
+_CONDITIONAL_ELSE = re.compile(r"^\s*#\s*(?:else|elif)\b")
+
+
+def _blocking_conditional_regions(
+    text: str, defined: frozenset[str]
+) -> list[tuple[int, int]]:
+    """**不能当作自供给**的条件区间（字符下标，半开）。
+
+    两类区间进不了自供给：
+
+    * **判死了的**：``#ifdef X``（X 不在命令行 ``-D`` 里）与 ``#ifndef X``
+      （X 在 ``-D`` 里）。分支根本不编译，那里的定义不存在——名字实际来自
+      头文件（zlib ``crc32.c`` 的 ``#ifdef DYNAMIC_CRC_TABLE`` 分支里定义了
+      ``x2n_table``，本构建该分支没有被编译；按自供给算，真依赖凭空消失，
+      判成可删）。
+    * **判不了死活的**：复杂的 ``#if`` 表达式（``defined(A) || !defined(B)``
+      的 B 往往由包含链里的头定义，命令行判不了）。zlib ``trees.c`` 的
+      ``static_ltree`` 声明就藏在 ``#if defined(GEN_TREES_H) || !defined(STDC)``
+      里——按自供给算同样漏掉真依赖。方向保守：这些名字保留为证据；若
+      幸存头确实也声明了它们，删除依然安全（走「另有供给」）。
+
+    ``#else`` 翻转当前半段的活死并分开记录。头文件侧**不要**用这个函数：
+    头文件整个被 include guard 包着，全判死就什么声明都不剩了。
+    """
+    regions: list[tuple[int, int]] = []
+    # 每层：[当前半段起点, 当前半段是否死, 祖先是否死, 守卫可求值?]
+    stack: list[list] = []
+    offset = 0
+
+    def close_half(upto: int) -> None:
+        if not stack:
+            return
+        entry = stack[-1]
+        # 判死、或守卫根本求不了值（复杂 #if）→ 这半段的定义不可信。
+        if entry[1] or not entry[3]:
+            regions.append((entry[0], upto))
+        entry[0] = upto
+
+    for line in text.splitlines(keepends=True):
+        ifdef = _CONDITIONAL_IFDEF.match(line)
+        ifndef = _CONDITIONAL_IFNDEF.match(line)
+        inherited = bool(stack) and (stack[-1][1] or stack[-1][2])
+        if ifdef:
+            stack.append([offset, ifdef.group(1) not in defined, inherited, True])
+        elif ifndef:
+            stack.append([offset, ifndef.group(1) in defined, inherited, True])
+        elif _COMPLEX_IF.match(line):
+            stack.append([offset, False, inherited, False])
+        elif _CONDITIONAL_ELSE.match(line) and stack:
+            # 当前半段到此为止；#else 后的新半段翻转活死（#elif 判不了，按活）。
+            close_half(offset)
+            entry = stack[-1]
+            entry[1] = (not entry[1]) if entry[3] else False
+        elif _CONDITIONAL_END.match(line) and stack:
+            close_half(offset)
+            stack.pop()
+        offset += len(line)
+    for entry in stack:  # 未闭合的条件块算到文件尾
+        if entry[1] or entry[2] or not entry[3]:
+            regions.append((entry[0], offset))
+    return regions
+
+
+def _macro_params(line: str) -> set[str]:
+    """``#define M(a, b) ...`` 的形参名集合；无参宏返回空集。"""
+    match = _DEFINE_HEAD.match(line)
+    if not match or not match.group(2):
+        return set()
+    return {
+        piece.strip()
+        for piece in (match.group(3) or "").split(",")
+        if piece.strip()
+    }
+
+
+def paste_affixes(text: str) -> tuple[frozenset[str], frozenset[str]]:
+    """宏体里用 ``##`` 拼接出来的**字面**前缀与后缀。
+
+    ``#define l_floatatt(n) (DBL_##n)`` 会把源码里写的 ``MANT_DIG`` 拼成
+    ``DBL_MANT_DIG``——一个源码和头文件里**都没有写过**的名字。文本层因此完全
+    看不到这条依赖：Lua 的 ``lcode.c -> float.h`` 就这样被判成「疑似未使用」，
+    删掉之后 ``use of undeclared identifier 'DBL_MANT_DIG'``。
+
+    只取 ``##`` 旁边是**字面量**的那一半：``##`` 紧挨着的若是本宏的**形参**
+    （``DBL_ ## n`` 里的 ``n``），拼出来的词随调用点变化，不构成固定词缀，
+    收进来只会制造噪声。
+    """
+    prefixes: set[str] = set()
+    suffixes: set[str] = set()
+    for line in _strip_noise(text).splitlines():
+        if not line.lstrip().startswith("#"):
+            continue
+        params = _macro_params(line)
+        for match in _PASTE_PREFIX.finditer(line):
+            if match.group(1) not in params:
+                prefixes.add(match.group(1))
+        for match in _PASTE_SUFFIX.finditer(line):
+            if match.group(1) not in params:
+                suffixes.add(match.group(1))
+    return frozenset(prefixes), frozenset(suffixes)
+
+
+def definition_offsets(
+    text: str, prototypes: bool = False
+) -> dict[str, int]:
     """同 :func:`definitions_in`，但给出每个名字**最早的定义位置**（字符下标）。
+
+    ``prototypes`` 为真时把 ``void f(int);`` 这种**函数原型**也算声明。头文件
+    里几乎全是原型，不算就一个供给者都认不出来；源文件里不能开——``return
+    foo(a);`` 的前缀是 ``return``，会被误认成声明。
+
 
     位置不是可选项。doctest 的 ``exception_translator.cpp`` 在第 19、24 行定义
     ``getExceptionTranslators`` / ``translateActiveException``，却在**第 14 行**
@@ -463,7 +596,12 @@ def definition_offsets(text: str) -> dict[str, int]:
         if close < 0:
             continue
         tail = stripped[close + 1 : close + 40]
-        if not (_DEF_TAIL.match(tail) or tail.lstrip().startswith(":")):
+        is_declaration = (
+            _DEF_TAIL.match(tail)
+            or tail.lstrip().startswith(":")
+            or (prototypes and tail.lstrip().startswith(";"))
+        )
+        if not is_declaration:
             continue
         add(name, match.start(1))
         # 形参名也算本文件提供：``unsigned start`` 里的 ``start`` 与头文件无关。
@@ -640,6 +778,8 @@ class IdentifierIndex:
         "_supplied",
         "_conditional",
         "_sidefx",
+        "_pastes",
+        "_aliases",
     )
 
     def __init__(self) -> None:
@@ -648,9 +788,11 @@ class IdentifierIndex:
         self._providers: dict[Path, frozenset[str]] = {}
         self._renamed: dict[Path, frozenset[str]] = {}
         self._defined: dict[Path, frozenset[str]] = {}
-        self._supplied: dict[Path, frozenset[str]] = {}
+        self._supplied: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
         self._conditional: dict[Path, frozenset[str]] = {}
         self._sidefx: dict[Path, tuple[str, ...]] = {}
+        self._pastes: dict[Path, tuple[frozenset[str], frozenset[str]]] = {}
+        self._aliases: dict[Path, tuple[tuple[str, str], ...]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
         cached = self._headers.get(path)
@@ -662,12 +804,19 @@ class IdentifierIndex:
         return ids
 
     def header_provider_ids(self, path: Path) -> frozenset[str]:
-        """这个头在**删除后仍可能继续供给**的标识符（去掉重命名宏）。
+        """这个头**声明/定义**了哪些名字（去掉重命名宏）。
 
-        只用于**幸存头**一侧（判断「别的头是否也能提供 X」）：``#define X Y``
-        与 ``#pragma map(X, ...)`` 只是别名，别名不能证明展开目标 Y 在删除后
-        仍然有声明——按"能提供"算会把真实依赖判成可删（zlib 的
-        ``inflate_fast`` 就是这样）。
+        只用于**幸存头**一侧（判断「别的头是否也能提供 X」）。两处语义：
+
+        * ``#define X Y`` 与 ``#pragma map(X, ...)`` 只是别名，别名不能证明
+          展开目标 Y 在删除后仍然有声明——按"能提供"算会把真实依赖判成可删
+          （zlib 的 ``inflate_fast`` 就是这样）；
+        * **「提到」不等于「提供」**。Lua 的 ``ldo.h`` 在另一个宏的展开体里
+          **调用** ``luaC_checkGC``，而真声明在 ``lgc.h``；按「文本出现过」
+          算供给，``ldebug.c -> lstring.h`` 就被判成「另有供给 → 疑似未使用」，
+          删掉之后 ``call to undeclared function 'luaC_checkGC'``。
+          所以这里只认**声明形态**（``#define``、函数原型/定义、类型与对象声明），
+          原型也算（头文件里几乎全是原型）。
 
         **不要**把它用在被删闭包那一侧：闭包里的 ``#define X Y`` 是在**定义**
         宏 X，宏随头一起消失，X 就是它提供的（fcntl.h 的 ``O_BINARY``）。
@@ -676,11 +825,52 @@ class IdentifierIndex:
         cached = self._providers.get(path)
         if cached is not None:
             return cached
-        ids = self.header_ids(path)
-        renamed = self._renamed_names(path)
-        providers = ids - renamed if renamed else ids
+        text = _read(path)
+        if text is None:
+            providers: frozenset[str] = frozenset()
+        else:
+            declared = frozenset(definition_offsets(text, prototypes=True))
+            renamed = self._renamed_names(path)
+            providers = declared - renamed
         self._providers[path] = providers
         return providers
+
+    def header_paste_affixes(self, path: Path) -> tuple[frozenset[str], frozenset[str]]:
+        """这个头里 ``##`` 拼接用的字面词缀（见 :func:`paste_affixes`）。"""
+        cached = self._pastes.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        affixes = paste_affixes(text) if text is not None else (frozenset(), frozenset())
+        self._pastes[path] = affixes
+        return affixes
+
+    def header_aliases(self, path: Path) -> tuple[tuple[str, str], ...]:
+        """这个头里的重命名别名 ``(别名, 目标)``（``#define X Y`` 形态）。
+
+        供 graph.py 做**别名链解析**。两种命运，方向相反：
+
+        * 幸存头里的 ``#define X Y``：X 这个名字在删除后**还在**，但只有
+          目标 Y 也活着它才可用——Y 在幸存侧仍有声明时 X 算「有供给」
+          （doctest 的 ``#define DOCTEST_SUPPRESS_…_POP  …_COMMON_…_POP``
+          链条）；Y 的声明只活在被删闭包里时 X 等于没了（zlib 的
+          ``inflate_fast``）。
+        * 被删闭包里的 ``#define X Y``：X 这个名字本身随头一起消失——
+          哪怕目标是到处都有的系统宏（minigzip 的 ``O_BINARY`` →
+          ``_O_BINARY``），删掉定义者编译就报 ``undeclared``。
+        """
+        cached = self._aliases.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path) or ""
+        pairs: list[tuple[str, str]] = []
+        for line in _strip_noise(text).splitlines():
+            match = _RENAME_DEFINE.match(line)
+            if match and match.group(2) not in _RENAME_TARGET_IS_A_MACRO:
+                pairs.append((match.group(1), match.group(2)))
+        out = tuple(pairs)
+        self._aliases[path] = out
+        return out
 
     def _renamed_names(self, path: Path) -> frozenset[str]:
         cached = self._renamed.get(path)
@@ -740,16 +930,28 @@ class IdentifierIndex:
         self._defined[path] = defined
         return defined
 
-    def source_self_supplied_ids(self, path: Path) -> frozenset[str]:
+    def source_self_supplied_ids(
+        self, path: Path, defined_macros: frozenset[str] = frozenset()
+    ) -> frozenset[str]:
         """源码**自己就给得出**、且给的位置不晚于首次使用的名字。
 
-        比 :meth:`source_defined_ids` 多一道位置判据：定义在**使用之后**时，
-        使用点上这个名字还没有声明，头文件仍然是必需的（doctest
-        ``exception_translator.cpp`` 第 14 行先用、第 19 行才定义
-        ``getExceptionTranslators``）。少了这道判据，那条候选被判「疑似未使用」，
-        实测删掉后 ``use of undeclared identifier``。
+        比 :meth:`source_defined_ids` 多两道判据：
+
+        * **位置**：定义在**使用之后**时，使用点上这个名字还没有声明，
+          头文件仍然是必需的（doctest ``exception_translator.cpp`` 第 14 行
+          先用、第 19 行才定义 ``getExceptionTranslators``）。少了这道判据，
+          那条候选被判「疑似未使用」，实测删掉后
+          ``use of undeclared identifier``。
+        * **判死了的条件分支**：定义落在 ``#ifdef X``（X 不在命令行 ``-D``
+          里）这类**确定不编译**的区间里时不算——那个定义根本不存在，
+          名字实际来自头文件（zlib ``crc32.c`` 的 ``#ifdef DYNAMIC_CRC_TABLE``
+          分支里定义了 ``x2n_table``，本构建该分支没有被编译；按自供给算，
+          真依赖凭空消失，判成可删）。判不了死活的分支保持旧口径——
+          里面的定义照算自供给。头文件侧不做这一步：头文件整个被 include
+          guard 包着，全判死就什么声明都不剩了。
         """
-        cached = self._supplied.get(path)
+        key = (path, defined_macros)
+        cached = self._supplied.get(key)
         if cached is not None:
             return cached
         text = _read(path)
@@ -758,12 +960,14 @@ class IdentifierIndex:
         else:
             offsets = definition_offsets(text)
             first = _first_occurrence(text)
+            regions = _blocking_conditional_regions(text, defined_macros)
             supplied = frozenset(
                 name
                 for name, where in offsets.items()
                 if first.get(name, where) >= where
+                and not any(lo <= where < hi for lo, hi in regions)
             )
-        self._supplied[path] = supplied
+        self._supplied[key] = supplied
         return supplied
 
     def source_conditional_ids(self, path: Path) -> frozenset[str]:
@@ -785,14 +989,27 @@ def analyse_usage(
     closure: tuple[Path, ...] | list[Path] | set[Path] | None = None,
     index: IdentifierIndex | None = None,
     reachable_counts: dict[str, int] | None = None,
+    paste_affixes: tuple[frozenset[str], frozenset[str]] | None = None,
+    declarers: dict[str, frozenset[Path]] | None = None,
+    alias_defs: dict[str, tuple[tuple[Path, str], ...]] | None = None,
+    defined_macros: frozenset[str] | None = None,
 ) -> UsageSignal:
     """Compare the identifiers a TU uses with those that disappear with an include.
+
+    ``paste_affixes`` 是**幸存头**里 ``##`` 拼接用的字面词缀
+    ``(前缀集合, 后缀集合)``。给出它时，消失集合里能被拼出来的名字也算命中：
+    源码写 ``MANT_DIG``、头文件提供 ``DBL_MANT_DIG``、中间靠
+    ``#define l_floatatt(n) (DBL_##n)`` 接上的情形，否则一条都看不到。
 
     ``closure`` is the *exclusive* closure of the candidate include -- the
     headers that stop being parsed if it is removed -- and normally includes
     ``header`` itself.  Passing it is what makes the verdict correct for
     headers that forward other headers; omitting it keeps the old
     single-file behaviour, which is only right when the candidate is a leaf.
+
+    ``defined_macros`` 是编译命令行 ``-D`` 给出的宏名集合，用于把 ``#ifdef X``
+    / ``#ifndef X`` 求值成死/活分支：死分支里的定义不算源码自供给（zlib
+    ``crc32.c`` 的 ``x2n_table``）。给不出就保持旧口径。
 
     ``reachable_counts`` maps an identifier to **how many headers in the whole
     reachable set declare it** (reachable = everything the unit parses now,
@@ -817,7 +1034,9 @@ def analyse_usage(
     # 源码自己定义的名字不算依赖证据：删掉头文件之后，这些名字由源码自己给出。
     # 不加这一步，``inffast.c`` 因为自己定义了 ``inflate_fast`` 而永远判「在用」
     # ——它的每一行实现都在提醒判定「这个头被用着」。
-    self_provided = index.source_self_supplied_ids(source)
+    self_provided = index.source_self_supplied_ids(
+        source, defined_macros if defined_macros is not None else frozenset()
+    )
     wanted_ids = source_ids - self_provided
 
     extra = [Path(p) for p in (closure or ()) if Path(p) != header]
@@ -860,6 +1079,36 @@ def analyse_usage(
             provider, count = hits[name]
             hits[name] = (provider, count + 1)
 
+    def _pasted_names() -> list[str]:
+        """消失集合里**可能被 ``##`` 拼出来**的名字。
+
+        只在快要下「没在用」的结论时才算——这一步要扫整个消失集合，放在别处
+        白烧时间。
+        """
+        if not paste_affixes:
+            return []
+        prefixes, suffixes = paste_affixes
+        if not prefixes and not suffixes:
+            return []
+        found: set[str] = set()
+        for path in ordered:
+            for name in index.header_ids(path):
+                for prefix in prefixes:
+                    if (
+                        len(name) > len(prefix)
+                        and name.startswith(prefix)
+                        and name[len(prefix) :] in source_ids
+                    ):
+                        found.add(name)
+                for suffix in suffixes:
+                    if (
+                        len(name) > len(suffix)
+                        and name.endswith(suffix)
+                        and name[: -len(suffix)] in source_ids
+                    ):
+                        found.add(name)
+        return sorted(found)[:8]
+
     if effects:
         # **副作用压过一切文本证据**：这个头靠「被包含时执行了什么」起作用，
         # 源码提不提到它的名字都无关。它必须留在候选之外——删掉之后编译照样
@@ -883,16 +1132,63 @@ def analyse_usage(
         # 这一条上——闭包有 275 个头，TU 随便提一个 string 就算在用。
         sole: dict[str, tuple[Path, int]] = {}
         cross: dict[str, tuple[Path, int]] = {}
-        for name, (provider, count) in hits.items():
-            total_providers = (
-                count
-                if reachable_counts is None
-                else reachable_counts.get(name, count)
-            )
-            if total_providers <= count:
-                sole[name] = (provider, count)
-            else:
-                cross[name] = (provider, count)
+        #: 谁都不提供的命中：命令行 ``-D`` 或源码之外的世界给的，删除任何
+        #: include 都带不走（doctest 的 ``DOCTEST_CONFIG_DISABLE``）。
+        ambient: list[str] = []
+        if declarers is not None and alias_defs is not None:
+            # **基于集合的精确语义**。消失集合就是 ``ordered``（闭包 + 候选
+            # 自己），名字 X 删除后的命运有四种，逐一判定：
+            #
+            # 1. 幸存侧还有真实声明者 → X 活着 → 命中不算证据；
+            # 2. 声明者全在消失集合 → X 没了 → 在用（NO_GZCOMPRESS、
+            #    luaC_checkGC）；
+            # 3. X 只是别名且别名定义在消失集合 → 名字本身随头消失 → 在用
+            #    （O_BINARY → _O_BINARY，目标再 ubiquitous 也没用）；
+            # 4. X 是幸存头的别名：目标 Y 在幸存侧仍有声明者 → X 活着 →
+            #    不算证据（doctest 的 SUPPRESS 链）；Y 也活不下去 → 在用
+            #    （zlib inflate_fast）。
+            # 谁都不提供（1–4 全不中）→ 环境噪音，从证据里剔除。
+            vanishing = {Path(p) for p in ordered}
+            for name, (provider, count) in hits.items():
+                real = declarers.get(name, frozenset())
+                if real - vanishing:
+                    cross[name] = (provider, count)
+                    continue
+                if real:
+                    sole[name] = (provider, count)
+                    continue
+                aliases_for_name = alias_defs.get(name, ())
+                if any(h in vanishing for h, _t in aliases_for_name):
+                    # 消失集合里有人定义了这个别名：名字随头消失。
+                    sole[name] = (provider, count)
+                    continue
+                surviving_aliases = [
+                    (h, t) for h, t in aliases_for_name if h not in vanishing
+                ]
+                if any(
+                    declarers.get(t, frozenset()) - vanishing
+                    for _h, t in surviving_aliases
+                ):
+                    # 幸存别名 + 目标在幸存侧仍有声明者 → 名字照常可用。
+                    cross[name] = (provider, count)
+                    continue
+                if surviving_aliases:
+                    # 幸存头保留了别名，但目标的声明全在消失集合里——
+                    # 展开出来的名字编不过（zlib inflate_fast）。
+                    sole[name] = (provider, count)
+                    continue
+                ambient.append(name)
+        else:
+            for name, (provider, count) in hits.items():
+                total_providers = (
+                    count
+                    if reachable_counts is None
+                    else reachable_counts.get(name, count)
+                )
+                if total_providers <= count:
+                    sole[name] = (provider, count)
+                else:
+                    cross[name] = (provider, count)
 
         # **特异性**：命中一个标识符不等于这个 include 被使用。
         #
@@ -946,6 +1242,7 @@ def analyse_usage(
                 cross_provided=tuple(sorted(cross)[:8]),
                 self_provided=tuple(sorted(self_hits)[:8]),
                 conditional_only=weak,
+                unprovided=tuple(sorted(ambient)[:8]),
             )
         if sole:
             # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
@@ -956,16 +1253,29 @@ def analyse_usage(
                 ambient_identifiers=tuple(sorted(sole)[:8]),
                 cross_provided=tuple(sorted(cross)[:8]),
                 self_provided=tuple(sorted(self_hits)[:8]),
+                unprovided=tuple(sorted(ambient)[:8]),
             )
         # 命中的每一个名字，在保留下来的头文件里都还有供给——删掉这条
         # include 之后它们照样存在。这不是「证据不足」，是证据指向删除；
         # 但文本层看不到命名空间与重载，所以仍然只是 *疑似*，由 verify 定论。
+        pasted = _pasted_names()
+        if pasted:
+            # 拼出来的名字两边文本里都不存在，只有编译器拼得出来。宁可判「在用」。
+            return UsageSignal(
+                verdict=UsageVerdict.IN_USE,
+                header_identifier_count=total,
+                cross_provided=tuple(sorted(cross)[:8]),
+                self_provided=tuple(sorted(self_hits)[:8]),
+                pasted=tuple(pasted),
+                unprovided=tuple(sorted(ambient)[:8]),
+            )
         return UsageSignal(
             verdict=UsageVerdict.PLAUSIBLY_UNUSED,
             shared_identifiers=tuple(sorted(cross)[:8]),
             header_identifier_count=total,
             cross_provided=tuple(sorted(cross)[:8]),
             self_provided=tuple(sorted(self_hits)[:8]),
+            unprovided=tuple(sorted(ambient)[:8]),
         )
 
     if total == 0:
@@ -982,6 +1292,14 @@ def analyse_usage(
             # branch is never reached -- the closure is the real comparison.
             return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
 
+    pasted = _pasted_names()
+    if pasted:
+        return UsageSignal(
+            verdict=UsageVerdict.IN_USE,
+            header_identifier_count=total,
+            self_provided=tuple(sorted(self_hits)[:8]),
+            pasted=tuple(pasted),
+        )
     return UsageSignal(
         verdict=UsageVerdict.PLAUSIBLY_UNUSED,
         header_identifier_count=total,

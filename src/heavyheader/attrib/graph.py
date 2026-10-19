@@ -460,10 +460,46 @@ def find_removal_candidates(
             reach_all |= analysis.closures.get(other, set())
         source_ids = index.source_ids(tu.source) or frozenset()
         reachable_counts: dict[str, int] = {}
+        declarers: dict[str, frozenset[Path]] = {}
+        alias_defs: dict[str, tuple[tuple[Path, str], ...]] = {}
         if source_ids:
             for path in reach_all:
                 for name in index.header_provider_ids(path) & source_ids:
                     reachable_counts[name] = reachable_counts.get(name, 0) + 1
+            # **精确判定用的两张底账**（与上面的计数口径不同，这里覆盖可达集
+            # 里出现过的**所有**名字，别名目标也算——analyse_usage 要按候选
+            # 的消失集合逐名字裁决，计数不够用）：
+            #
+            # * ``declarers``：真实声明/定义（别名剥除后）每个名字的声明者集合；
+            # * ``alias_defs``：每个别名名字的定义处 ``(头, 目标)``。
+            #
+            # 四种命运在 analyse_usage 里裁决：声明者全消失→在用；幸存别名但
+            # 目标活不下去→在用（zlib inflate_fast）；消失侧定义的别名→名字
+            # 随头消失（O_BINARY）；**谁都不提供→环境噪音**，从证据里剔除
+            # （doctest 的 DOCTEST_CONFIG_DISABLE——命令行 -D 给的，幻影命中
+            # 曾把 4 条真可删的候选全顶成「在用」）。
+            all_declarers: dict[str, set[Path]] = {}
+            all_aliases: dict[str, list[tuple[Path, str]]] = {}
+            for path in reach_all:
+                for name in index.header_provider_ids(path):
+                    all_declarers.setdefault(name, set()).add(path)
+                for alias, target in index.header_aliases(path):
+                    all_aliases.setdefault(alias, []).append((path, target))
+            declarers = {
+                name: frozenset(paths) for name, paths in all_declarers.items()
+            }
+            alias_defs = {
+                name: tuple(pairs) for name, pairs in all_aliases.items()
+            }
+        # ``##`` 拼接的字面词缀：源码写一半、头文件提供另一半，中间由宏拼起来。
+        # 少了这一项，Lua 的 ``<float.h>`` 会被判成「疑似未使用」。
+        prefixes: set[str] = set()
+        suffixes: set[str] = set()
+        for path in reach_all:
+            found_prefix, found_suffix = index.header_paste_affixes(path)
+            prefixes |= found_prefix
+            suffixes |= found_suffix
+        affixes = (frozenset(prefixes), frozenset(suffixes))
 
         for header in directs:
             # Union of everything reachable from *other* direct includes.  A
@@ -538,6 +574,10 @@ def find_removal_candidates(
                 closure=exclusive,
                 index=index,
                 reachable_counts=reachable_counts,
+                paste_affixes=affixes,
+                declarers=declarers,
+                alias_defs=alias_defs,
+                defined_macros=compile_defines(tu),
             )
             candidates.append(
                 RemovalCandidate(
@@ -638,6 +678,23 @@ def _ambiguous_include_lines(tu: TranslationUnit, header: Path) -> tuple[int, ..
     return tuple(find_include_lines(text, header))
 
 
+def compile_defines(tu: TranslationUnit) -> frozenset[str]:
+    """这个单元编译命令行 ``-D`` / ``/D`` 给出的宏名集合。
+
+    用于把 ``#ifdef X`` / ``#ifndef X`` 求值成死/活分支（见
+    :func:`heavyheader.attrib.usage._dead_conditional_regions`）。拿不到编译
+    选项时返回空集——所有条件分支按未知处理，保持旧口径。
+    """
+    options = tu.compile_options
+    flags = getattr(options, "extra_flags", None) or []
+    names: set[str] = set()
+    for flag in flags:
+        body = flag[2:] if flag.startswith("-D") or flag.startswith("/D") else ""
+        if body:
+            names.add(body.split("=", 1)[0].strip())
+    return frozenset(names)
+
+
 def _usage_reason(signal) -> str:
     """一句话说明 usage 判定的依据（按证据强度从强到弱取第一条）。
 
@@ -648,6 +705,8 @@ def _usage_reason(signal) -> str:
         return ""
     if signal.side_effects:
         return f"副作用：{signal.side_effects[0]}"
+    if signal.pasted:
+        return f"{'、'.join(signal.pasted[:2])} 由 ## 拼接产生（源码只写了一半）"
     if signal.provided_by is not None and signal.shared_identifiers:
         owner = signal.provided_by.name
         names = "、".join(signal.shared_identifiers[:2])
@@ -655,6 +714,9 @@ def _usage_reason(signal) -> str:
     if signal.conditional_only:
         names = "、".join(signal.conditional_only[:2])
         return f"{names} 仅用于 #ifdef 判断（删除会换分支）"
+    if signal.unprovided:
+        names = "、".join(signal.unprovided[:2])
+        return f"{names} 不由任何头提供（命令行宏）"
     if signal.self_provided:
         names = "、".join(signal.self_provided[:2])
         return f"{names} 由本文件自己定义"
@@ -723,6 +785,12 @@ def _notes(
             f"{owner} 在名字空间作用域执行了 {shown} ——"
             "删除不会编译失败，但会静默改变程序行为（副作用型 include）"
         )
+    if signal is not None and signal.pasted:
+        names = "、".join(signal.pasted[:3])
+        notes.append(
+            f"{names} 由幸存头里的 ## 拼接产生（源码只写了词缀的一半），"
+            "文本层看不到这个名字——按「在用」处理，避免静默改程序"
+        )
     if signal is not None and signal.conditional_only:
         # 「命中了但它只是被问了一句在不在」必须写出来，否则读者看到
         # 「疑似未使用」会以为判定什么都没找到。
@@ -730,6 +798,14 @@ def _notes(
         notes.append(
             f"{names} 只在 #ifdef / #ifndef 里被问「在不在」，"
             "删除只会改变条件编译的分支，不是硬依赖（该分支能否编过仍需实测）"
+        )
+    if signal is not None and signal.unprovided:
+        # 幻影命中：这些名字可达集里没有任何头提供——多半来自编译命令行。
+        # 不写出来，读者看到「疑似未使用」会疑惑「明明命中了怎么算没用」。
+        names = "、".join(signal.unprovided[:3])
+        notes.append(
+            f"{names} 不由任何被包含的头提供（多半是命令行 -D 宏），"
+            "删除 include 带不走它们，不算保留证据"
         )
     if signal is not None and signal.self_provided:
         names = "、".join(signal.self_provided[:3])

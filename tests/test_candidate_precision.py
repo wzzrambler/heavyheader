@@ -296,3 +296,250 @@ def test_unresolvable_mention_does_not_invent_an_edge(tmp_path):
     )
     adjacency = _potential_adjacency(tu, IncludeMentions(), {src, one, two, user})
     assert adjacency.get(user, []) == []
+
+
+def test_pasted_macro_name_blocks_unused_verdict(tmp_path):
+    """``##`` 拼出来的名字两边文本里都不存在——文本层唯一能抓到的线索。
+
+    复刻 Lua lcode.c 的形态：源码写 ``l_floatatt(MANT_DIG)``，宏把它拼成
+    ``DBL_MANT_DIG``，而这个名字由被删的 ``<float.h>`` 提供。旧判定在源码里
+    找不到 ``DBL_MANT_DIG`` 就判「疑似未使用」，删除后报
+    ``use of undeclared identifier 'DBL_MANT_DIG'``。
+    """
+    lgc = _write(tmp_path / "float.h", "#define DBL_MANT_DIG 53\n")
+    # float.h 是「只声明宏的头」：闭包里再放一个有真实声明的伴头，
+    # 否则判定会走「无闭包聚合头」的保守分支，测不到粘贴规则。
+    companion = _write(tmp_path / "float-decls.h", "typedef int floatmax_t;\n")
+    luaconf = _write(tmp_path / "luaconf.h", "#define l_floatatt(n) (DBL_##n)\n")
+    src = _write(
+        tmp_path / "lcode.c",
+        '#include "float.h"\n#include "luaconf.h"\nint f(void) { return l_floatatt(MANT_DIG); }\n',
+    )
+
+    index = IdentifierIndex()
+    prefixes, _suffixes = index.header_paste_affixes(luaconf)
+    assert prefixes == frozenset({"DBL_"})
+
+    signal = analyse_usage(
+        src,
+        lgc,
+        closure=[lgc, companion],
+        index=index,
+        reachable_counts={},
+        paste_affixes=(prefixes, frozenset()),
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert "DBL_MANT_DIG" in signal.pasted
+
+
+def test_surviving_header_mention_is_not_a_provider(tmp_path):
+    """幸存头在宏体里**调用**一个函数不等于它**声明**了这个函数。
+
+    复刻 Lua ldebug.c 的形态：``ldo.h`` 的宏展开体里有 ``luaC_checkGC``，
+    真声明在被删的 ``lgc.h``。旧口径按「文本出现过」算供给，ldo.h 也被当成
+    另一个供给者 → 判「疑似未使用」，删除后
+    ``call to undeclared function 'luaC_checkGC'``。
+    """
+    ldo = _write(
+        tmp_path / "ldo.h",
+        "#define luaD_call(L, f) (luaD_callnoyield(L, f), luaC_checkGC(L))\n",
+    )
+    lgc = _write(tmp_path / "lgc.h", "void luaC_checkGC(struct lua_State *L);\n")
+    src = _write(
+        tmp_path / "ldebug.c",
+        '#include "ldo.h"\n#include "lgc.h"\nvoid run(struct lua_State *L) { luaC_checkGC(L); }\n',
+    )
+
+    index = IdentifierIndex()
+    # 闭包侧（header_ids）确实能看到 ldo.h 提到这个名字；
+    # 幸存头侧（header_provider_ids）只认声明形态，宏体里的调用不算。
+    assert "luaC_checkGC" in index.header_ids(ldo)
+    assert "luaC_checkGC" not in index.header_provider_ids(ldo)
+    assert "luaC_checkGC" in index.header_provider_ids(lgc)
+
+    # 模拟 graph.py 的 reachable_counts：按 provider 口径数供给者。
+    counts = sum(
+        1 for p in (ldo, lgc) if "luaC_checkGC" in index.header_provider_ids(p)
+    )
+    signal = analyse_usage(
+        src,
+        lgc,
+        closure=[lgc],
+        index=index,
+        reachable_counts={"luaC_checkGC": counts},
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert signal.provided_by == lgc
+
+
+def test_command_line_macro_is_not_keep_evidence(tmp_path):
+    """可达集里**没有任何头**提供的命中是幻影——删除 include 带不走它。
+
+    复刻 doctest handler.cpp 的形态：``DOCTEST_CONFIG_DISABLE`` 只出现在
+    ``#ifdef`` 里，真正的定义来自编译命令行 ``-D``。旧判定看到「闭包提到 +
+    源码提到」就判「在用」，真值是删除后照样编译。
+    """
+    a = _write(tmp_path / "a.h", "#ifdef DOCTEST_CONFIG_DISABLE\nint x;\n#endif\n")
+    src = _write(
+        tmp_path / "main.c",
+        '#include "a.h"\n#ifdef DOCTEST_CONFIG_DISABLE\nint y;\n#endif\n',
+    )
+
+    signal = analyse_usage(
+        src,
+        a,
+        closure=[a],
+        index=IdentifierIndex(),
+        declarers={},
+        alias_defs={},
+    )
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+    assert "DOCTEST_CONFIG_DISABLE" in signal.unprovided
+
+
+def test_vanishing_alias_with_surviving_target_is_a_provider(tmp_path):
+    """幸存头里的 ``#define X Y``：只要 Y 在幸存侧仍有声明者，X 就还可用。
+
+    复刻 doctest 的警告宏链：候选头提到 ``POP``，而 ``POP`` 的定义是
+    幸存头 ``warnings.h`` 里的 ``#define POP COMMON_POP``，``COMMON_POP``
+    又由幸存头 ``doctest.h`` 定义。删掉候选后 POP 照常展开——命中不构成
+    保留证据。
+    """
+    doctest_h = _write(tmp_path / "doctest.h", "#define COMMON_POP\nint x;\n")
+    warnings_h = _write(tmp_path / "warnings.h", "#define POP COMMON_POP\n")
+    old_h = _write(tmp_path / "old.h", "POP\nint old_api(void);\n")
+    src = _write(
+        tmp_path / "main.c",
+        '#include "doctest.h"\n#include "warnings.h"\n#include "old.h"\nPOP\n',
+    )
+
+    # 模拟 graph.py 的两张底账：真实声明者（别名剥除）+ 别名定义处
+    declarers = {"COMMON_POP": frozenset({doctest_h})}
+    alias_defs = {"POP": ((warnings_h, "COMMON_POP"),)}
+    signal = analyse_usage(
+        src,
+        old_h,
+        closure=[old_h],
+        index=IdentifierIndex(),
+        declarers=declarers,
+        alias_defs=alias_defs,
+    )
+    # 命中的名字由幸存头经别名链继续提供 → 疑似未使用
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+
+
+def test_vanishing_alias_with_dying_target_still_in_use(tmp_path):
+    """别名目标只活在被删闭包里时，幸存头救不了它——zlib inflate_fast 形态。
+
+    ``zconf.h``（幸存）把 ``foo`` 别名到 ``bar``，而 ``bar`` 的声明随被删的
+    ``old.h`` 一起消失。删除后别名展开到一个未声明的名字——必须判「在用」。
+    """
+    zconf = _write(tmp_path / "zconf.h", "#define foo bar\n")
+    old_h = _write(tmp_path / "old.h", "int old_api(int foo);\n")
+    src = _write(
+        tmp_path / "main.c",
+        '#include "zconf.h"\n#include "old.h"\nint run(void) { return foo(); }\n',
+    )
+
+    declarers = {}  # bar 的声明随 old.h 一起消失
+    alias_defs = {"foo": ((zconf, "bar"),)}
+    signal = analyse_usage(
+        src,
+        old_h,
+        closure=[old_h],
+        index=IdentifierIndex(),
+        declarers=declarers,
+        alias_defs=alias_defs,
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+
+
+def test_vanishing_side_alias_dies_with_its_header(tmp_path):
+    """被删闭包里的 ``#define X Y``：X 这个名字随头一起消失。
+
+    复刻 minigzip 的 ``O_BINARY``：目标 ``_O_BINARY`` 是系统头里到处都有的
+    宏，但定义 O_BINARY 这个名字的只有被删的那一个头——删除后照样
+    ``undeclared identifier``。
+    """
+    fcntl_h = _write(tmp_path / "fcntl.h", "#define O_BINARY _O_BINARY\n")
+    system_h = _write(tmp_path / "system.h", "#define _O_BINARY 0x8000\n")
+    src = _write(
+        tmp_path / "main.c",
+        '#include "fcntl.h"\n#include "system.h"\nint f(void) { return O_BINARY == 0; }\n',
+    )
+
+    declarers = {"_O_BINARY": frozenset({system_h})}
+    alias_defs = {"O_BINARY": ((fcntl_h, "_O_BINARY"),)}
+    signal = analyse_usage(
+        src,
+        fcntl_h,
+        closure=[fcntl_h],
+        index=IdentifierIndex(),
+        declarers=declarers,
+        alias_defs=alias_defs,
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+    assert signal.provided_by == fcntl_h
+
+
+def test_macro_qualified_definition_still_declares(tmp_path):
+    """宏名当类型限定符的表定义也是声明——zlib trees.h / crc32.h 的形态。
+
+    ``local const ct_data static_ltree[D_CODES] = {…}`` 里的 ``local`` 是宏、
+    ``ct_data`` 是自定义类型。旧的对象声明正则只认关键字限定符，这批表在
+    头文件和源文件里都「没有声明者」，四条真依赖被判成「另有供给 → 疑似
+    未使用」，删除后 ``use of undeclared identifier 'static_ltree'``。
+    """
+    trees = _write(
+        tmp_path / "trees.h",
+        "#define local static\ntypedef struct ct_data_s { int f; } ct_data;\n"
+        "local const ct_data static_ltree[10] = { {0, 0} };\n",
+    )
+    src = _write(
+        tmp_path / "trees.c",
+        '#include "trees.h"\nint pick(int i) { return static_ltree[i].f; }\n',
+    )
+
+    index = IdentifierIndex()
+    assert "static_ltree" in index.header_provider_ids(trees)
+
+    signal = analyse_usage(
+        src,
+        trees,
+        closure=[trees],
+        index=index,
+        declarers={"static_ltree": frozenset({trees})},
+        alias_defs={},
+    )
+    assert signal.verdict is UsageVerdict.IN_USE
+
+
+def test_conditional_branch_definition_is_not_self_supply(tmp_path):
+    """非激活条件分支里的定义不能当自供给——zlib crc32.c 的形态。
+
+    ``#ifdef DYNAMIC_CRC_TABLE`` 分支里定义了 ``x2n_table``，本构建该分支
+    **没有**被编译，名字实际来自被删的 ``crc32.h``。旧的位置判据看到
+    「定义在使用之前」就把名字从证据里剔掉了，真依赖凭空消失，判成可删，
+    删除后 ``use of undeclared identifier 'x2n_table'``。
+    """
+    crc_h = _write(tmp_path / "crc32.h", "local const int x2n_table[32] = {0};\n")
+    src = _write(
+        tmp_path / "crc32.c",
+        '#include "crc32.h"\n'
+        "#ifdef DYNAMIC_CRC_TABLE\nlocal const int x2n_table[32] = {0};\n#endif\n"
+        "int use(void) { return x2n_table[0]; }\n",
+    )
+
+    index = IdentifierIndex()
+    # 源码里那个定义在条件区间内 → 不算自供给，名字仍是证据
+    assert "x2n_table" not in index.source_self_supplied_ids(src)
+
+    signal = analyse_usage(
+        src,
+        crc_h,
+        closure=[crc_h],
+        index=index,
+        declarers={"x2n_table": frozenset({crc_h})},
+        alias_defs={},
+    )
+    assert signal.verdict is UsageVerdict.IN_USE

@@ -188,6 +188,13 @@ include guard 拉住的头不计入（口径与实测见
 不削弱**——工具的沉默（没列为可删）不等于「在用」，绝不据此降级我们的结论；工具缺失时
 自动跳过，结论仍以本工具实测为准。详见 [ROADMAP](ROADMAP.md) v0.3。
 
+静态判定在三个语料上做过对照实验（doctest / zlib / Lua，见
+[`experiments/candidate-precision-round3-20261019.md`](experiments/candidate-precision-round3-20261019.md)）：
+「疑似未使用」的推荐在三个语料上**零假阳性**——没有一条会推荐出编不过的删除；
+首条真有用的候选都排到第 1–2 位，而按纯行数排序（Header Hero 口径）要翻遍整张表。
+判定是纯文本层的：副作用型 include、`##` 拼接、别名链、命令行 `-D` 的条件分支
+求值都在这一层完成，不依赖 AST。
+
 ### 3. CI 门禁（`gate`）
 
 ```

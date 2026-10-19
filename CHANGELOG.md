@@ -6,6 +6,42 @@
 
 ### 变更
 
+- **候选精度第三轮：第三个语料（Lua）暴露新根因，判定升级为集合语义**
+  （对照见
+  [`experiments/candidate-precision-round3-20261019.md`](experiments/candidate-precision-round3-20261019.md)）。
+  为防过拟合，引入第三个语料 Lua 5.4.7（33 个编译单元）做泛化检验——立刻暴露
+  6 条「疑似未使用」假阳性，连带挖出五处根因，全部修复后三个语料的
+  `plausibly_unused` 推荐做到**零假阳性**（doctest 3/3、zlib 1/1、Lua 19/20，
+  唯一非有用项是编得过但省 0 个文件的空头承诺）：
+  * **幸存头「提到」不等于「提供」**：Lua `ldo.h` 在宏展开体里*调用*
+    `luaC_checkGC`，真声明在别处——按「文本出现过」算供给会把真依赖判成
+    可删。`header_provider_ids` 改为只认**声明形态**（`#define` 名、函数
+    原型/定义、类型与对象声明）。
+  * **别名链解析**：幸存头里的 `#define X Y` 在 Y 于幸存侧仍有声明者时
+    继续让 X 可用（doctest 的警告宏链）；Y 的声明只活在被删闭包里时不算
+    （zlib `inflate_fast`）。被删闭包里的别名则随头一起消失（`O_BINARY`）。
+    判定从计数升级为**基于集合的精确语义**：graph 传每个名字的真实声明者
+    集合与别名定义处，`analyse_usage` 按候选的消失集合逐名字裁决。
+  * **环境噪音剔除**：可达集里没有任何头提供的命中（多半是命令行 `-D` 宏，
+    如 doctest 的 `DOCTEST_CONFIG_DISABLE`）不再构成保留证据，单独记进
+    `unprovided` 并写进报告。这一类幻影命中曾把 doctest 4 条真可删的候选
+    全部顶成「在用」。
+  * **宏名当类型限定符的对象定义**：`local const ct_data static_ltree[…]`
+    （zlib trees.h）、`DOCTEST_THREAD_LOCAL …`（doctest）——旧正则只认
+    关键字限定符，这批表定义在头和源里都「没有声明者」。
+  * **条件分支求值**：拿编译命令行 `-D` 把 `#ifdef X` / `#ifndef X` 求值成
+    死/活分支（含 `#else` 翻转），**判死了的分支**与**求不了值的复杂
+    `#if`** 里的定义不再算源码自供给（zlib `crc32.c` 的 `x2n_table` 藏在
+    非激活分支里、`trees.c` 的表藏在复杂 `#if` 里，两处真依赖因此凭空消失）。
+    求值在源码侧做——头文件整个被 include guard 包着，不能这么算。
+  * **`##` 拼接检测**（`usage.paste_affixes`）：`#define l_floatatt(n) (DBL_##n)`
+    把源码写的 `MANT_DIG` 拼成 `DBL_MANT_DIG`——一个源码和头文件里都没写过
+    的名字。拼接产物命中即判「在用」（Lua `lcode.c -> float.h`）。
+  * **对照（同一把尺子，基线 = f9e9397 第二轮）**：Lua 从 17 条「疑似未使用」
+    里 6 条编不过，到 20 条里 0 条编不过；doctest P@5 60%→60%（首条有用
+    保持第 1 位）且 3/3 全对；zlib 首条有用第 39 → **1** 位、`plausibly_unused`
+    1/1 全对；排序口径 P@5：doctest 60%、zlib 20%、Lua 80%——全部远高于
+    纯行数口径（Header Hero）的 0%/0%/0%。
 - **候选精度第二轮：先把尺子修对，再改算法**（对照见
   [`experiments/candidate-precision-round2-20261019.md`](experiments/candidate-precision-round2-20261019.md)）。
   * **基准加第三条真值轴**（`--check-codegen`，汇编指纹）。原来只有「编不编得过」

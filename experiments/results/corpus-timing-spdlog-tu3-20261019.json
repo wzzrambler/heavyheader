@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-19",
+  "project": "spdlog",
+  "tus": 8,
+  "top": 3,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "arms": [
+    {
+      "arm": "tu(usage-ranked)",
+      "candidates": 3,
+      "compiled": 2,
+      "improved": 2,
+      "adopt_rate": 0.667,
+      "details": [
+        {
+          "site": "example.cpp",
+          "header": "ranges.h",
+          "reach": 1,
+          "verdict": "plausibly_unused",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-bench\\spdlog\\include\\spdlog/fmt/bundled\\base.h:2310:45: error: implicit instantiation of undefined template 'fmt::detail::type_is_unformattable_fo"
+        },
+        {
+          "site": "async.cpp",
+          "header": "async.h",
+          "reach": 1,
+          "verdict": "plausibly_unused",
+          "status": "improved",
+          "baseline_ms": 545.0,
+          "patched_ms": 530.3,
+          "percent_saved": 2.697,
+          "message": "基线 545 ms → 移除后 530 ms"
+        },
+        {
+          "site": "cfg.cpp",
+          "header": "helpers-inl.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "improved",
+          "baseline_ms": 559.5,
+          "patched_ms": 121.1,
+          "percent_saved": 78.351,
+          "message": "基线 559 ms → 移除后 121 ms"
+        }
+      ]
+    }
+  ]
+}

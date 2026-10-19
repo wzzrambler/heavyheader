@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-19",
+  "project": "spdlog",
+  "tus": 8,
+  "top": 8,
+  "runs_per_side": 3,
+  "aggregate_noise_floor_percent": 1.0,
+  "arms": [
+    {
+      "arm": "tu(usage-ranked)",
+      "candidates": 8,
+      "compiled": 3,
+      "improved": 1,
+      "adopt_rate": 0.125,
+      "details": [
+        {
+          "site": "example.cpp",
+          "header": "ranges.h",
+          "reach": 1,
+          "verdict": "plausibly_unused",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-bench\\spdlog\\include\\spdlog/fmt/bundled\\base.h:2310:45: error: implicit instantiation of undefined template 'fmt::detail::type_is_unformattable_fo"
+        },
+        {
+          "site": "async.cpp",
+          "header": "async.h",
+          "reach": 1,
+          "verdict": "plausibly_unused",
+          "status": "no-change",
+          "baseline_ms": 549.4,
+          "patched_ms": 543.2,
+          "percent_saved": 1.127,
+          "message": "差异在噪声范围内（+6 ms）"
+        },
+        {
+          "site": "cfg.cpp",
+          "header": "helpers-inl.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "improved",
+          "baseline_ms": 566.1,
+          "patched_ms": 125.5,
+          "percent_saved": 77.838,
+          "message": "基线 566 ms → 移除后 125 ms"
+        },
+        {
+          "site": "bundled_fmtlib_format.cpp",
+          "header": "format-inl.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-q5a9ltnn\\bundled_fmtlib_format.cpp:13:1: error: unknown type name 'FMT_BEGIN_NAMESPACE'"
+        },
+        {
+          "site": "example.cpp",
+          "header": "mdc.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-0dimo_f0\\example.cpp:391:13: error: no member named 'mdc' in namespace 'spdlog'"
+        },
+        {
+          "site": "example.cpp",
+          "header": "ostr.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "no-change",
+          "baseline_ms": 1198.7,
+          "patched_ms": 1201.0,
+          "percent_saved": -0.196,
+          "message": "差异在噪声范围内（-2 ms）"
+        },
+        {
+          "site": "example.cpp",
+          "header": "udp_sink.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-8iwtrea5\\example.cpp:246:20: error: no member named 'udp_sink_config' in namespace 'spdlog::sinks'"
+        },
+        {
+          "site": "example.cpp",
+          "header": "daily_file_sink.h",
+          "reach": 1,
+          "verdict": "in_use",
+          "status": "compile-error",
+          "baseline_ms": null,
+          "patched_ms": null,
+          "percent_saved": null,
+          "message": "移除后编译失败：C:\\Users\\31879\\AppData\\Local\\Temp\\heavyheader-probe-k_vd2lsb\\example.cpp:134:25: error: no member named 'daily_logger_mt' in namespace 'spdlog'; did you mean 'daily_logger'?"
+        }
+      ]
+    }
+  ]
+}

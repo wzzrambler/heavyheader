@@ -29,7 +29,6 @@ The measurement protocol is deliberately simple and deliberately honest:
 from __future__ import annotations
 
 import contextlib
-import re
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
@@ -37,6 +36,7 @@ from pathlib import Path
 from typing import NamedTuple
 
 from . import codegen
+from . import includes as _includes
 from .attrib.advice import AGGREGATE_NOISE_FLOOR, TIME_NOISE_FLOOR, build_advice
 from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
@@ -46,6 +46,16 @@ from .models import (
     tu_compile_seconds,
 )
 from .scanner import default_include_dirs
+
+# 行号定位只有一份实现（``heavyheader.includes``）。下面这些别名是内部与测试
+# 用的历史名字，保留它们是为了不把「重命名」和「改算法」混在一次提交里。
+_INCLUDE_RE = _includes.INCLUDE_RE
+_BOM = _includes.BOM
+_strip_bom = _includes.strip_bom
+_strip_comments = _includes.strip_comments
+_path_matches = _includes.path_matches
+find_include_lines = _includes.find_include_lines
+find_include_line = _includes.find_include_line
 
 __all__ = [
     "VerifyOptions",
@@ -178,68 +188,6 @@ class VerificationResult:
 # locating and patching the include line
 # --------------------------------------------------------------------------
 
-_INCLUDE_RE = re.compile(
-    r'^\s*#\s*include\s*(?P<delim>[<"])(?P<target>[^>"]+)[>"]'
-)
-
-
-#: UTF-8 BOM.  Windows editors（VS、Notepad、vcpkg 抓下来的一批文件）默认
-#: 会给源码加它。它不是 ``\s``，所以 ``^\s*#\s*include`` 匹配不到带 BOM 的
-#: 首行——一个真实工程的第一个 include 就这样被判成「找不到该注释哪一行」，
-#: 结论从「建议删除」悄悄变成「需人工判断」。扫描侧不受影响：编译器自己
-#: 认识 BOM；受影响的只有我们自己做文本匹配的这一层。
-_BOM = "\ufeff"
-
-
-def _strip_bom(text: str) -> str:
-    """Remove a leading BOM without changing the line count.
-
-    行号是定位 include 的唯一坐标，所以只能去掉 BOM 字符本身——
-    把首行删掉会让后面所有行号错一位。
-    """
-    return text[len(_BOM) :] if text.startswith(_BOM) else text
-
-
-def _strip_comments(source: str) -> str:
-    """Blank out comments while preserving line structure.
-
-    Line count must not change, otherwise line numbers reported by the
-    compiler stop matching the file we edit.  Only whole-line and trailing
-    comments are handled -- a ``//`` inside a string literal would confuse a
-    full lexer, but that is vanishingly rare in an ``#include`` line.
-    """
-    out: list[str] = []
-    in_block = False
-    for line in _strip_bom(source).splitlines():
-        result: list[str] = []
-        index = 0
-        while index < len(line):
-            if in_block:
-                end = line.find("*/", index)
-                if end == -1:
-                    result.append(" " * (len(line) - index))
-                    index = len(line)
-                else:
-                    result.append(" " * (end + 2 - index))
-                    index = end + 2
-                    in_block = False
-                continue
-            pair = line[index : index + 2]
-            if pair == "/*":
-                in_block = True
-                result.append("  ")
-                index += 2
-                continue
-            if pair == "//":
-                result.append(" " * (len(line) - index))
-                index = len(line)
-                continue
-            result.append(line[index])
-            index += 1
-        out.append("".join(result))
-    return "\n".join(out) + "\n"
-
-
 class IncludeLocation(NamedTuple):
     """Where the ``#include`` for a header lives, and how sure we are."""
 
@@ -248,59 +196,6 @@ class IncludeLocation(NamedTuple):
     status: str
     #: 文本匹配到的行数。歧义时用来把情况说清楚，而不是含糊一句「找不到」。
     matches: int
-
-
-def _normalise(text: str) -> str:
-    """统一路径分隔符，去掉 ``./`` 前缀，便于比较。"""
-    return text.strip().replace("\\", "/").lstrip("./")
-
-
-def _path_matches(target: str, header: Path) -> bool:
-    """``#include`` 的文本是否指向这个头文件（强匹配）。
-
-    比只比文件名强得多：``#include "other/thing.h"`` 的文本是路径，与候选头的
-    完整路径做后缀比较即可。这样 ``util/thing.h`` 与 ``other/thing.h`` 两个
-    同名头能被区分开——只比文件名时它们完全一样，verify 会注释掉先出现的那行，
-    于是给出一条指向错误文件的结论。
-
-    这不是重新实现预处理器：只是把 include 文本当作路径后缀来比，不做宏展开、
-    不算条件编译。比不出来时调用方会退回弱匹配。
-    """
-    wanted = str(header).replace("\\", "/")
-    target = _normalise(target)
-    return bool(target) and (wanted == target or wanted.endswith("/" + target))
-
-
-def _match_lines(source_text: str, header: Path, predicate) -> list[int]:
-    return [
-        number
-        for number, line in enumerate(_strip_comments(source_text).splitlines(), start=1)
-        if (match := _INCLUDE_RE.match(line)) and predicate(match.group("target"))
-    ]
-
-
-def find_include_lines(source_text: str, header: Path) -> list[int]:
-    """Every 1-based line whose ``#include`` names ``header``.
-
-    两级匹配：先用完整路径后缀（强），只有强匹配定不下来时才退回文件名（弱）。
-    返回**全部**候选行，由调用方决定——同名头冲突时若随便挑一行，删掉的可能是
-    另一个文件，而结论看起来完全可信。
-    """
-    strong = _match_lines(source_text, header, lambda t: _path_matches(t, header))
-    if strong:
-        return strong
-    # 弱匹配：include 文本只有文件名（``#include <thing.h>``），或路径对不上。
-    return _match_lines(source_text, header, lambda t: Path(t).name == header.name)
-
-
-def find_include_line(source_text: str, header: Path) -> int | None:
-    """The include line for ``header``, but only when it is unambiguous.
-
-    同名冲突时返回 ``None``，而不是「第一个匹配胜出」。宁可验证不了，也不能
-    把另一条 include 注释掉——那会让 verify 给出一个指向错误文件的结论。
-    """
-    matches = find_include_lines(source_text, header)
-    return matches[0] if len(matches) == 1 else None
 
 
 def locate_include_line(

@@ -30,10 +30,12 @@ sizes, and returns statistics and candidates.  It never touches a compiler.
 from __future__ import annotations
 
 import os
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..includes import find_include_line
 from ..models import (
     HeaderKind,
     HeaderStats,
@@ -166,6 +168,94 @@ def _build_adjacency(tu: TranslationUnit) -> dict[Path, list[Path]]:
     return {parent: list(children) for parent, children in adjacency.items()}
 
 
+_INCLUDE_LINE = re.compile(
+    r'^\s*#\s*include\s*[<"]([^">]+)[">]', re.MULTILINE
+)
+
+
+class IncludeMentions:
+    """``file -> 它自己的 #include 行列出的头文件名``（按路径缓存的文本扫描）。
+
+    为什么需要它：``-H`` 只报告**首次生效**的包含点。``type.h`` 里那句
+    ``#include "prelude.h"`` 在 ``type.cpp`` 先包含过之后被 guard 吞掉，树里
+    根本没有这条边。于是「删掉 ``type.cpp`` 里的直连 prelude.h」看起来会带走
+    275 个头，实际上一个也带不走——实测 doctest 上 60 条候选里有 18 条属于
+    这一类，全部浪费一次编译去证伪。
+
+    成本核算必须继续用有效树（一个头只解析一次才叫成本）；只有**删除预测**
+    需要这张补全图。同一个文件在多轮扫描间共享缓存。
+    """
+
+    __slots__ = ("_cache",)
+
+    def __init__(self) -> None:
+        self._cache: dict[Path, tuple[str, ...]] = {}
+
+    def of(self, path: Path) -> tuple[str, ...]:
+        cached = self._cache.get(path)
+        if cached is not None:
+            return cached
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        names = tuple(match.group(1).strip() for match in _INCLUDE_LINE.finditer(text))
+        self._cache[path] = names
+        return names
+
+
+def _resolve_mention(
+    name: str, includer: Path, by_name: dict[str, list[Path]]
+) -> list[Path]:
+    """把一个 ``#include`` 里的名字对到本次真正解析过的文件。
+
+    只认两种情形：① 相对包含者的目录能对上；② 这个名字在本次解析集合里
+    **唯一**。同名多份且无法相对定位时返回空——宁可少补一条边（保守，
+    闭包偏大），也不猜错把两个同名头混成一个。
+    """
+    candidates = by_name.get(Path(name).name)
+    if not candidates:
+        return []
+    relative = (includer.parent / name).resolve()
+    for path in candidates:
+        try:
+            if path.resolve() == relative:
+                return [path]
+        except OSError:  # pragma: no cover - 路径不可解析时退回唯一匹配
+            break
+    if len(candidates) == 1:
+        return [candidates[0]]
+    return []
+
+
+def _potential_adjacency(
+    tu: TranslationUnit, mentions: IncludeMentions, parsed: set[Path]
+) -> dict[Path, list[Path]]:
+    """有效树 + 文本补全的**潜在供给边**，用于「删掉这条会少解析什么」。
+
+    与 :func:`heavyheader.attrib.edgecost.build_potential_graph` 同一思路、
+    同一理由：被 include guard 抑制的第二次包含不会出现在 ``-H`` 里，但它
+    确实提供了到达路径。差别是这里按**完整路径**建图（边级归因那侧按文件名
+    聚合，因为它的输出是给人看的排名）。
+    """
+    adjacency: dict[Path, dict[Path, None]] = defaultdict(dict)
+    for event in tu.include_events:
+        adjacency[event.includer][event.included] = None
+
+    by_name: dict[str, list[Path]] = defaultdict(list)
+    for path in parsed:
+        by_name[path.name].append(path)
+    for paths in by_name.values():
+        paths.sort()
+
+    for path in parsed:
+        for name in mentions.of(path):
+            for target in _resolve_mention(name, path, by_name):
+                if target != path:
+                    adjacency[path][target] = None
+    return {parent: list(children) for parent, children in adjacency.items()}
+
+
 def closure_of(adjacency: dict[Path, list[Path]], start: Path) -> set[Path]:
     """Every header reachable from ``start``, excluding ``start`` itself.
 
@@ -278,15 +368,29 @@ class _TuAnalysis:
 
 
 def _analyse_tus(scan: ProjectScan, sizes: HeaderSizes) -> list[_TuAnalysis]:
+    """每个单元两张图：有效树管成本，潜在供给图管「删了会少什么」。
+
+    这两个问题需要不同的图，混用会在两边都错：
+
+    * ``-H`` 有效树里每个头只出现一次（第二次被 guard 吞掉），所以它正确
+      回答「这次构建解析了哪些头、各多大代价」；
+    * 但删掉一条 include 之后**还剩哪些路径可达**，必须把被吞掉的第二次包含
+      算回来，否则会把「其实还有别的路」的头算成消失。
+
+    实测代价：doctest 24 单元 60 条候选里 18 条因此报出「会带走 27 万行」，
+    删掉后一个文件都没少解析。
+    """
     analyses: list[_TuAnalysis] = []
+    mentions = IncludeMentions()
     for tu in scan.ok_tus:
-        adjacency = _build_adjacency(tu)
         processed = {e.included for e in tu.include_events}
+        parsed = set(processed) | {tu.source}
+        potential = _potential_adjacency(tu, mentions, parsed)
         analyses.append(
             _TuAnalysis(
                 tu=tu,
-                adjacency=adjacency,
-                closures={h: closure_of(adjacency, h) for h in processed},
+                adjacency=potential,
+                closures={h: closure_of(potential, h) for h in parsed},
                 processed_lines=sizes.total(processed),
             )
         )
@@ -335,11 +439,31 @@ def find_removal_candidates(
     index = usage_index if usage_index is not None else IdentifierIndex()
 
     candidates: list[RemovalCandidate] = []
+    # 同一份源码可能被编多次（静态库 + 动态库，同一份 compile_commands 里两条
+    # 命令）。代价要按编译次数算，但**候选是同一条待改的代码行**——重复列出
+    # 只会让读者以为有两个优化点。实测 zlib：87 条候选里有 4 条是这种重复。
+    seen_sites: set[tuple[str, Path, int | None]] = set()
     for analysis in _analyse_tus(scan, sizes):
         tu = analysis.tu
         directs = tu.direct_includes()
         if not directs:
             continue
+
+        # 这个单元当前能到达的全部头文件。用来回答一个用法判定必须回答、
+        # 但旧实现没回答的问题：被判为「在用」的那个符号，删掉这条 include
+        # 之后**还会不会存在**。只在到达集里出现一次的符号，删了就没了；
+        # 出现在别处的符号，删了照样在——不构成保留理由。
+        #
+        # 只统计 TU 源码提到过的符号：其余符号永远不会成为命中，算了也是浪费。
+        reach_all: set[Path] = set(directs)
+        for other in directs:
+            reach_all |= analysis.closures.get(other, set())
+        source_ids = index.source_ids(tu.source) or frozenset()
+        reachable_counts: dict[str, int] = {}
+        if source_ids:
+            for path in reach_all:
+                for name in index.header_provider_ids(path) & source_ids:
+                    reachable_counts[name] = reachable_counts.get(name, 0) + 1
 
         for header in directs:
             # Union of everything reachable from *other* direct includes.  A
@@ -384,11 +508,21 @@ def find_removal_candidates(
             if analysis.processed_lines:
                 percent = saved / analysis.processed_lines * 100.0
             line = _include_line(tu, header)
+            site = (str(tu.source).lower(), header, line)
+            if site in seen_sites:
+                continue
+            seen_sites.add(site)
             # 用法判定必须覆盖「删掉这个 include 后不再被解析的那批头」，
             # 而不是候选头自己的那段文本——实验里 5 个失败候选全部栽在这里：
             # doctest_compatibility.h 自身没有 TEST_CASE，TEST_CASE 在它
             # 往下拉的 doctest.h 里。
-            signal = analyse_usage(tu.source, header, closure=exclusive, index=index)
+            signal = analyse_usage(
+                tu.source,
+                header,
+                closure=exclusive,
+                index=index,
+                reachable_counts=reachable_counts,
+            )
             candidates.append(
                 RemovalCandidate(
                     tu=tu.source,
@@ -439,11 +573,29 @@ def _estimate_seconds(tu: TranslationUnit, processed_lines: int, saved: int) -> 
 
 
 
-def _include_line(tu: TranslationUnit, header: Path) -> int | None:
+def _include_line(
+    tu: TranslationUnit, header: Path, source_text: str | None = None
+) -> int | None:
+    """这条 include 在源文件的第几行。
+
+    编译器**不报行号**：GCC/Clang 的 ``-H`` 只有缩进与路径，MSVC 的
+    ``/showIncludes`` 同样只有层级。所以先看事件里有没有（某些工具链会填），
+    没有就从源码文本定位——否则报告里每条候选都是「行号未知」，读者拿不到
+    可以动手的那一行，下游的 verify / blame 也都得重算一遍。
+
+    文本定位沿用 :mod:`heavyheader.includes` 的保守规则：同名头有歧义时返回
+    ``None``，不猜——猜错会让人删掉另一个文件，而结论看起来完全可信。
+    """
     for event in tu.include_events:
-        if event.depth == 0 and event.included == header:
+        if event.depth == 0 and event.included == header and event.line:
             return event.line
-    return None
+    text = source_text
+    if text is None:
+        try:
+            text = tu.source.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return None
+    return find_include_line(text, header)
 
 
 def _confidence(exclusive: set[Path], analysis: _TuAnalysis, verdict) -> str:
@@ -484,6 +636,18 @@ def _notes(
     signal=None,
 ) -> list[str]:
     notes: list[str] = []
+    if (
+        signal is not None
+        and signal.cross_provided
+        and signal.verdict.value == "plausibly_unused"
+    ):
+        # 说清「为什么判它没用」：命中的名字都还有别的供给者。不写这句，
+        # 读者只能看到一个结论，没法复核它对不对。
+        names = "、".join(signal.cross_provided[:3])
+        notes.append(
+            f"源码提到的 {names} 在保留下来的头文件里另有供给，"
+            "删掉这条不会缺声明（文本层判断，最终以实测为准）"
+        )
     if signal is not None and signal.provided_by is not None and signal.provided_by != header:
         # 说清符号到底由谁提供。只写「这个 include 在被用」，用户还是不知道
         # 依赖藏在哪一层；写出文件名才可操作（比如「该直接 include doctest.h」）。

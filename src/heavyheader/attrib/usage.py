@@ -85,6 +85,11 @@ class UsageSignal:
     #: 标识符。留着它是为了把「为什么判不了」说清楚，而不是扔一个
     #: 「无法判定」让人猜。
     ambient_identifiers: tuple[str, ...] = ()
+    #: 命中了、但**在保留下来的头文件里也有供给**的标识符。这类命中不构成
+    #: 「删了就会缺」的证据：删掉这条 include 之后，符号还能从别处拿到。
+    #: 实测（doctest，60 条候选）里旧的判定把 60/60 全算「正在使用」，而真值
+    #: 有 48% 能编译通过——差别全在这一栏。
+    cross_provided: tuple[str, ...] = ()
 
     @property
     def label(self) -> str:
@@ -117,6 +122,13 @@ _IGNORED = frozenset(
     std size_t ptrdiff_t nullptr_t
     """.split()
 )
+
+#: 「重命名」而不是「声明」：``#define inflate_fast z_inflate_fast`` 只是给符号
+#: 起了个别名，真正提供声明的仍然是 ``inffast.h``。实测（zlib）：删掉
+#: ``inffast.h`` 编译失败，但 ``zconf.h`` 里这行重命名让「另有供给者」成立，
+#: 于是把一条真依赖判成了「可删」。``#pragma map(inflate_fast, ...)`` 同理。
+_RENAME_DEFINE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)\s+[A-Za-z_]\w*\s*$")
+_RENAME_PRAGMA = re.compile(r"^\s*#\s*pragma\s+map\s*\(\s*([A-Za-z_]\w*)")
 
 # 编译器内建：这些标识符**永远不由某个头文件提供**，而是编译器自己预定义，
 # 或者是语言扩展关键字。把它们算作「使用证据」会造成系统性假阴性。
@@ -263,11 +275,13 @@ class IdentifierIndex:
     broken header cannot make a scan quadratic.
     """
 
-    __slots__ = ("_headers", "_sources")
+    __slots__ = ("_headers", "_sources", "_providers", "_renamed")
 
     def __init__(self) -> None:
         self._headers: dict[Path, frozenset[str]] = {}
         self._sources: dict[Path, frozenset[str]] = {}
+        self._providers: dict[Path, frozenset[str]] = {}
+        self._renamed: dict[Path, frozenset[str]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
         cached = self._headers.get(path)
@@ -277,6 +291,37 @@ class IdentifierIndex:
         ids = frozenset(identifiers_in(_strip_noise(text))) if text else frozenset()
         self._headers[path] = ids
         return ids
+
+    def header_provider_ids(self, path: Path) -> frozenset[str]:
+        """这个头**真正声明**的标识符（去掉纯重命名宏）。
+
+        与 :meth:`header_ids` 只差一条，但很关键：``#define X Y`` 与
+        ``#pragma map(X, ...)`` 只是别名，别名不能让 X 在删除后继续存在。
+        判断「另一个头是否也提供 X」必须用这个集合，否则一条真实依赖会因为
+        别处的重命名被判成「可删」（zlib 的 ``inflate_fast`` 就是这样）。
+        """
+        cached = self._providers.get(path)
+        if cached is not None:
+            return cached
+        ids = self.header_ids(path)
+        renamed = self._renamed_names(path)
+        providers = ids - renamed if renamed else ids
+        self._providers[path] = providers
+        return providers
+
+    def _renamed_names(self, path: Path) -> frozenset[str]:
+        cached = self._renamed.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path) or ""
+        names: set[str] = set()
+        for line in _strip_noise(text).splitlines():
+            match = _RENAME_DEFINE.match(line) or _RENAME_PRAGMA.match(line)
+            if match:
+                names.add(match.group(1))
+        frozen = frozenset(names)
+        self._renamed[path] = frozen
+        return frozen
 
     def source_ids(self, path: Path) -> frozenset[str] | None:
         """``None`` (not an empty set) when the source cannot be read.
@@ -301,6 +346,7 @@ def analyse_usage(
     header: Path,
     closure: tuple[Path, ...] | list[Path] | set[Path] | None = None,
     index: IdentifierIndex | None = None,
+    reachable_counts: dict[str, int] | None = None,
 ) -> UsageSignal:
     """Compare the identifiers a TU uses with those that disappear with an include.
 
@@ -309,6 +355,15 @@ def analyse_usage(
     ``header`` itself.  Passing it is what makes the verdict correct for
     headers that forward other headers; omitting it keeps the old
     single-file behaviour, which is only right when the candidate is a leaf.
+
+    ``reachable_counts`` maps an identifier to **how many headers in the whole
+    reachable set declare it** (reachable = everything the unit parses now,
+    including what the vanishing set contributes).  With it, a hit counts as
+    evidence only when the vanishing set is its *sole* provider: a symbol that
+    survives in another header cannot justify keeping this include.  Without
+    it every mention counts, which on doctest gave 60 "in use" verdicts out of
+    60 candidates while 48% of them actually compiled — the same mistake the
+    closure itself was built to avoid, one level down.
 
     Note that a header which merely aggregates others (``#pragma once`` plus
     a wall of ``#include``) is *not* judged on its own text: with a closure it
@@ -333,7 +388,9 @@ def analyse_usage(
     headers_with_text = 0
 
     for path in ordered:
-        ids = index.header_ids(path)
+        # 「真正声明」而不是「提到」：重命名宏（``#define X Y``）不算提供者，
+        # 否则闭包里的真依赖会被别处的别名掩盖。
+        ids = index.header_provider_ids(path)
         if not ids:
             continue
         headers_with_text += 1
@@ -347,6 +404,26 @@ def analyse_usage(
             hits[name] = (provider, count + 1)
 
     if hits:
+        # **供给者唯一性**：命中一个标识符只说明 TU 用到它，不说明它来自
+        # 这条 include。同一个名字往往还有别的头在提供——删掉这条之后它照样
+        # 存在，那就不该把它算成「不能删」的理由。
+        #
+        # 实测（doctest，24 单元 60 条候选）：旧的判定只看「闭包里是否声明」，
+        # 结果 60/60 全判「正在使用」，而真实编译有 29/60 能删。差别全在
+        # 这一条上——闭包有 275 个头，TU 随便提一个 string 就算在用。
+        sole: dict[str, tuple[Path, int]] = {}
+        cross: dict[str, tuple[Path, int]] = {}
+        for name, (provider, count) in hits.items():
+            total_providers = (
+                count
+                if reachable_counts is None
+                else reachable_counts.get(name, count)
+            )
+            if total_providers <= count:
+                sole[name] = (provider, count)
+            else:
+                cross[name] = (provider, count)
+
         # **特异性**：命中一个标识符不等于这个 include 被使用。
         #
         # 实测数据（nlohmann/json 的 locale 候选）把这个问题摆得很清楚：
@@ -360,7 +437,7 @@ def analyse_usage(
         threshold = max(2, headers_with_text // 25)
         specific = {
             name: provider
-            for name, (provider, count) in hits.items()
+            for name, (provider, count) in sole.items()
             if count <= threshold
         }
         if specific:
@@ -374,17 +451,29 @@ def analyse_usage(
                 ambient_identifiers=tuple(
                     sorted(
                         n
-                        for n, (_p, c) in hits.items()
+                        for n, (_p, c) in sole.items()
                         if c > threshold
                     )[:8]
                 ),
+                cross_provided=tuple(sorted(cross)[:8]),
             )
-        # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
+        if sole:
+            # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
+            return UsageSignal(
+                verdict=UsageVerdict.UNKNOWN,
+                shared_identifiers=tuple(sorted(sole)[:8]),
+                header_identifier_count=total,
+                ambient_identifiers=tuple(sorted(sole)[:8]),
+                cross_provided=tuple(sorted(cross)[:8]),
+            )
+        # 命中的每一个名字，在保留下来的头文件里都还有供给——删掉这条
+        # include 之后它们照样存在。这不是「证据不足」，是证据指向删除；
+        # 但文本层看不到命名空间与重载，所以仍然只是 *疑似*，由 verify 定论。
         return UsageSignal(
-            verdict=UsageVerdict.UNKNOWN,
-            shared_identifiers=tuple(sorted(hits)[:8]),
+            verdict=UsageVerdict.PLAUSIBLY_UNUSED,
+            shared_identifiers=tuple(sorted(cross)[:8]),
             header_identifier_count=total,
-            ambient_identifiers=tuple(sorted(hits)[:8]),
+            cross_provided=tuple(sorted(cross)[:8]),
         )
 
     if total == 0:

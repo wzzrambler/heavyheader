@@ -1,0 +1,1966 @@
+{
+ "summaries": {
+  "single": {
+   "command_count": 39,
+   "tu": 39,
+   "failed": 0,
+   "baseline_seconds": 53.74321029995917,
+   "candidates": 90,
+   "verdicts": {
+    "plausibly_unused": 7,
+    "unknown": 8,
+    "in_use": 75
+   }
+  },
+  "mt": {
+   "command_count": 39,
+   "tu": 39,
+   "failed": 0,
+   "baseline_seconds": 52.419895600003656,
+   "candidates": 91,
+   "verdicts": {
+    "plausibly_unused": 8,
+    "unknown": 5,
+    "in_use": 78
+   }
+  },
+  "mt_legacy": {
+   "command_count": 39,
+   "tu": 39,
+   "failed": 0,
+   "baseline_seconds": 53.40028810000513,
+   "candidates": 93,
+   "verdicts": {
+    "plausibly_unused": 8,
+    "unknown": 6,
+    "in_use": 79
+   }
+  }
+ },
+ "tables": {
+  "single": [
+   {
+    "tu": "zbuff_common.c",
+    "header": "zbuff.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0121,
+    "reason": "ZBUFF_getErrorName、ZBUFF_isError 由本文件自己定义"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "hist.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0005,
+    "reason": "count、src 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_double_fast.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_doubleFast 由本文件自己定义"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": "num_indexes 由本文件自己定义"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": ""
+   },
+   {
+    "tu": "zstd_fast.c",
+    "header": "zstd_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_fast 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_ddict.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "dctx 由本文件自己定义"
+   },
+   {
+    "tu": "pool.c",
+    "header": "allocations.h",
+    "verdict": "unknown",
+    "seconds": 0.4296,
+    "reason": "疑似副作用：_STATIC_ASSERT(sizeof(unsigned int) <= _ALLOCA_S_MARKER_SIZE)（宏调用展开成声明还是执行看不出来，需编译器汇编校验）"
+   },
+   {
+    "tu": "xxhash.c",
+    "header": "xxhash.h",
+    "verdict": "unknown",
+    "seconds": 0.0875,
+    "reason": "疑似副作用：__ANNOTATION(SAL_useHeader(void))（宏调用展开成声明还是执行看不出来，需编译器汇编校验）"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdio.h",
+    "verdict": "unknown",
+    "seconds": 0.0218,
+    "reason": "NULL 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "unknown",
+    "seconds": 0.0165,
+    "reason": "ZSTD_CCtx_params、ZSTD_TARGETCBLOCKSIZE_MIN 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_ddict.h",
+    "verdict": "unknown",
+    "seconds": 0.0108,
+    "reason": "ZSTD_dct_auto、ZSTD_dct_fullDict 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "pool.c",
+    "header": "debug.h",
+    "verdict": "unknown",
+    "seconds": 0.0006,
+    "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "zstd_opt.h",
+    "verdict": "unknown",
+    "seconds": 0.0005,
+    "reason": "ZSTD_updateTree、iend 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "assert.h",
+    "verdict": "unknown",
+    "seconds": 0.0002,
+    "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_compress_sequences.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.5893,
+    "reason": "BIT_CStream_t、BIT_addBits 由 bitstream.h 提供"
+   },
+   {
+    "tu": "zstd_compress_literals.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.5771,
+    "reason": "CTable、DEBUGLEVEL 由 huf.h 提供"
+   },
+   {
+    "tu": "error_private.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.4906,
+    "reason": "ERR_enum 由 error_private.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.356,
+    "reason": "FORWARD_IF_ERROR 由 error_private.h 提供"
+   },
+   {
+    "tu": "zbuff_common.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.3195,
+    "reason": "ERR_getErrorName、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_common.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.071,
+    "reason": "ZSTD_VERSION_NUMBER、ZSTD_VERSION_STRING 由 zstd.h 提供"
+   },
+   {
+    "tu": "huf_decompress.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0453,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "cover.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0378,
+    "reason": "ERROR 展开后用到 ZSTD_ERROR（由 error_private.h 提供）"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_decompress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.027,
+    "reason": "HUFptr、LLTable 由 zstd_decompress_internal.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "xxhash.h",
+    "verdict": "in_use",
+    "seconds": 0.0266,
+    "reason": "BYTE、U32 由 xxhash.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0209,
+    "reason": "RETURN_ERROR_IF 展开后用到 s（由 zstd_compress_internal.h 提供）"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0197,
+    "reason": "ZSTD_hash6Ptr、ZSTD_hash8Ptr 由 zstd_compress_internal.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0172,
+    "reason": "ZSTD_ldm_skipSequences、iend 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "pool.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.017,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0135,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdlib.h",
+    "verdict": "in_use",
+    "seconds": 0.0128,
+    "reason": "free、malloc 由 corecrt_malloc.h 提供"
+   },
+   {
+    "tu": "threading.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.0079,
+    "reason": "DEBUGLEVEL、ZSTD_pthread_cond_t 由 debug.h 提供"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0038,
+    "reason": "FSE_CTable、FSE_FUNCTION_TYPE 由 fse.h 提供"
+   },
+   {
+    "tu": "fse_decompress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0037,
+    "reason": "FSE_DECODE_TYPE、FSE_DTable 由 fse.h 提供"
+   },
+   {
+    "tu": "debug.c",
+    "header": "debug.h",
+    "verdict": "in_use",
+    "seconds": 0.0035,
+    "reason": "DEBUGLEVEL 由 debug.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0033,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0032,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.003,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "mem.h",
+    "verdict": "in_use",
+    "seconds": 0.0026,
+    "reason": "HIST_WKSP_SIZE 展开后用到 sizeof（由 mem.h 提供）"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "zstd_v05.h",
+    "verdict": "in_use",
+    "seconds": 0.0023,
+    "reason": "MEM_H_MODULE、ZBUFFv05_DCtx 由 mem.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "HUF_BLOCKSIZE_MAX、HUF_CElt 由 huf.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zdict.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ZDICT_params_t、notificationLevel 由 zdict.h 提供"
+   },
+   {
+    "tu": "entropy_common.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0017,
+    "reason": "HUF_READ_STATS_WORKSPACE_SIZE_U32、HUF_TABLELOG_MAX 由 huf.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0017,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0012,
+    "reason": "ZSTD_COMPRESSBLOCK_BTLAZY2、ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_lazy.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0011,
+    "reason": "ZSTD_LAZY_DDSS_BUCKET_LOG、ZSTD_ROW_HASH_TAG_BITS 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0011,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "clevels.h",
+    "verdict": "in_use",
+    "seconds": 0.0008,
+    "reason": "ZSTD_MAX_CLEVEL、ZSTD_defaultCParameters 由 clevels.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZSTD_LDM_DEFAULT_WINDOW_LOG、ZSTD_ldm_adjustParameters 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zbuff_decompress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFF_DCtx 由 zbuff.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "zstd_v06.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFFv06_DCtx、ZSTDv06_DCtx 由 zstd_v06.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "zstd_v07.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFFv07_DCtx、ZBUFFv07_freeDCtx 由 zstd_v07.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm_geartab.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_ldm_gearTab 由 zstd_ldm_geartab.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_pthread_cond_t、ZSTD_pthread_mutex_t 由 threading.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "COVER_best_t、COVER_dictSelection_t 由 cover.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "zstd_v04.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZBUFFv04_DCtx、ZSTDv04_Dctx 由 zstd_v04.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "HIST_WKSP_SIZE、HIST_WKSP_SIZE_U32 由 hist.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "HIST_WKSP_SIZE_U32、HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_opt.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "ZSTD_COMPRESSBLOCK_BTOPT、ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE 由 zstd_opt.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "ZSTD_ldm_adjustParameters、ZSTD_ldm_fillHashTable 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "COVER_best_destroy、COVER_best_finish 由 cover.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "POOL_create_advanced、POOL_ctx 由 pool.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "zstd_v01.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv01_Dctx 由 zstd_v01.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "zstd_v02.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv02_Dctx、dst 由 zstd_v02.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "zstd_v03.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv03_Dctx、dst 由 zstd_v03.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_defaultAllowed 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_COMPRESSBLOCK_DOUBLEFAST、ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_encodeSequences 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_fillDoubleHashTable 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_decompressBlock_internal、not_streaming 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressLiterals、suspectUncompressible 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressBlock_fast、ZSTD_compressBlock_fast_dictMatchState 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressSuperBlock 由 zstd_compress_superblock.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressRleLiteralsBlock、ZSTD_noCompressLiterals 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_fillHashTable 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customFree、ZSTD_customMalloc 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_buildFSETable、ZSTD_decompressBlock_internal 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_ddict.h",
+    "verdict": "in_use",
+    "seconds": 0.0001,
+    "reason": "ZSTD_DDict_dictContent、ZSTD_DDict_dictSize 由 zstd_ddict.h 提供"
+   }
+  ],
+  "mt": [
+   {
+    "tu": "zbuff_common.c",
+    "header": "zbuff.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0128,
+    "reason": "ZBUFF_getErrorName、ZBUFF_isError 由本文件自己定义"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "hist.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0004,
+    "reason": "count、src 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_double_fast.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_doubleFast 由本文件自己定义"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": "num_indexes 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressSuperBlock、dst 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_fast.c",
+    "header": "zstd_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_fast 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_ddict.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "dctx 由本文件自己定义"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": ""
+   },
+   {
+    "tu": "xxhash.c",
+    "header": "xxhash.h",
+    "verdict": "unknown",
+    "seconds": 0.0744,
+    "reason": "疑似副作用：__ANNOTATION(SAL_useHeader(void))（宏调用展开成声明还是执行看不出来，需编译器汇编校验）"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdio.h",
+    "verdict": "unknown",
+    "seconds": 0.0245,
+    "reason": "NULL 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_ddict.h",
+    "verdict": "unknown",
+    "seconds": 0.0111,
+    "reason": "ZSTD_dct_auto、ZSTD_dct_fullDict 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "zstd_opt.h",
+    "verdict": "unknown",
+    "seconds": 0.0004,
+    "reason": "ZSTD_updateTree、iend 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "assert.h",
+    "verdict": "unknown",
+    "seconds": 0.0003,
+    "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_compress_literals.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.6242,
+    "reason": "CTable、DEBUGLEVEL 由 huf.h 提供"
+   },
+   {
+    "tu": "error_private.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.5887,
+    "reason": "ERR_enum 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_compress_sequences.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.5776,
+    "reason": "BIT_CStream_t、BIT_addBits 由 bitstream.h 提供"
+   },
+   {
+    "tu": "pool.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.5156,
+    "reason": "ZSTD_pthread_cond_t、ZSTD_pthread_mutex_t 由 threading.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.4366,
+    "reason": "ZSTD_pthread_cond_t、ZSTD_pthread_mutex_t 由 threading.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.3396,
+    "reason": "FORWARD_IF_ERROR 由 error_private.h 提供"
+   },
+   {
+    "tu": "zbuff_common.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.3361,
+    "reason": "ERR_getErrorName、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "threading.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.33,
+    "reason": "DEBUGLEVEL、EINVAL 由 debug.h 提供"
+   },
+   {
+    "tu": "zstd_common.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0743,
+    "reason": "ZSTD_VERSION_NUMBER、ZSTD_VERSION_STRING 由 zstd.h 提供"
+   },
+   {
+    "tu": "huf_decompress.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0491,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0289,
+    "reason": "RETURN_ERROR_IF 展开后用到 s（由 zstd_compress_internal.h 提供）"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_decompress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0277,
+    "reason": "HUFptr、LLTable 由 zstd_decompress_internal.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "xxhash.h",
+    "verdict": "in_use",
+    "seconds": 0.0244,
+    "reason": "BYTE、U32 由 xxhash.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0213,
+    "reason": "ERROR 展开后用到 ZSTD_ERROR（由 error_private.h 提供）"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0182,
+    "reason": "ZSTD_hash6Ptr、ZSTD_hash8Ptr 由 zstd_compress_internal.h 提供"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdlib.h",
+    "verdict": "in_use",
+    "seconds": 0.0144,
+    "reason": "free、malloc 由 corecrt_malloc.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0129,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "pool.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0107,
+    "reason": "POOL_create、POOL_create_advanced 由 pool.h 提供"
+   },
+   {
+    "tu": "debug.c",
+    "header": "debug.h",
+    "verdict": "in_use",
+    "seconds": 0.006,
+    "reason": "DEBUGLEVEL 由 debug.h 提供"
+   },
+   {
+    "tu": "fse_decompress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0041,
+    "reason": "FSE_DECODE_TYPE、FSE_DTable 由 fse.h 提供"
+   },
+   {
+    "tu": "threading.c",
+    "header": "process.h",
+    "verdict": "in_use",
+    "seconds": 0.0038,
+    "reason": "副作用：double const _HUGE = System::Double::PositiveInfinity"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0038,
+    "reason": "FSE_CTable、FSE_FUNCTION_TYPE 由 fse.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0028,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "mem.h",
+    "verdict": "in_use",
+    "seconds": 0.0026,
+    "reason": "HIST_WKSP_SIZE 展开后用到 sizeof（由 mem.h 提供）"
+   },
+   {
+    "tu": "pool.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0022,
+    "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "zstd_v05.h",
+    "verdict": "in_use",
+    "seconds": 0.0021,
+    "reason": "MEM_H_MODULE、ZBUFFv05_DCtx 由 mem.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0019,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "HUF_BLOCKSIZE_MAX、HUF_CElt 由 huf.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "entropy_common.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0017,
+    "reason": "HUF_READ_STATS_WORKSPACE_SIZE_U32、HUF_TABLELOG_MAX 由 huf.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zdict.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ZDICT_params_t、notificationLevel 由 zdict.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0014,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0014,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_lazy.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0012,
+    "reason": "ZSTD_LAZY_DDSS_BUCKET_LOG、ZSTD_ROW_HASH_TAG_BITS 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0011,
+    "reason": "ZSTD_COMPRESSBLOCK_BTLAZY2、ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.001,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zbuff_decompress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0008,
+    "reason": "ZBUFF_DCtx 由 zbuff.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "clevels.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZSTD_MAX_CLEVEL、ZSTD_defaultCParameters 由 clevels.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "zstd_v07.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFFv07_DCtx、ZBUFFv07_freeDCtx 由 zstd_v07.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_LDM_DEFAULT_WINDOW_LOG、ZSTD_ldm_adjustParameters 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_ldm_skipSequences、iend 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm_geartab.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_ldm_gearTab 由 zstd_ldm_geartab.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "zstd_v06.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZBUFFv06_DCtx、ZSTDv06_DCtx 由 zstd_v06.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "HIST_WKSP_SIZE、HIST_WKSP_SIZE_U32 由 hist.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "HIST_WKSP_SIZE_U32、HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "zstd_v04.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "ZBUFFv04_DCtx、ZSTDv04_Dctx 由 zstd_v04.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_opt.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTD_COMPRESSBLOCK_BTOPT、ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE 由 zstd_opt.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "zstd_v01.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv01_Dctx 由 zstd_v01.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "zstd_v03.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv03_Dctx、dst 由 zstd_v03.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_defaultAllowed 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_COMPRESSBLOCK_DOUBLEFAST、ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_encodeSequences 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_fillDoubleHashTable 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "POOL_create_advanced、POOL_ctx 由 pool.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_ldm_adjustParameters、ZSTD_ldm_fillHashTable 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_buildFSETable、ZSTD_decompressBlock_internal 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_decompressBlock_internal、not_streaming 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "COVER_best_t、COVER_dictSelection_t 由 cover.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "COVER_best_destroy、COVER_best_finish 由 cover.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "zstd_v02.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTDv02_Dctx、dst 由 zstd_v02.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressLiterals、suspectUncompressible 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressBlock_fast、ZSTD_compressBlock_fast_dictMatchState 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressSuperBlock 由 zstd_compress_superblock.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressRleLiteralsBlock、ZSTD_noCompressLiterals 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_fillHashTable 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customFree、ZSTD_customMalloc 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_ddict.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_DDict_dictContent、ZSTD_DDict_dictSize 由 zstd_ddict.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   }
+  ],
+  "mt_legacy": [
+   {
+    "tu": "zbuff_common.c",
+    "header": "zbuff.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0126,
+    "reason": "ZBUFF_getErrorName、ZBUFF_isError 由本文件自己定义"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "hist.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0004,
+    "reason": "count、src 由本文件自己定义"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0004,
+    "reason": "num_indexes 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_double_fast.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_doubleFast 由本文件自己定义"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "divsufsort.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0003,
+    "reason": ""
+   },
+   {
+    "tu": "zstd_fast.c",
+    "header": "zstd_fast.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_fast 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_ddict.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0002,
+    "reason": "dctx 由本文件自己定义"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "plausibly_unused",
+    "seconds": 0.0001,
+    "reason": "ZSTD_compressSuperBlock、dst 由本文件自己定义"
+   },
+   {
+    "tu": "xxhash.c",
+    "header": "xxhash.h",
+    "verdict": "unknown",
+    "seconds": 0.085,
+    "reason": "疑似副作用：__ANNOTATION(SAL_useHeader(void))（宏调用展开成声明还是执行看不出来，需编译器汇编校验）"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdio.h",
+    "verdict": "unknown",
+    "seconds": 0.0294,
+    "reason": "NULL 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_ddict.h",
+    "verdict": "unknown",
+    "seconds": 0.0121,
+    "reason": "ZSTD_dct_auto、ZSTD_dct_fullDict 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_legacy.h",
+    "verdict": "unknown",
+    "seconds": 0.0054,
+    "reason": "ZSTD_LEGACY_SUPPORT 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "zstd_opt.h",
+    "verdict": "unknown",
+    "seconds": 0.0004,
+    "reason": "ZSTD_updateTree、iend 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "assert.h",
+    "verdict": "unknown",
+    "seconds": 0.0003,
+    "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+   },
+   {
+    "tu": "zstd_compress_sequences.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.5766,
+    "reason": "BIT_CStream_t、BIT_addBits 由 bitstream.h 提供"
+   },
+   {
+    "tu": "zstd_compress_literals.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.5638,
+    "reason": "CTable、DEBUGLEVEL 由 huf.h 提供"
+   },
+   {
+    "tu": "error_private.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.5527,
+    "reason": "ERR_enum 由 error_private.h 提供"
+   },
+   {
+    "tu": "pool.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.4917,
+    "reason": "ZSTD_pthread_cond_t、ZSTD_pthread_mutex_t 由 threading.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.3832,
+    "reason": "ZSTD_pthread_cond_t、ZSTD_pthread_mutex_t 由 threading.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.375,
+    "reason": "FORWARD_IF_ERROR 由 error_private.h 提供"
+   },
+   {
+    "tu": "threading.c",
+    "header": "threading.h",
+    "verdict": "in_use",
+    "seconds": 0.3645,
+    "reason": "DEBUGLEVEL、EINVAL 由 debug.h 提供"
+   },
+   {
+    "tu": "zbuff_common.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.3309,
+    "reason": "ERR_getErrorName、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_common.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0606,
+    "reason": "ZSTD_VERSION_NUMBER、ZSTD_VERSION_STRING 由 zstd.h 提供"
+   },
+   {
+    "tu": "huf_decompress.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0424,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0341,
+    "reason": "RETURN_ERROR_IF 展开后用到 s（由 zstd_compress_internal.h 提供）"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "xxhash.h",
+    "verdict": "in_use",
+    "seconds": 0.0265,
+    "reason": "BYTE、U32 由 xxhash.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "zstd_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0228,
+    "reason": "ERROR 展开后用到 ZSTD_ERROR（由 error_private.h 提供）"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "zstd_compress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.02,
+    "reason": "ZSTD_hash6Ptr、ZSTD_hash8Ptr 由 zstd_compress_internal.h 提供"
+   },
+   {
+    "tu": "divsufsort.c",
+    "header": "stdlib.h",
+    "verdict": "in_use",
+    "seconds": 0.0173,
+    "reason": "free、malloc 由 corecrt_malloc.h 提供"
+   },
+   {
+    "tu": "zbuff_compress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0142,
+    "reason": "FORWARD_IF_ERROR 展开后用到 error（由 zstd.h 提供）"
+   },
+   {
+    "tu": "pool.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0102,
+    "reason": "POOL_create、POOL_create_advanced 由 pool.h 提供"
+   },
+   {
+    "tu": "debug.c",
+    "header": "debug.h",
+    "verdict": "in_use",
+    "seconds": 0.0067,
+    "reason": "DEBUGLEVEL 由 debug.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_legacy.h",
+    "verdict": "in_use",
+    "seconds": 0.0059,
+    "reason": "ZSTD_decompressLegacy、ZSTD_decompressLegacyStream 由 zstd_legacy.h 提供"
+   },
+   {
+    "tu": "threading.c",
+    "header": "process.h",
+    "verdict": "in_use",
+    "seconds": 0.0042,
+    "reason": "副作用：double const _HUGE = System::Double::PositiveInfinity"
+   },
+   {
+    "tu": "fse_compress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0038,
+    "reason": "FSE_CTable、FSE_FUNCTION_TYPE 由 fse.h 提供"
+   },
+   {
+    "tu": "fse_decompress.c",
+    "header": "fse.h",
+    "verdict": "in_use",
+    "seconds": 0.0036,
+    "reason": "FSE_DECODE_TYPE、FSE_DTable 由 fse.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.0033,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "mem.h",
+    "verdict": "in_use",
+    "seconds": 0.0025,
+    "reason": "HIST_WKSP_SIZE 展开后用到 sizeof（由 mem.h 提供）"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "zstd_v05.h",
+    "verdict": "in_use",
+    "seconds": 0.0025,
+    "reason": "MEM_H_MODULE、ZBUFFv05_DCtx 由 mem.h 提供"
+   },
+   {
+    "tu": "pool.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0021,
+    "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.002,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "time.h",
+    "verdict": "in_use",
+    "seconds": 0.002,
+    "reason": "CLOCKS_PER_SEC、clock 由 time.h 提供"
+   },
+   {
+    "tu": "zdict.c",
+    "header": "zdict.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ZDICT_params_t、notificationLevel 由 zdict.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0018,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0017,
+    "reason": "HUF_BLOCKSIZE_MAX、HUF_CElt 由 huf.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0017,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERR_isError 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0016,
+    "reason": "ERROR、ERROR_H_MODULE 由 error_private.h 提供"
+   },
+   {
+    "tu": "entropy_common.c",
+    "header": "huf.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "HUF_READ_STATS_WORKSPACE_SIZE_U32、HUF_TABLELOG_MAX 由 huf.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0015,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_v05.c",
+    "header": "error_private.h",
+    "verdict": "in_use",
+    "seconds": 0.0012,
+    "reason": "ERROR、ERR_getErrorName 由 error_private.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0011,
+    "reason": "ZSTD_COMPRESSBLOCK_BTLAZY2、ZSTD_COMPRESSBLOCK_BTLAZY2_DICTMATCHSTATE 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_lazy.c",
+    "header": "zstd_lazy.h",
+    "verdict": "in_use",
+    "seconds": 0.0011,
+    "reason": "ZSTD_LAZY_DDSS_BUCKET_LOG、ZSTD_ROW_HASH_TAG_BITS 由 zstd_lazy.h 提供"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "zstd_decompress_internal.h",
+    "verdict": "in_use",
+    "seconds": 0.0009,
+    "reason": "HUFptr、LLTable 由 zstd_decompress_internal.h 提供"
+   },
+   {
+    "tu": "zstd_v06.c",
+    "header": "zstd_v06.h",
+    "verdict": "in_use",
+    "seconds": 0.0008,
+    "reason": "ZBUFFv06_DCtx、ZSTDv06_DCtx 由 zstd_v06.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "clevels.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZSTD_MAX_CLEVEL、ZSTD_defaultCParameters 由 clevels.h 提供"
+   },
+   {
+    "tu": "zbuff_decompress.c",
+    "header": "zbuff.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFF_DCtx 由 zbuff.h 提供"
+   },
+   {
+    "tu": "zstd_v07.c",
+    "header": "zstd_v07.h",
+    "verdict": "in_use",
+    "seconds": 0.0007,
+    "reason": "ZBUFFv07_DCtx、ZBUFFv07_freeDCtx 由 zstd_v07.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_LDM_DEFAULT_WINDOW_LOG、ZSTD_ldm_adjustParameters 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZSTD_ldm_skipSequences、iend 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_v04.c",
+    "header": "zstd_v04.h",
+    "verdict": "in_use",
+    "seconds": 0.0006,
+    "reason": "ZBUFFv04_DCtx、ZSTDv04_Dctx 由 zstd_v04.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_ldm_geartab.h",
+    "verdict": "in_use",
+    "seconds": 0.0005,
+    "reason": "ZSTD_ldm_gearTab 由 zstd_ldm_geartab.h 提供"
+   },
+   {
+    "tu": "hist.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_WKSP_SIZE、HIST_WKSP_SIZE_U32 由 hist.h 提供"
+   },
+   {
+    "tu": "huf_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_WKSP_SIZE_U32、HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_opt.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTD_COMPRESSBLOCK_BTOPT、ZSTD_COMPRESSBLOCK_BTOPT_DICTMATCHSTATE 由 zstd_opt.h 提供"
+   },
+   {
+    "tu": "zstd_opt.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "HIST_count_simple 由 hist.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "COVER_best_t、COVER_dictSelection_t 由 cover.h 提供"
+   },
+   {
+    "tu": "zstd_v01.c",
+    "header": "zstd_v01.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv01_Dctx 由 zstd_v01.h 提供"
+   },
+   {
+    "tu": "zstd_v02.c",
+    "header": "zstd_v02.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv02_Dctx、dst 由 zstd_v02.h 提供"
+   },
+   {
+    "tu": "zstd_v03.c",
+    "header": "zstd_v03.h",
+    "verdict": "in_use",
+    "seconds": 0.0004,
+    "reason": "ZSTDv03_Dctx、dst 由 zstd_v03.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_defaultAllowed 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_COMPRESSBLOCK_DOUBLEFAST、ZSTD_COMPRESSBLOCK_DOUBLEFAST_DICTMATCHSTATE 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "hist.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "HIST_countFast_wksp、HIST_count_wksp 由 hist.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "zstd_ldm.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_ldm_adjustParameters、ZSTD_ldm_fillHashTable 由 zstd_ldm.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_buildFSETable、ZSTD_decompressBlock_internal 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "zstd_decompress_block.c",
+    "header": "zstd_decompress_block.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "ZSTD_decompressBlock_internal、not_streaming 由 zstd_decompress_block.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "cover.h",
+    "verdict": "in_use",
+    "seconds": 0.0003,
+    "reason": "COVER_best_destroy、COVER_best_finish 由 cover.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressLiterals、suspectUncompressible 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressBlock_fast、ZSTD_compressBlock_fast_dictMatchState 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_compress.c",
+    "header": "zstd_compress_superblock.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressSuperBlock 由 zstd_compress_superblock.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_sequences.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_crossEntropyCost、ZSTD_encodeSequences 由 zstd_compress_sequences.h 提供"
+   },
+   {
+    "tu": "zstd_compress_superblock.c",
+    "header": "zstd_compress_literals.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_compressRleLiteralsBlock、ZSTD_noCompressLiterals 由 zstd_compress_literals.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_fillHashTable 由 zstd_fast.h 提供"
+   },
+   {
+    "tu": "zstd_ldm.c",
+    "header": "zstd_double_fast.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_fillDoubleHashTable 由 zstd_double_fast.h 提供"
+   },
+   {
+    "tu": "zstdmt_compress.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "POOL_create_advanced、POOL_ctx 由 pool.h 提供"
+   },
+   {
+    "tu": "zstd_ddict.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customFree、ZSTD_customMalloc 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "allocations.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供"
+   },
+   {
+    "tu": "zstd_decompress.c",
+    "header": "zstd_ddict.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "ZSTD_DDict_dictContent、ZSTD_DDict_dictSize 由 zstd_ddict.h 提供"
+   },
+   {
+    "tu": "cover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   },
+   {
+    "tu": "fastcover.c",
+    "header": "pool.h",
+    "verdict": "in_use",
+    "seconds": 0.0002,
+    "reason": "POOL_add、POOL_create 由 pool.h 提供"
+   }
+  ]
+ }
+}

@@ -436,7 +436,7 @@ def build(path: str) -> None:
     story.append(WorkflowDiagram())
     story.append(
         P("图 1  HeavyHeader 工作链。工具不自己解析 C++，而是向真实编译器提问并读取它的回答，"
-          "把编译器的真实计时数据与依赖图交叉归因，再交给命令消费（当前共九个命令）。图中各环节均已实现并有测试覆盖。",
+          "把编译器的真实计时数据与依赖图交叉归因，再交给命令消费（当前共十一个命令）。图中各环节均已实现并有测试覆盖。",
           "caption")
     )
     story.append(NextPageTemplate("body"))
@@ -482,21 +482,23 @@ def build(path: str) -> None:
     )
     story.append(
         P(
-            "九个命令构成完整治理闭环：<font face='%s'>scan</font> 产出 Markdown / HTML / JSON 报告并可存为"
+            "十一个命令构成完整治理闭环：<font face='%s'>scan</font> 产出 Markdown / HTML / JSON 报告并可存为"
             "基线；<font face='%s'>verify</font> 把候选 include 真的注释掉、重新编译、实测耗时/内存/体积差异——成本模型再"
             "严谨也仍是模型，权威结论来自实测；<font face='%s'>gate</font> 在 CI 中对基线做回归判定，失败时"
             "指名道姓报出是哪些头文件、哪些 include 行引入的；<font face='%s'>compare</font> 对比两份扫描，"
             "定位成本上升的具体文件；<font face='%s'>toolchains</font> 给出同一份代码在多编译器下的成本横评；"
             "<font face='%s'>history</font> 把多次扫描聚合成成本趋势；<font face='%s'>pr-comment</font> 把对比渲染成 "
             "PR 评论并幂等发布；<font face='%s'>blame</font> 把成本回归归因到具体 commit 与 include 行；"
-            "<font face='%s'>edge-cost</font> 按 include 边给出边际解析成本。"
+            "<font face='%s'>edge-cost</font> 按 include 边给出边际解析成本；"
+            "<font face='%s'>configs</font> 让同一棵树按多套构建配置各扫一遍、只报判定变了的候选；"
+            "<font face='%s'>verified</font> 只列编译器证据撑住的候选（汇编一致 + 省时过线 + 复测成立）。"
             "门禁只使用确定性的归因行数判定，墙钟时间因随负载波动只做展示。"
-            % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
+            % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
         )
     )
     story.append(
         P(
-            "项目已完成 v0.1–v0.4 全部路线图条目，通过 <b>622 个单元测试</b>，CI 覆盖三大操作系统 × 四个 "
+            "项目已完成 v0.1–v0.4 全部路线图条目，通过 <b>722 个单元测试</b>，CI 覆盖三大操作系统 × 四个 "
             "Python 版本的测试矩阵、lint、自举扫描、覆盖率与 MSVC 证据共 16 个岗位，<b>当前全部通过</b>；"
             "运行时零第三方依赖并由测试守护，<b>v0.1.0 已发布至 PyPI</b>（2026-10-19，全新虚拟环境 "
             "安装验证通过）。四个真实开源项目（fmt、nlohmann-json、spdlog、cpp-httplib）的基准显示：54 个"
@@ -955,6 +957,66 @@ def build(path: str) -> None:
         )
     )
 
+    # ------------------------------------------------------ 五·续 更大语料
+    # 标题不能孤零零掉在页脚：它底下紧接着一张三行表，分开排会让人以为这一节结束了。
+    story.append(PageBreak())
+    story.append(P("换更大的语料：判据差的不是精度，是按配置求值", "h2"))
+    story.append(
+        P(
+            "前四个工程用来做精度专项（候选判定对不对）。要回答「绝对值有多少」，只能换更大的"
+            "真实工程，于是语料扩到五个：doctest、zlib、Lua 5.4.7、zstd 1.5.6、brotli 1.1.0。"
+            "后两个是规模检验——zstd 的 lib/ 有 39 个编译单元、350 万行，基线 53.4 秒，是 Lua 的"
+            "3.2 倍；brotli 有 32 个编译单元、295 万行。" + D(3)
+        )
+    )
+    story.append(
+        TABLE(
+            ["语料", "编译单元", "头文件解析量", "基线", "本轮用它回答什么"],
+            [
+                ["doctest / zlib / Lua 5.4.7", "149 / 9 / 34", "—", "—", "候选判定精度与假阳性"],
+                ["zstd 1.5.6（lib/）", "39", "350 万行", "53.4 s", "单条收益的绝对值上限"],
+                ["brotli 1.1.0（c/）", "32", "295 万行", "45.0 s", "代码组织方式的特殊结构"],
+            ],
+            widths=[52 * mm, 26 * mm, 32 * mm, 20 * mm, 40 * mm],
+        )
+    )
+    story.append(SP(4))
+    story.append(
+        P(
+            "zstd 首轮同时给出一个好消息和一个坏消息。好消息：最大的一条候选 "
+            "<font face='%s'>pool.c → allocations.h</font> 实测 <b>384 → 205 ms（−46.6%%）</b>，"
+            "解析文件数 184 → 32，是全项目至今最大的单条收益。坏消息：7 条「疑似未使用」候选实测"
+            "收益全为 0，而真正有收益的那条被判成「在用」。根因不是判据不够精细，而是<b>判据没有"
+            "按配置求值</b>——相关引用全部落在 "
+            "<font face='%s'>#ifdef ZSTD_MULTITHREAD</font> 区间里，这批编译命令没有定义那个宏。"
+            % (_MONO, _MONO)
+        )
+    )
+    story.append(
+        P(
+            "这次修复换来一句可以直接引用的话：<b>同一行 include，在两种构建配置下答案相反</b>。"
+            "同一棵源码树，不加宏时删掉它能编过且汇编一致；加上 "
+            "<font face='%s'>-DZSTD_MULTITHREAD</font> 之后删了直接编译失败。「这条 include 该不该删」"
+            "不是源码的属性，是<b>构建配置的属性</b>。这一条现在是一条命令："
+            "<font face='%s'>heavyheader configs</font> 把同一份 compile_commands.json 派生几份、"
+            "各扫一遍、按（单元, 头, 行）对齐，只报判定变了的候选——zstd 三套配置扫下来是 "
+            "90 / 91 / 93 个候选，只有 3 条判定不同，方向全部手工编译核对过。"
+            % (_MONO, _MONO)
+        )
+    )
+    story.append(
+        P(
+            "brotli 暴露的是另一种结构：它用<b>无 include guard 的实现片段</b>组织代码（先 "
+            "<font face='%s'>#define FN</font> 再 <font face='%s'>#include</font>），片段里的代码"
+            "不在编译单元的文本里，于是「片段用到了这个头的符号」在文本层根本不存在。修法是承认"
+            "这种结构，并区分重复包含的两种性质：带 guard 的头第二次起是空操作（删任何一行都不省"
+            "解析，收益按 0 计）；无 guard 的片段每次包含都是一次实例化，展开成 N 条站点候选、"
+            "强制过汇编闸门。brotli 上 31 个站点实测 <b>0 条可删</b>——28 条编译失败、3 条汇编指纹"
+            "变了；关掉强制闸门时，那 3 条会退化成「无变化（−8 ms）」，也就是<b>看起来无害的"
+            "破坏性改动</b>。" % (_MONO, _MONO)
+        )
+    )
+
     # ------------------------------------------------------ 六 CI 门禁与治理流程
     story.append(P("六 CI 门禁与治理流程", "h1"))
     story.append(P("从一次性分析到持续治理", "h2"))
@@ -1008,6 +1070,26 @@ def build(path: str) -> None:
         )
     )
     story.append(SP(4))
+    story.append(
+        P(
+            "「可采纳率」是三个指标，引用时必须带分母——这一点单独说明，因为它最容易被读错。"
+            "① <b>池内采纳率 25%</b>（5/20）：只回答送测池里多少条最终被确认为 improved，"
+            "<b>不是端到端准确率，也不是召回率</b>；② <b>产出速度 52 秒/条</b>：扫描 + 三真值 + "
+            "计时漏斗 4 分 21 秒换 5 条（修复前是 4.4 分钟/条）；③ <b>端到端 2.3%</b>（5/222）："
+            "相对「真能删 69 条」是 7.2%。同一池换一种测量协议（双侧预热 + min-of-5）得 40%，"
+            "成员只重合 3 条——<b>率是协议的属性，不只是工具的属性</b>。" + D(3)
+        )
+    )
+    story.append(
+        P(
+            "还有三条必须一起读的限定：单侧 5 次读数的极差中位数是 <b>11.8 ms</b>，而确认收益只有 "
+            "2.7–8.8 ms，收益是 min-of-N 压出来的；复测存活率 <b>73%</b>（11 → 8）；49 条未送测的"
+            "已证实候选确实少解析 2,374 行，只是低于噪声线 3–5 倍——<b>不可说成「工具对它们没有"
+            "潜在收益」</b>，只能说这台机器上测不出来。同理，「已验证层级」（汇编一致 + 省时过线 + "
+            "复测成立的候选）也不是一张稳定名单：Lua 上同一命令连跑两遍，进这一层的分别是 2 条与 "
+            "3 条，<b>成员零重合</b>。它只对「本轮」负责。" + D(3)
+        )
+    )
     story.append(
         P(
             "方法论文档为报告里的每一个指标给出定义：「如果一个指标没法在这里查到定义，那它不应该"
@@ -1066,7 +1148,7 @@ def build(path: str) -> None:
     story.append(P("测试策略", "h2"))
     story.append(
         P(
-            "622 个单元测试覆盖解析、归因、门禁、verify、增量缓存、多编译器对比与并行编译健壮性各子系统。测试样本优先用真实编译器输出"
+            "722 个单元测试覆盖解析、归因、门禁、verify、增量缓存、多编译器对比与并行编译健壮性各子系统。测试样本优先用真实编译器输出"
             "逐字复制而不是手写构造——解析器的输入是编译器方言的文本，手写样本会悄悄偏离真实格式。"
             "上一节提到的独占闭包 bug 正是因为「症状与正常输出无法区分」，才以回归测试的方式永久防守。"
             + D(5)
@@ -1149,8 +1231,8 @@ def build(path: str) -> None:
         TABLE(
             ["已有基础", "已经核对的内容", "接下来的开发工作"],
             [
-                ["九命令 CLI（scan / verify / gate / compare / history / pr-comment / toolchains / blame / edge-cost）",
-                 "终端输出样例与 622 个单元测试",
+                ["十一命令 CLI（scan / verify / verified / gate / compare / history / pr-comment / toolchains / blame / edge-cost / configs）",
+                 "终端输出样例与 722 个单元测试",
                  "pr-comment 的 GitLab 后端仍待做（需另一套 API）"],
                 ["三编译器驱动（GCC / Clang / MSVC）",
                  "四真实项目基准，54 个编译单元的采集记录",
@@ -1318,7 +1400,7 @@ def build(path: str) -> None:
         ("D2", "docs/architecture.md：《架构》——分层结构、数据流与六个刻意的设计选择。"),
         ("D3", "benchmarks/：run_all.py 基准脚本与 results/summary.md 汇总——四个真实项目的实测数据。"),
         ("D4", "ROADMAP.md：《路线图》——v0.1 / v0.2 / v0.3 排序即优先级。"),
-        ("D5", "tests/：622 个单元测试，样本优先采用真实编译器输出逐字复制；按平台中性编写。"),
+        ("D5", "tests/：722 个单元测试，样本优先采用真实编译器输出逐字复制；按平台中性编写。"),
         ("D6", "experiments/results/decision-20261018.md：《删除建议决策层实测》——222 个候选全部真实编译后的结论分布、三维度数据与竞品交叉核对。"),
         ("D7", "SUBMISSION.md：《提交清单》——比赛材料、节点与剩余步骤。"),
         ("D8", "README.md：项目主页——能力总览、诚实的边界与快速开始。"),

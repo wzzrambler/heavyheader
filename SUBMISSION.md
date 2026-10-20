@@ -8,7 +8,7 @@
 | 项 | 状态 | 位置 |
 |---|---|---|
 | 代码 | ✅ 186 文件 | `src/heavyheader/` |
-| 测试 | ✅ 508 个全绿 + ruff 0 违规（2026-10-19 修复 CI lint：原 91 处） | `tests/` |
+| 测试 | ✅ **722 个全绿 / 7 跳过** + ruff 0 违规（2026-10-20 实测） | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/**GOVERNANCE**/CODEOWNERS/Issue·PR 模板/CI | 仓库根 |
 | 独创性说明 | ✅ `docs/innovation.md`：反事实构建实验范式、三项创新点、消融表、不声称清单 | `docs/innovation.md` |
 | 场景落地说明 | ✅ `docs/scenario.md`：四步全链路 + 真实工程数据卡 + 部署/运行/测试证据 | `docs/scenario.md` |
@@ -19,6 +19,9 @@
 | 完整构建实验 | ✅ 真实工程 63 TU，完整构建 −7.1% 墙上 / −11.4% CPU，断言逐个一致 | `experiments/` + `experiments/results/` |
 | 删除建议决策层 | ✅ 222 候选全部实测：建议删除 1 / 保留 187 / 需人工判断 34，三维度数据 + 竞品交叉 | `attrib/advice.py` + `experiments/results/decision-*.md` |
 | 竞品真实对比 | ✅ clang-include-cleaner 同工程同任务：0 删除 / 101 补充；我们 1 条实测 −43.5% | `experiments/results/competitor-*.md` |
+| 第五语料 + 按配置求值 | ✅ zstd 1.5.6（39 TU / 350 万行）单条 **−46.6%**（384→205 ms）；同一行 include 在 `-DZSTD_MULTITHREAD` 下删了**编不过**——该不该删是构建配置的属性；`configs` 命令三配置 90/91/93 候选、仅 3 条判定不同 | `src/heavyheader/configmatrix.py` + `experiments/results/config-matrix-zstd-cli-20261020.md` |
+| 实现片段与实例化站点 | ✅ brotli 1.1.0（32 TU / 295 万行）：无 guard 片段展开 31 个站点，实测 **0 条可删**（28 编错 + 3 汇编变了）；关掉强制闸门那 3 条会退化成「无变化 −8 ms」 | `tests/test_instantiation_sites.py` + `docs/benchmark-report.md` §9.18 |
+| 已验证层级 | ✅ 新命令 `verified` + `verify --tier`：三档证据（verified / equivalent / compiles_only），措辞由测试锁死；Lua 两遍 2 条 / 3 条且**成员零重合**，6 条闸门证据**全部来自判据不推荐侧** | `src/heavyheader/evidence.py` + `docs/benchmark-report.md` §9.20 |
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
@@ -27,8 +30,8 @@
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
-| 作品介绍文档 | ✅ 24 页 PDF（2026-10-19 第五轮刷新） | `HeavyHeader-作品介绍文档.pdf` |
-| 选题报告（补充） | ✅ 17 页 PDF（2026-10-19 第五轮刷新） | `HeavyHeader-选题报告.pdf` |
+| 作品介绍文档 | ✅ 27 页 PDF（2026-10-20 第九轮刷新：新增 4.6–4.8） | `HeavyHeader-作品介绍文档.pdf` |
+| 选题报告（补充） | ✅ 18 页 PDF（2026-10-20 第九轮刷新：新增「换更大的语料」与三指标口径） | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
 | 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 186 文件，CI 三工作流（首发展示为压缩提交，2026-10-19 起按逻辑分别提交） |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |

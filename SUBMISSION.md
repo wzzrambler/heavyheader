@@ -8,13 +8,14 @@
 | 项 | 状态 | 位置 |
 |---|---|---|
 | 代码 | ✅ 186 文件 | `src/heavyheader/` |
-| 测试 | ✅ **722 个全绿 / 7 跳过** + ruff 0 违规（2026-10-20 实测） | `tests/` |
+| 测试 | ✅ **723 个全绿 / 7 跳过** + ruff 0 违规（2026-10-20 实测） | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/**GOVERNANCE**/CODEOWNERS/Issue·PR 模板/CI | 仓库根 |
 | 独创性说明 | ✅ `docs/innovation.md`：反事实构建实验范式、三项创新点、消融表、不声称清单 | `docs/innovation.md` |
 | 场景落地说明 | ✅ `docs/scenario.md`：四步全链路 + 真实工程数据卡 + 部署/运行/测试证据 | `docs/scenario.md` |
-| 上游落地战役 | ✅ 2 个 PR 级补丁（doctest −3.01% / zlib −2.125%）+ 英文 PR 正文，dry-run 验证可套用 | `contrib/upstream/` |
+| 上游落地战役 | ✅ 2 个 PR 已提交（doctest#1212 −3.01% / madler/zlib#1344 −2.125%）+ 英文 PR 正文；**2026-10-21 核实状态均为 open、未被合并**（只写「已提交」不写「已被采用」） | `contrib/upstream/` |
 | 零依赖守护 | ✅ `tests/test_no_deps.py`：CI 强制零运行时依赖（架构约束） | `tests/` |
 | 基准数据 | ✅ fmt 真实项目 + 构造工程 + 三编译器横评 | `benchmarks/` |
+| 五分钟演示脚本 | ✅ `docs/demo-walkthrough.md`：一条候选走完「热点→验证→闸门→门禁」，每条命令在本机实测过（含现场可造的 link-trap 最小复现） | `docs/demo-walkthrough.md` |
 | 多编译器对比 | ✅ GCC / Clang / MSVC 真实三编译器横评 | `toolchains` 子命令 + `benchmarks/results/toolchains-demo.{json,md}` |
 | 完整构建实验 | ✅ 真实工程 63 TU，完整构建 −7.1% 墙上 / −11.4% CPU，断言逐个一致 | `experiments/` + `experiments/results/` |
 | 删除建议决策层 | ✅ 222 候选全部实测：建议删除 1 / 保留 187 / 需人工判断 34，三维度数据 + 竞品交叉 | `attrib/advice.py` + `experiments/results/decision-*.md` |
@@ -30,8 +31,8 @@
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
-| 作品介绍文档 | ✅ 27 页 PDF（2026-10-20 第九轮刷新：新增 4.6–4.8） | `HeavyHeader-作品介绍文档.pdf` |
-| 选题报告（补充） | ✅ 18 页 PDF（2026-10-20 第九轮刷新：新增「换更大的语料」与三指标口径） | `HeavyHeader-选题报告.pdf` |
+| 作品介绍文档 | ✅ 29 页 PDF（2026-10-21 第十轮刷新：新增「评审速读三件事」、0.1 复现入口表；封面版本号 v6.0） | `HeavyHeader-作品介绍文档.pdf` |
+| 选题报告（补充） | ✅ 18 页 PDF（2026-10-21 第十轮刷新：同步 PR 实时状态） | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 约 5 分钟 MP4（10.6 MB） | `HeavyHeader-演示视频.mp4` |
 | 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 186 文件，CI 三工作流（首发展示为压缩提交，2026-10-19 起按逻辑分别提交） |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |

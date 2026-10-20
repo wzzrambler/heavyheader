@@ -579,6 +579,27 @@ def test_codegen_changed_is_human_with_keep_lean(tmp_path):
     assert "不计入收益" in texts
 
 
+def test_codegen_changed_does_not_claim_a_cause(tmp_path):
+    """汇编不一致时只报「不一样」，不猜原因。
+
+    曾经这里写着「少了这个头会改变重载解析或条件编译」——那是把一类已排查
+    案例的成因当成了通则。实测中同一条状态也出现在「少了一个函数定义、
+    链接期才暴露」的情形（ benchmarks/cases/demo 的 link-trap 复现），
+    成因不同，工具没有证据区分，所以只能说差异存在、需人工判断。
+    """
+    candidate = _candidate(tmp_path)
+    result = _result(
+        candidate,
+        "codegen-changed",
+        message="移除后编译通过，但生成的代码与原来不同",
+    )
+    advice = build_advice(candidate, result, None)
+    texts = " ".join(reason.text for reason in advice.reasons)
+    assert "人工判断" in texts
+    for guess in ("重载解析", "条件编译发生变化", "起因是"):
+        assert guess not in texts, guess
+
+
 def test_scan_report_lists_the_verify_queue(tmp_path):
     """没跑 verify 的扫描报告要把候选列成「待验证队列」，而不是留给读者。
 

@@ -278,7 +278,7 @@ def _codegen_changed(
     与 :func:`_keep` 的区别：编译器没有否决，是**代码等价性检查**否决的。
     两者都要留记录，但理由不同：前者是「删不掉」，后者是「删得掉，但删了程序
     就变了」。实测案例：删掉 ``<iomanip>`` 后目标文件从 21,289 字节缩到
-    10,183 字节，起因是重载解析改变。
+    10,183 字节——能编过，但已不是同一个程序（差异原因不在本层判断之内）。
     """
     reasons = [
         AdviceReason(
@@ -287,8 +287,8 @@ def _codegen_changed(
         ),
         AdviceReason(
             aspect=AdviceAspect.FUNCTION,
-            text="编译通过 ≠ 同一个程序：少了这个头会改变重载解析或条件编译，"
-            "行为可能随之改变",
+            text="编译通过 ≠ 同一个程序：两侧汇编指纹不一致，行为可能已变"
+            "（差异原因需人工判断——工具只报「不一样」，不猜为什么）",
         ),
         AdviceReason(
             aspect=AdviceAspect.BUILD,

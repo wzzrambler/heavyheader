@@ -1014,7 +1014,8 @@ def verify_candidates(
                     status="codegen-changed",
                     patched_seconds=patched_seconds,
                     message="移除后编译通过，但生成的代码与原来不同"
-                    "（重载解析或条件编译发生变化）",
+                    "（差异原因需人工判断：条件编译、重载解析选中的定义，"
+                    "或链接期才暴露的缺失定义都有可能）",
                     **_codegen_fields(codegen_pair),
                 )
             )

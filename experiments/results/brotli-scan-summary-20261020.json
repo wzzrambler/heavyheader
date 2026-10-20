@@ -1,0 +1,94 @@
+{
+ "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\brotli-1.1.0",
+ "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+ "baseline_seconds": 47.564786,
+ "tu_count": 32,
+ "candidate_count": 84,
+ "verdicts": {
+  "plausibly_unused": 4,
+  "unknown": 6,
+  "in_use": 74
+ },
+ "rows": [
+  {
+   "tu": "compound_dictionary.c",
+   "header": "quality.h",
+   "line": 13,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0559,
+   "reason": "bucket_bits、compound 由本文件自己定义"
+  },
+  {
+   "tu": "backward_references.c",
+   "header": "dictionary_hash.h",
+   "line": 18,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0002,
+   "reason": ""
+  },
+  {
+   "tu": "dictionary_hash.c",
+   "header": "dictionary_hash.h",
+   "line": 10,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0002,
+   "reason": "kStaticDictionaryHashLengths、kStaticDictionaryHashWords 由本文件自己定义"
+  },
+  {
+   "tu": "literal_cost.c",
+   "header": "literal_cost.h",
+   "line": 10,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0001,
+   "reason": "BrotliEstimateBitCostsForLiterals、cost 由本文件自己定义"
+  },
+  {
+   "tu": "dictionary_hash.c",
+   "header": "platform.h",
+   "line": 9,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.5221,
+   "reason": "BROTLI_INTERNAL 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+  },
+  {
+   "tu": "brotli.c",
+   "header": "io.h",
+   "line": 31,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0031,
+   "reason": "_isatty、_setmode 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+  },
+  {
+   "tu": "compress_fragment_two_pass.c",
+   "header": "find_match_length.h",
+   "line": 25,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0006,
+   "reason": "FindMatchLengthWithLimit 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+  },
+  {
+   "tu": "compress_fragment.c",
+   "header": "find_match_length.h",
+   "line": 25,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0005,
+   "reason": "FindMatchLengthWithLimit 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+  },
+  {
+   "tu": "static_dict.c",
+   "header": "find_match_length.h",
+   "line": 13,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0003,
+   "reason": "FindMatchLengthWithLimit 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定"
+  },
+  {
+   "tu": "brotli.c",
+   "header": "share.h",
+   "line": 32,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0,
+   "reason": "这个头只做转发或只提供宏（没有函数/类型声明），它的作用取决于后续头怎么用这些宏"
+  }
+ ]
+}

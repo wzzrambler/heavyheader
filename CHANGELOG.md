@@ -6,6 +6,22 @@
 
 ### 新增
 
+- **新命令 `configs`：同一棵源码树按多套构建配置各扫一遍**（`configmatrix.py`）。
+  判定层本来就按每条编译命令里的 `-D` 求值 `#ifdef`，所以不需要新的分析逻辑：
+  把同一份 `compile_commands.json` 派生几份、各扫一遍、按 `(单元, 头, 行)` 对齐，
+  只报判定变了的候选。实测 zstd 三套配置（`single` / `-DZSTD_MULTITHREAD` /
+  `+ -DZSTD_LEGACY_SUPPORT=1`）：候选 90/91/93，**只有 3 条判定不同**，且方向
+  全部用手工编译核对过。回答的是 `scan` 回答不了的问题：这条 include 该不该删，
+  取决于**这批编译命令有没有打开某个宏**。
+
+- **新命令 `configs`：同一棵源码树按多套构建配置各扫一遍**（`configmatrix.py`）。
+  判定层本来就按每条编译命令里的 `-D` 求值 `#ifdef`，所以不需要新的分析逻辑：
+  把同一份 `compile_commands.json` 派生几份、各扫一遍、按 `(单元, 头, 行)` 对齐，
+  只报判定变了的候选。实测 zstd 三套配置（`single` / `-DZSTD_MULTITHREAD` /
+  `+ -DZSTD_LEGACY_SUPPORT=1`）：候选 90/91/93，**只有 3 条判定不同**，且方向
+  全部用手工编译核对过。回答的是 `scan` 回答不了的问题：这条 include 该不该删，
+  取决于**这批编译命令有没有打开某个宏**。
+
 - **副作用分层：`object` 直接拦，`call` 交给编译器裁**（`attrib/usage.py`、
   `verify.py`）。`side_effect_kinds_in` 把名字空间作用域里的可疑语句分成两类：
   带初始化的对象定义（`static X y = register_it();`，文本层看得确凿，仍判「在用」）
@@ -33,6 +49,26 @@
   首位变为 httplib 12.09s / json.hpp 3.42s / helpers-inl.h 1.16s。
 
 ### 修复
+
+- **实现片段里的代码不算 TU 的代码**（`has_include_guard` / `extra_source_ids`）。
+  brotli 用「无 include guard 的实现片段」组织代码（`*_inc.h`：`.c` 先
+  `#define FN …` 再 `#include` 它来实例化），片段里的使用以前**根本没被读到**，
+  于是把片段对 `cluster.h` 的依赖判成不存在——推荐层 11 条里 4 条编不过
+  （报错位置在 `block_splitter_inc.h:224`，不在被改的 `.c` 里）。现在把**无 guard
+  的项目内依赖**的标识符并进 `source_ids`：brotli 推荐层 11 → 4、编不过 4 → 0；
+  Lua 那条从第四轮就在的历史假阳性（`luac.c → lopnames.h`）也一并消失，
+  推荐层精度 18/19 → **18/18**，P@5/P@10 从 80%/90% 升到 100%/100%。
+  doctest 6/6、zlib 1/1 不变。
+
+- **实现片段里的代码不算 TU 的代码**（`has_include_guard` / `extra_source_ids`）。
+  brotli 用「无 include guard 的实现片段」组织代码（`*_inc.h`：`.c` 先
+  `#define FN …` 再 `#include` 它来实例化），片段里的使用以前**根本没被读到**，
+  于是把片段对 `cluster.h` 的依赖判成不存在——推荐层 11 条里 4 条编不过
+  （报错位置在 `block_splitter_inc.h:224`，不在被改的 `.c` 里）。现在把**无 guard
+  的项目内依赖**的标识符并进 `source_ids`：brotli 推荐层 11 → 4、编不过 4 → 0；
+  Lua 那条从第四轮就在的历史假阳性（`luac.c → lopnames.h`）也一并消失，
+  推荐层精度 18/19 → **18/18**，P@5/P@10 从 80%/90% 升到 100%/100%。
+  doctest 6/6、zlib 1/1 不变。
 
 - **源码侧按 `-D` 求值：死分支里的引用不算「用到」**（`IdentifierIndex.source_live_ids`）。
   换语料换出来的最大一条：zstd `lib/common/pool.c → allocations.h`，
@@ -74,6 +110,20 @@
   7.6ms 的真实收益估成 0.339s（虚高约 50 倍），新锚估 0.011s（1.5 倍）。
 
 ### 实验与调研
+
+- **第五个语料 brotli 1.1.0：推荐层第一次出现 4 条假阳性**（基准报告 §9.17）。
+  `c/` 下 32 TU、2.95 M 行解析量、串行基线 45.0 s；84 条候选（疑似 11 / 无法判定
+  8 / 在用 65）。修复实现片段判据后推荐层 4 条全部成立，`verify --top 30`
+  实测 **2 improved**：`utf8_util.h ← utf8_util.c` 373 → 200 ms（−46.4%）、
+  `quality.h ← compound_dictionary.c` 466 → 379 ms（−18.7%），聚合 −0.58%。
+  已知缺口记在案：3 条候选因「同名 include 出现 3–19 次」被判 ambiguous，从未实测。
+
+- **第五个语料 brotli 1.1.0：推荐层第一次出现 4 条假阳性**（基准报告 §9.17）。
+  `c/` 下 32 TU、2.95 M 行解析量、串行基线 45.0 s；84 条候选（疑似 11 / 无法判定
+  8 / 在用 65）。修复实现片段判据后推荐层 4 条全部成立，`verify --top 30`
+  实测 **2 improved**：`utf8_util.h ← utf8_util.c` 373 → 200 ms（−46.4%）、
+  `quality.h ← compound_dictionary.c` 466 → 379 ms（−18.7%），聚合 −0.58%。
+  已知缺口记在案：3 条候选因「同名 include 出现 3–19 次」被判 ambiguous，从未实测。
 
 ### 实验与调研
 

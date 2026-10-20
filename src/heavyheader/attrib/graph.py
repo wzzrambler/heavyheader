@@ -502,6 +502,28 @@ def find_removal_candidates(
         unit_defines = compile_defines(tu)
         # 与 analyse_usage 同一口径：判死了的条件分支里提到的名字不算「用到」。
         source_ids = index.source_live_ids(tu.source, unit_defines) or frozenset()
+        # **实现片段的代码属于这个 TU**。不带 include guard 的头（brotli 的
+        # ``*_inc.h``、各种 ``*.inl``/``.ipp``）不是接口，是被 #include 进来
+        # 「就地展开」的代码；只看 .c 文本会漏掉片段里对别的头的使用，于是把
+        # 真依赖判成「疑似未使用」（实测 brotli：4 条推荐全部编译失败）。
+        #
+        # 判据用「无 guard」而不是文件名后缀：guard 是**语言层面**的事实
+        # （无 guard 的头重复包含会重定义，所以它必然是一次性片段），后缀只是
+        # 各家习惯。
+        extra_ids: set[str] = set()
+        root_prefix = str(Path(scan.root).resolve()).lower()
+        for dependency in tu.dependencies:
+            try:
+                inside = str(Path(dependency).resolve()).lower().startswith(root_prefix)
+            except OSError:
+                continue
+            if not inside or index.is_guarded(dependency):
+                continue
+            ids = index.source_live_ids(dependency, unit_defines)
+            if ids:
+                extra_ids |= ids
+        if extra_ids:
+            source_ids = frozenset(source_ids | extra_ids)
         reachable_counts: dict[str, int] = {}
         declarers: dict[str, frozenset[Path]] = {}
         conditional_declarers: dict[str, frozenset[Path]] = {}
@@ -650,6 +672,7 @@ def find_removal_candidates(
                 conditional_declarers=conditional_declarers,
                 alias_defs=alias_defs,
                 macro_defs=macro_defs,
+                extra_source_ids=frozenset(extra_ids),
                 defined_macros=unit_defines,
             )
             candidates.append(

@@ -339,6 +339,43 @@ def _declares_nothing(text: str) -> bool:
 #
 # ``_strip_noise`` 只保留代码本体：注释与字符串被抹成空格，``#include`` 行整行
 # 抹掉（否则 ``#include <regex>`` 自己会贡献 ``regex`` 这个命中）。
+_GUARD_IFNDEF = re.compile(r"^\s*#\s*ifndef\s+([A-Za-z_]\w*)")
+_GUARD_DEFINE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)")
+_GUARD_PRAGMA = re.compile(r"^\s*#\s*pragma\s+once\b")
+
+
+def has_include_guard(text: str) -> bool:
+    """这个文件带不带 include guard（``#pragma once`` 或 ``#ifndef X`` + ``#define X``）。
+
+    判它是为了分清两种 .h：
+
+    * **接口头**（带 guard）：可以被任意多次包含，里面的声明属于「头文件
+      提供的名字」，不算 TU 自己的代码；
+    * **实现片段**（不带 guard）：brotli 的 ``*_inc.h`` 就是这一类——它们靠
+      ``#define FN …`` 再被 ``#include`` 多次来「实例化模板」，一加 guard 就
+      没法重复包含了。片段里的代码是**这个 TU 的代码**，它用到的名字必须算作
+      「TU 用到」，否则依赖会被判成不存在：实测 `block_splitter.c → cluster.h`
+      删掉后 ``block_splitter_inc.h:224`` 报 ``use of undeclared identifier
+      'HistogramAdd'``——使用方在片段里，判定层根本没看那段文本。
+    """
+    lines = [line for line in strip_comments(text).splitlines()][:40]
+    for index, line in enumerate(lines):
+        if _GUARD_PRAGMA.match(line):
+            return True
+        match = _GUARD_IFNDEF.match(line)
+        if not match:
+            continue
+        macro = match.group(1)
+        for follower in lines[index + 1 :]:
+            if not follower.strip():
+                continue
+            define = _GUARD_DEFINE.match(follower)
+            if define and define.group(1) == macro:
+                return True
+            break
+    return False
+
+
 _CONDITIONAL_DIRECTIVE = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef|elif)\b")
 
 _DEFINE_NAME = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)")
@@ -950,6 +987,7 @@ class IdentifierIndex:
         "_live",
         "_defined_ids",
         "_live_src",
+        "_guarded",
     )
 
     def __init__(self) -> None:
@@ -967,6 +1005,7 @@ class IdentifierIndex:
         self._live: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
         self._defined_ids: dict[Path, frozenset[str]] = {}
         self._live_src: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
+        self._guarded: dict[Path, bool] = {}
         self._defined_ids: dict[Path, frozenset[str]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
@@ -1283,6 +1322,15 @@ class IdentifierIndex:
         self._live_src[key] = live
         return live
 
+    def is_guarded(self, path: Path) -> bool:
+        """这个文件带不带 include guard（见 :func:`has_include_guard`）。"""
+        cached = self._guarded.get(path)
+        if cached is None:
+            text = _read(path)
+            cached = has_include_guard(text) if text is not None else True
+            self._guarded[path] = cached
+        return cached
+
     def source_conditional_ids(self, path: Path) -> frozenset[str]:
         """源码只在条件编译判断里提到的名字（见 :func:`conditional_mentions`）。"""
         cached = self._conditional.get(path)
@@ -1307,6 +1355,7 @@ def analyse_usage(
     conditional_declarers: dict[str, frozenset[Path]] | None = None,
     alias_defs: dict[str, tuple[tuple[Path, str], ...]] | None = None,
     macro_defs: dict[str, tuple[tuple[Path, frozenset[str]], ...]] | None = None,
+    extra_source_ids: frozenset[str] = frozenset(),
     defined_macros: frozenset[str] | None = None,
 ) -> UsageSignal:
     """Compare the identifiers a TU uses with those that disappear with an include.
@@ -1347,6 +1396,9 @@ def analyse_usage(
     # whole-header 依赖 ``allocations.h`` 永远「在用」——实测那是 zstd 上最大的
     # 一条删除（−44.5%、解析文件 184→32）。
     source_ids = index.source_live_ids(source, defined_macros or frozenset())
+    if extra_source_ids:
+        # 实现片段（不带 include guard 的 .h）里的代码属于这个 TU。
+        source_ids = frozenset(source_ids | extra_source_ids)
 
     # 源码自己定义的名字不算依赖证据：删掉头文件之后，这些名字由源码自己给出。
     # 不加这一步，``inffast.c`` 因为自己定义了 ``inflate_fast`` 而永远判「在用」

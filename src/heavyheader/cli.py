@@ -309,6 +309,24 @@ def build_parser() -> argparse.ArgumentParser:
     gate.add_argument("--update-baseline", action="store_true", help="通过门禁时更新基线")
     gate.add_argument("--report", type=Path, default=None, help="同时写出 HTML 报告")
 
+    configs = subparsers.add_parser(
+        "configs",
+        help="同一棵源码树按多套构建配置各扫一遍，只报判定变了的候选",
+    )
+    add_common(configs)
+    configs.add_argument(
+        "--config",
+        dest="configs",
+        action="append",
+        default=[],
+        metavar="名字:参数",
+        help='一套配置，如 "mt:-DZSTD_MULTITHREAD"；第一套作基准，可重复',
+    )
+    configs.add_argument("--format", choices=["md", "json"], default="md")
+    configs.add_argument(
+        "-o", "--output", type=Path, default=None, help="输出文件（默认 stdout）"
+    )
+
     compare = subparsers.add_parser("compare", help="对比两份已保存的扫描结果")
     compare.add_argument("before", type=Path, help="基线 JSON")
     compare.add_argument("after", type=Path, help="新扫描 JSON")
@@ -843,6 +861,99 @@ def _cmd_gate(args) -> int:
     return 1
 
 
+def _cmd_configs(args) -> int:
+    """多套构建配置各扫一遍，只汇报判定变化。
+
+    判定层本来就按每条编译命令里的 ``-D`` 求值 ``#ifdef``，所以这里不需要新的
+    分析逻辑：把同一份 ``compile_commands.json`` 派生几份、各扫一遍、按
+    ``(单元, 头, 行)`` 对齐即可。实测 zstd：`pool.c → allocations.h` 在单线程
+    配置里可删（−46.6%），加 ``-DZSTD_MULTITHREAD`` 后删了编不过。
+    """
+    from .configmatrix import (
+        ConfigSpec,
+        render_matrix,
+        table_of,
+        temporary_database,
+        verdict_changes,
+    )
+
+    if not args.configs:
+        print(
+            '错误：至少给一套配置，如 --config "single:" --config "mt:-DZSTD_MULTITHREAD"',
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        specs = [ConfigSpec.parse(raw) for raw in args.configs]
+    except ValueError as exc:
+        print(f"错误：{exc}", file=sys.stderr)
+        return 2
+    names = [spec.name for spec in specs]
+    if len(set(names)) != len(names):
+        print("错误：配置名重复（名字用来对齐报告表格）。", file=sys.stderr)
+        return 2
+    if args.compile_commands is None:
+        print(
+            "错误：configs 需要 --compile-commands（否则没有可派生的编译命令）。",
+            file=sys.stderr,
+        )
+        return 2
+
+    import json
+
+    base_entries = json.loads(Path(args.compile_commands).read_text(encoding="utf-8"))
+    tables = {}
+    summaries = {}
+    for spec in specs:
+        db_path, holder = temporary_database(base_entries, spec.flags)
+        try:
+            original = args.compile_commands
+            args.compile_commands = db_path
+            try:
+                scan = _run_scan(args)
+            finally:
+                args.compile_commands = original
+        finally:
+            holder.cleanup()
+        tables[spec.name] = table_of(scan.candidates)
+        verdicts: dict[str, int] = {}
+        for row in tables[spec.name].values():
+            verdicts[row["verdict"]] = verdicts.get(row["verdict"], 0) + 1
+        summaries[spec.name] = {
+            "tu": len(scan.ok_tus),
+            "failed": len(scan.failed_tus),
+            "baseline_seconds": scan.baseline_seconds,
+            "candidates": len(tables[spec.name]),
+            "verdicts": verdicts,
+        }
+        print(
+            f"[{spec.name:<10}] 单元 {len(scan.ok_tus)} "
+            f"候选 {len(tables[spec.name])} {verdicts}",
+            file=sys.stderr,
+        )
+
+    base = names[0]
+    changes = {
+        spec.name: verdict_changes(tables[base], tables[spec.name])
+        for spec in specs[1:]
+    }
+    if args.format == "json":
+        payload = {
+            "configs": [
+                {"name": s.name, "flags": list(s.flags)} for s in specs
+            ],
+            "summaries": summaries,
+            "changes": {
+                name: [change.__dict__ for change in items]
+                for name, items in changes.items()
+            },
+        }
+        _emit(_json_pretty(payload), args.output)
+        return 0
+    _emit(render_matrix(specs, summaries, changes), args.output)
+    return 0
+
+
 def _cmd_compare(args) -> int:
     try:
         before = load_baseline(args.before)
@@ -1135,6 +1246,7 @@ _COMMANDS = {
     "scan": _cmd_scan,
     "verify": _cmd_verify,
     "gate": _cmd_gate,
+    "configs": _cmd_configs,
     "compare": _cmd_compare,
     "blame": _cmd_blame,
     "edge-cost": _cmd_edge_cost,

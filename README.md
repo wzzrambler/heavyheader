@@ -76,6 +76,17 @@ $ heavyheader scan ./src --format html -o report.html
 | `blame` | 成本考古：把头文件成本回归归因到 commit、文件与 include 行 |
 | `edge-cost` | 按 include **边**归因解析成本（clang-first，需真编译一次）；预测排序用，结论仍归 `verify` |
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
+| `configs` | 同一棵源码树按多套构建配置各扫一遍，只报**判定变了**的候选 |
+
+`configs` 回答的是一个 `scan` 回答不了的问题：这条 include 该不该删，取决于**这批
+编译命令有没有打开某个宏**。实测 zstd：`pool.c → allocations.h` 在单线程配置里可删
+（384 → 205 ms，−46.6%），加 `-DZSTD_MULTITHREAD` 之后删了直接编不过。同一棵树三套
+配置扫下来只有 3 条判定不同——工具不会因为换配置就整体改表，只在关键处改对。
+
+```bash
+$ heavyheader configs . --compiler clang --compile-commands compile_commands.json \
+    --config "single:" --config "mt:-DZSTD_MULTITHREAD"
+```
 
 `scan` 另有两个可选分析：`--pch` 估算预编译头收益，`--forward-decl` 寻找可改为
 前向声明的 include。两者都是估算，报告内附限制说明。
@@ -194,9 +205,9 @@ include guard 拉住的头不计入（口径与实测见
 
 静态判定在三个语料上做过对照实验（doctest / zlib / Lua，见
 [`experiments/candidate-precision-round3-20261019.md`](experiments/candidate-precision-round3-20261019.md)）：
-「疑似未使用」的推荐在 doctest 与 zlib 上**零假阳性**，Lua 上 19 条里 18 条成立
-（唯一例外是 `luac.c → lopnames.h`，预估 0.4 ms，别名判据的历史遗留，见
-[`docs/benchmark-report.md`](docs/benchmark-report.md) §9.13）；
+「疑似未使用」的推荐在 Lua（18/18）、doctest（6/6）、zlib（1/1）上**零假阳性**——
+没有一条会推荐出编不过的删除（判据演进见
+[`docs/benchmark-report.md`](docs/benchmark-report.md) §9.13、§9.17）；
 首条真有用的候选都排到第 1–2 位，而按纯行数排序（Header Hero 口径）要翻遍整张表。
 判定是纯文本层的：副作用型 include、`##` 拼接、别名链、命令行 `-D` 的条件分支
 求值都在这一层完成，不依赖 AST。

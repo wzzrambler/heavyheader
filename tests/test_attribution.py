@@ -281,13 +281,19 @@ def test_ranking_refuses_to_put_an_in_use_header_first(tmp_path):
     to compile.
     """
     root = tmp_path
+    # 两个头都带 include guard：不带 guard 的头被当作「实现片段」，片段里的
+    # 代码算 TU 自己的代码（brotli 的 *_inc.h 就是这一类，见 graph.py）。
     huge = root / "huge_in_use.h"
     huge.write_text(
-        "\n".join(f"int huge_symbol_{i}();" for i in range(4000)) + "\n",
+        "#ifndef HUGE_IN_USE_H\n#define HUGE_IN_USE_H\n"
+        + "\n".join(f"int huge_symbol_{i}();" for i in range(4000))
+        + "\n#endif\n",
         encoding="utf-8",
     )
     (root / "tiny_unused.h").write_text(
-        "\n".join(f"int tiny_symbol_{i}();" for i in range(20)) + "\n",
+        "#ifndef TINY_UNUSED_H\n#define TINY_UNUSED_H\n"
+        + "\n".join(f"int tiny_symbol_{i}();" for i in range(20))
+        + "\n#endif\n",
         encoding="utf-8",
     )
     source = root / "main.cpp"

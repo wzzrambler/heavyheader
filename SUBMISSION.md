@@ -8,7 +8,7 @@
 | 项 | 状态 | 位置 |
 |---|---|---|
 | 代码 | ✅ 186 文件 | `src/heavyheader/` |
-| 测试 | ✅ **725 个全绿 / 7 跳过** + ruff 对 `src/` 0 违规（2026-10-21 实测） | `tests/` |
+| 测试 | ✅ **648 个全绿 / 7 跳过** + ruff 对 `src/` 0 违规（2026-10-21 实测） | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/**GOVERNANCE**/CODEOWNERS/Issue·PR 模板/CI | 仓库根 |
 | 独创性说明 | ✅ `docs/innovation.md`：反事实构建实验范式、三项创新点、消融表、不声称清单 | `docs/innovation.md` |
 | 场景落地说明 | ✅ `docs/scenario.md`：四步全链路 + 真实工程数据卡 + 部署/运行/测试证据 | `docs/scenario.md` |

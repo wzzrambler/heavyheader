@@ -31,7 +31,15 @@ SCANNED_DIRS = ("src", ".")
 #: ``_work`` 是竞赛实验拉取的第三方源码树（nlohmann/json 的 tarball 展开），
 #: 里面的 markdown 不属于本项目，它们的链接好坏与本仓库无关——把它扫进来只会
 #: 让测试因为别人的文档失败。
-SKIP_DIR_NAMES = {".git", "__pycache__", "video_build_0", ".pytest_cache", "_work"}
+#:
+#: ``results`` 同理：``experiments/results/`` 与 ``benchmarks/results/`` 都是
+#: **生成物**（每次跑实验就往里加文件），扫进来会有两个副作用——① 每加一份结果，
+#: 参数化用例数就变一次，于是「测试有多少个」这个数字不稳定，文档里没法引用；
+#: ② 这些文件里的路径是当次机器的绝对路径，链接检查没有意义。手写的文档仍在
+#: 扫描范围内（``docs/``、根目录的 md 与 workflows）。
+SKIP_DIR_NAMES = {
+    ".git", "__pycache__", "video_build_0", ".pytest_cache", "_work", "results",
+}
 
 #: 这两个文件**刻意**携带畸形链接：finalize.py 要用它当修复目标，
 #: 本文件要用它当断言对象。把它们排除，否则扫描会自己告自己。

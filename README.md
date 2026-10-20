@@ -81,7 +81,7 @@ $ heavyheader scan ./src --format html -o report.html
 
 `configs` 回答的是一个 `scan` 回答不了的问题：这条 include 该不该删，取决于**这批
 编译命令有没有打开某个宏**。实测 zstd：`pool.c → allocations.h` 在单线程配置里可删
-（384 → 205 ms，−46.6%），加 `-DZSTD_MULTITHREAD` 之后删了直接编不过。同一棵树三套
+（384 → 205 ms，−46.5%），加 `-DZSTD_MULTITHREAD` 之后删了直接编不过。同一棵树三套
 配置扫下来只有 3 条判定不同——工具不会因为换配置就整体改表，只在关键处改对。
 
 ```bash
@@ -239,14 +239,14 @@ include guard 拉住的头不计入（口径与实测见
 可删的行，但这些工程里剩下的冗余本身就不多，见 §9.14。
 
 换到更大的真实工程（zstd 1.5.6 的 `lib/`，39 TU、3.5 M 行）之后结论变了一半：
-最大一条是 `pool.c → allocations.h`，**384 ms → 205 ms（−46.6%，解析文件
+最大一条是 `pool.c → allocations.h`，**384 ms → 205 ms（−46.5%，解析文件
 184 → 32）**，而它此前被判定层标成「在用」——那两个符号的全部引用都在
 `#ifdef ZSTD_MULTITHREAD` 里，本配置没定义它。同一个头在两种构建配置下一个该删、
 一个删了编不过：**「这条 include 该不该删」不是代码的属性，是构建配置的属性**，
 工具按 `compile_commands.json` 里逐单元的 `-D` 求值，见 §9.15。
 
 换到更大的真实工程（zstd 1.5.6 的 `lib/`，39 TU、3.5 M 行）之后结论变了一半：
-最大一条是 `pool.c → allocations.h`，**384 ms → 205 ms（−46.6%，解析文件
+最大一条是 `pool.c → allocations.h`，**384 ms → 205 ms（−46.5%，解析文件
 184 → 32）**，而它此前被判定层标成「在用」——那两个符号的全部引用都在
 `#ifdef ZSTD_MULTITHREAD` 里，本配置没定义它。同一个头在两种构建配置下一个该删、
 一个删了编不过：**「这条 include 该不该删」不是代码的属性，是构建配置的属性**，

@@ -360,7 +360,7 @@ def build(path: str) -> None:
                 [
                     "<b>③ 这不是一次性分析工具</b>",
                     "而是一条<b>可复现、可审查、可接入 CI 的治理链路</b>："
-                    "上游 PR、门禁、成本考古、语义化发布与 725 个测试",
+                    "上游 PR、门禁、成本考古、语义化发布与 648 个测试",
                     "第四章（上游 PR）；G3 门禁；6.4（成本考古）；第九章（治理）",
                 ],
             ],
@@ -398,7 +398,8 @@ def build(path: str) -> None:
         P(
             "「组合现成工具」与「方法论创新」的界线是可以消融检验的：拿掉本项目中任何一层，"
             "都有实测记录在案的错误结论在等着——拿掉独占闭包计算，候选排序会把「所有单元"
-            "都必需的头」排第一（实测前 5 个候选全部编译失败）；拿掉交替测量，2.005%% 的机器"
+            "都必需的头」占据前排——这类候选删掉必然编译失败（同向实测：13 个已知失败候选被压到"
+            "第 27 名以后，见 2.5）；拿掉交替测量，2.005%% 的机器"
             "漂移会被整块报成优化收益；拿掉强制复测，第一轮 4 条 improved 复测 0/4 复现；"
             "拿掉三态决策层，用户手里会剩下 187 条「疑似未使用」的假阳性。完整消融表见仓库 "
             "<font face='%s'>docs/innovation.md</font>。" % _MONO
@@ -414,9 +415,11 @@ def build(path: str) -> None:
             "<font face='%s'>pr-comment</font>（PR 评论机器人）、"
             "<font face='%s'>configs</font>（多套构建配置各扫一遍，只报判定变化）、"
             "<font face='%s'>verified</font>（只列编译器证据撑住的候选），支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链；<b>725 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
+            "Clang 17+ 与 MSVC 三种工具链；<b>648 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
-            "MSVC 证据），<b>当前全部通过</b>；运行时<b>零第三方依赖</b>，且由测试守护"
+            "MSVC 证据）；2026-10-21 核实最近一次 main 运行：Windows/Linux 8 组、代码检查、"
+            "自举扫描全过，macOS 4 组被并发取消（非测试失败）。运行时<b>零第三方依赖</b>，"
+            "且由测试守护"
             "（新增依赖会让 CI 直接失败）。<b>v0.1.0 已发布至 PyPI</b>（2026-10-19），"
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
             "（2026-10-21 复验仍可用）。"
@@ -425,7 +428,7 @@ def build(path: str) -> None:
         ),
         P(
             "除成本归因外，项目还做了四件现有工具不做的事：<b>模板实例化成本归因</b>"
-            "（实测包含 nlohmann/json.hpp 的文件有 39% 构建时间花在模板实例化上）、"
+            "（实测全项目模板实例化占构建时间 23%–32%，见 5.1）、"
             "<b>预编译头收益估算</b>、<b>前向声明建议</b>，以及<b>成本考古</b>——"
             "把成本增量归因到具体 commit 与 include 行；截至 2026-10-19、基于 GitHub 仓库"
             "检索 / 项目官网 / 学术检索的核读未见同能力实现——这是<b>截至该日期的检索"
@@ -474,7 +477,7 @@ def build(path: str) -> None:
                     "场景落地（30%）",
                     "第三章（完整任务示例）、第四章（真实工程 + 完整构建对照 + 上游 PR）",
                     "scan → verify → gate 接成流水线；63 TU 完整构建 −11.4% CPU、断言逐个一致；"
-                    "zstd 单条 −46.6%（384 → 205 ms）、brotli 31 个实例化站点逐个由编译器裁决；"
+                    "zstd 单条 −46.5%（384 → 205 ms）、brotli 31 个实例化站点逐个由编译器裁决；"
                     "两条实测优化已提交上游 PR（doctest#1212、madler/zlib#1344；"
                     "状态经 2026-10-21 核实：均 open、未被合并）；"
                     "spdlog 上 −78% 的大额「提升」被汇编闸门识破为静默改程序（§9.11）",
@@ -483,7 +486,8 @@ def build(path: str) -> None:
                     "开源治理（20%）",
                     "第九章（治理结构、CI 16 岗位、测试策略）、第十章（缺陷与路线图）",
                     "GOVERNANCE + 零依赖守护测试 + 语义化版本发布；"
-                    "v0.1.0 已发布至 PyPI 并通过全新环境安装验证；CI 全绿",
+                    "v0.1.0 已发布至 PyPI 并通过全新环境安装验证；CI 16 岗位（Win/Linux 全过，"
+                    "macOS 最近一次被并发取消）",
                 ],
                 [
                     "长期发展（20%）",
@@ -513,7 +517,7 @@ def build(path: str) -> None:
                     "<font face='%s'>scan</font>" % _MONO,
                     "真实编译器自述解析行为（-H / -ftime-report），"
                     "归因到具体 include 行：谁贵、被谁付钱",
-                    "nlohmann/json 25 TU：1430 万行解析量归因到 9302 条 include 边",
+                    "nlohmann/json 25 TU：487 万行解析量归因到 9,294 条 include 边",
                 ],
                 [
                     "<b>② 提出删除候选</b>",
@@ -573,7 +577,7 @@ def build(path: str) -> None:
             "中列是原始记录"
             "（均在 <font face='%s'>experiments/results/</font>），右列是环境与复现入口"
             "（脚本在 <font face='%s'>experiments/</font>，可用 "
-            "<font face='%s'>python experiments/&lt;脚本&gt;.py</font> 重跑）。"
+            "<font face='%s'>python experiments/&lt;name&gt;.py</font> 重跑）。"
             "换机器、换编译器，数字会变、方向不变——所以每一行都写了测量环境。"
             % (_MONO, _MONO, _MONO)
         ),
@@ -581,9 +585,9 @@ def build(path: str) -> None:
             ["本文的数字", "原始记录", "环境与复现入口"],
             [
                 [
-                    "zstd 单条 <b>−46.6%</b>（384 → 205 ms，解析文件 184 → 32）",
+                    "zstd 单条 <b>−46.5%</b>（384 → 205 ms，解析文件 184 → 32）",
                     "experiments/results/zstd-verify-20261020b.md",
-                    "zstd 1.5.6 lib/，39 TU / 350 万行，clang；同命令第一遍为 "
+                    "zstd 1.5.6 lib/，39 TU / 351 万行，clang；同命令第一遍为 "
                     "384 → 213 ms（−44.5%），方向一致",
                 ],
                 [
@@ -630,6 +634,25 @@ def build(path: str) -> None:
                     "已验证层级两遍 <b>2 / 3 条</b>、成员零重合",
                     "experiments/results/verified-layer-lua-20261020.md + .json",
                     "Lua 5.4.7；heavyheader verified --top 20 --runs 3 --confirm 2",
+                ],
+                [
+                    "PCH 估算：闭包 139,180 行、净收益 3,201,140 行（65.8%）",
+                    "experiments/results/pch-estimate-json25-20261021.md（含 .json）",
+                    "nlohmann-json 25 TU；heavyheader scan <root> --pch --pch-top 5",
+                ],
+                [
+                    "模板实例化占构建时间 <b>23.3%–31.7%</b>（两次扫描）、"
+                    "15–20 个单元超过 25%",
+                    "benchmarks/results/nlohmann-json-baseline.json 的 "
+                    "<font face='Cascadia'>template_profile</font>；"
+                    "experiments/results/pch-estimate-json25-20261021.json",
+                    "GCC -ftime-report 阶段计时；两次独立扫描差异来自机器负载",
+                ],
+                [
+                    "语料规模：zstd 351 万行 / Lua 109 万行（3.2 倍）、brotli 295 万行",
+                    "experiments/results/zstd-rescan-20261021.md、"
+                    "lua-rescan-20261021.md、brotli-rescan-20261021.md",
+                    "clang 20；各自 compile_commands.json",
                 ],
             ],
             widths=[126, 126, 88],
@@ -908,7 +931,7 @@ def build(path: str) -> None:
         TABLE(
             ["拿掉哪一层", "会得到的错误结论", "记录在哪"],
             [
-                ["独占闭包判定", "前 5 个候选全部编译失败；真实收益 6.8% 的改动被排到第 25 位", "experiments/rank_check.py"],
+                ["独占闭包判定", "13 个已知失败的候选里，排最前的也掉到第 27 名以后（13/13 被压后）；缺了它，前排会被所有单元共用的头占据，删掉必然编译失败", "experiments/rank_check.py → results/rank-check-20261017.md"],
                 ["交替测量协议", "2.005% 的机器漂移被报成优化收益（交替后 0.644%）", "experiments/g2-interleaved-aa-*"],
                 ["强制复测", "第一轮 4 条 improved 复测 0/4 复现；3.738% 单遍收益是噪声", "experiments/g2-confirm-picks-*"],
                 ["三态决策层", "用户手里剩下 187 条「疑似未使用」的假阳性", "experiments/decision_check.py"],
@@ -1066,7 +1089,7 @@ def build(path: str) -> None:
             "TU 层候选按新排序取前 3 条送计时闭环，跑出全部语料里最大的单条计时收益——"
             "删掉 <font face='Cascadia'>cfg.cpp</font> 的 "
             "<font face='Cascadia'>#include &lt;spdlog/cfg/helpers-inl.h&gt;</font> 后聚合 "
-            "566 → 125 ms（<b>−77.8%，四次独立运行复现</b>）。但把它接上第三条真值（汇编指纹）"
+            "566 → 125 ms（<b>−77.8%，三次独立运行复现</b>）。但把它接上第三条真值（汇编指纹）"
             "后发现：删除后的汇编从 <b>10,329 行塌缩到 40 行</b>——cfg.cpp 就是把 "
             "<font face='Cascadia'>load_levels</font> 等函数编进库的编译单元，那条 include 提供的是"
             "它们的<b>定义</b>；<font face='Cascadia'>-fsyntax-only</font> 照样过（声明在别的头里），"
@@ -1176,7 +1199,7 @@ def build(path: str) -> None:
         P(
             "把 4 个项目合起来看：104 个成本候选中 3 个「疑似未使用」，全部集中在 spdlog 的"
             " TU 层。这 3 条随后的去向本身就是一次三态结论的完整演示：<b>1 条实测 improved</b>"
-            "（删除独占子树后聚合 566 → 125 ms，四次独立运行复现）、<b>1 条在噪声线边缘</b>"
+            "（删除独占子树后聚合 566 → 125 ms，三次独立运行复现）、<b>1 条在噪声线边缘</b>"
             "（+2.4%~2.9%，如实标注）、<b>1 条实测编译失败</b>（重载决议选中的模板依赖，"
             "文本层的已知边界）。与之对照，第三章构造的未使用 include 被准确识别并实测省 "
             "38.5%。<b>该报的报，不该报的不报，报错的拦得住，两边都有数据。</b>"
@@ -1261,13 +1284,13 @@ def build(path: str) -> None:
         P(
             "前四轮都在中小工程上做精度专项。要回答「绝对值有多少」，只能换更大的真实"
             "工程。第一个规模语料是 <b>zstd 1.5.6 的 "
-            "<font face='%s'>lib/</font></b>：39 个编译单元、350 万行、基线 53.4 秒，"
-            "是 Lua 的 3.2 倍。" % _MONO
+            "<font face='%s'>lib/</font></b>：39 个编译单元、351 万行头文件解析量——是 Lua"
+            "（34 TU / 109 万行）的 3.2 倍；单机基线 40.5–53.4 秒（两次扫描，随负载波动）。" % _MONO
         ),
         P(
             "首轮结果有两件事同时发生。<b>好消息</b>：最大的一条候选 "
             "<font face='%s'>pool.c → allocations.h</font> 实测 <b>384 ms → 205 ms"
-            "（−46.6%%）</b>，解析文件数 184 → 32，是全项目至今最大的单条收益。"
+            "（−46.5%%）</b>，解析文件数 184 → 32，是全项目至今最大的单条收益。"
             "<b>坏消息</b>：7 条「疑似未使用」候选实测收益全为 0（6 条无变化、1 条编不过），"
             "而真正有收益的那条被判定为「在用」。" % _MONO
         ),
@@ -1471,10 +1494,10 @@ def build(path: str) -> None:
             "而不只是按模板名列一个全局 Top-N。" % (_MONO, _MONO, _MONO, _MONO)
         ),
         P(
-            "实测：一个包含 <font face='%s'>nlohmann/json.hpp</font> 的文件，"
-            "模板实例化 <font face='%s'>0.44s</font> / 总耗时 <font face='%s'>1.13s</font>，"
-            "即 <b>39%%</b>。在 nlohmann-json 的 25 个编译单元上，全项目模板实例化占 "
-            "<b>42.8%%</b>，22 个单元占比超过 25%%。" % (_MONO, _MONO, _MONO)
+            "实测：nlohmann-json 的 25 个编译单元上，模板实例化合计 16.9–32.4 秒，"
+            "占构建时间 <b>23.3%%–31.7%%</b>，其中 <b>15–20 个</b>单元占比超过 25%%。"
+            "（两次独立扫描得 23.29%% 与 31.72%%——<font face='%s'>-ftime-report</font> 的阶段计时"
+            "随机器负载波动，所以给区间而不是单点。）" % (_MONO,)
         ),
         P("模板成本分两部分，诚实程度不同，报告里分别标注：", "quote"),
         TABLE(
@@ -1835,11 +1858,15 @@ def build(path: str) -> None:
             widths=[130, 290],
         ),
         SP(4),
-        P("9.1 CI：16 个岗位，当前全部通过", "h2"),
+        P("9.1 CI：16 个岗位，按运行逐次核实", "h2"),
         P(
             "CI 覆盖 Linux / Windows / macOS 三个操作系统 × Python 3.10–3.13 四个版本的"
             "测试矩阵（12 个岗位），外加 lint（ruff）、自举扫描、覆盖率与 MSVC 证据，"
-            "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
+            "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。"
+            "<b>状态按每次运行核实，不写「当前全部通过」</b>：2026-10-21 查最近一次 main "
+            "运行（14 个岗位）——Windows 与 Linux 各 4 组、代码检查、自举扫描全部通过；"
+            "macOS 4 组被<b>并发取消</b>（cancelled，不是 failed），macOS 的绿灯来自 "
+            "2026-10-19 那一轮。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
             "HeavyHeader 扫描它，断言归因行数非零、编译单元被发现——这一步同时也是集成测试，"
             "验证工具在非 Windows、非 MinGW 的工具链下也能正确解析编译器输出；MSVC 证据"
             "任务在 Windows runner 上真实运行 <font face='%s'>cl</font> 并跑门禁。"
@@ -1859,7 +1886,7 @@ def build(path: str) -> None:
         ),
         P("9.3 测试策略", "h2"),
         P(
-            "<b>725 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
+            "<b>648 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
             "样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"

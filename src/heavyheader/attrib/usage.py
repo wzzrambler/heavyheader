@@ -950,7 +950,17 @@ def macro_bodies_in(text: str) -> dict[str, frozenset[str]]:
         if not match:
             continue
         name, params, body = match.group(1), match.group(2) or "", match.group(3)
-        ids = set(_IDENTIFIER.findall(strip_comments(body)))
+        # 用 :func:`identifiers_in` 而不是裸的 ``_IDENTIFIER.findall``：后者会把
+        # **关键字与编译器内建**也当成依赖。
+        #
+        # 实测（Lua 5.4.7，2026-10-20 供给侧漏报诊断）：``luaconf.h`` 里
+        # ``#define LUAI_UACNUMBER double`` 的展开体是关键字 ``double``，而
+        # ``header_definition_ids`` 在 stdlib.h 的文本里也能「找到」double 这个
+        # 名字——于是判定说「删掉 stdlib.h 就没有 double 了」，把 4 条真能删的
+        # 候选锁成「正在使用」。其中 3 条经重复测量确认能省 3.1%~3.2%
+        # （``lmathlib.c`` / ``liolib.c`` / ``lstrlib.c`` → stdlib.h）。
+        # 关键字不随任何头文件消失，这条依赖从一开始就不成立。
+        ids = identifiers_in(strip_comments(body))
         if params:
             ids -= set(_IDENTIFIER.findall(params))
         ids.discard(name)

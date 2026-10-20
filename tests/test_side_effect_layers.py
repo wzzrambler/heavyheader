@@ -69,6 +69,25 @@ def test_macro_body_names_are_collected():
     assert bodies["lua_getlocaledecpoint"] == frozenset({"localeconv", "decimal_point"})
 
 
+def test_macro_bodies_ignore_keywords_and_builtins():
+    """展开体里的**关键字与编译器内建**不是依赖。
+
+    实测（Lua 5.4.7）：``luaconf.h`` 的 ``#define LUAI_UACNUMBER double``
+    让判定以为「删掉 stdlib.h 就没有 double 了」，把 4 条真能删的候选锁成
+    「正在使用」。关键字不随任何头文件消失，不能算证据。
+    """
+    bodies = macro_bodies_in(
+        "#define LUAI_UACNUMBER double\n"
+        "#define WIDE long\n"
+        "#define COMPILER __GNUC__\n"
+        "#define REAL localeconv\n"
+    )
+    assert bodies["LUAI_UACNUMBER"] == frozenset()
+    assert bodies["WIDE"] == frozenset()
+    assert bodies["COMPILER"] == frozenset()
+    assert bodies["REAL"] == frozenset({"localeconv"})
+
+
 def _write(path: Path, text: str) -> Path:
     path.write_text(text, encoding="utf-8")
     return path

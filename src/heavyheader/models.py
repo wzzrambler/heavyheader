@@ -319,6 +319,11 @@ class RemovalCandidate:
     #: ）。判定本身只是个标签，读者要复核它得知道理由；以前理由只写在
     #: ``notes`` 里、而 ``notes`` 只进 JSON，Markdown/HTML 报告上看不到。
     usage_reason: str = ""
+    #: 文本层看到消失集合里有「疑似副作用」——一句宏调用，看不出它展开成声明
+    #: 还是展开成带动态初始化的对象（doctest 的静态注册 vs UCRT 的重载定义）。
+    #: 为真时 verify **强制**打开汇编等价闸门：这类候选唯一的合格证据是编译器
+    #: 说「汇编一字未变」，不是文本说「没提到它的名字」。
+    side_effect_suspected: bool = False
     #: Why we think it is (or is not) safe to remove.
     confidence: str = "unknown"
     notes: list[str] = field(default_factory=list)

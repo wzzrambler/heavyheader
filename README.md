@@ -194,17 +194,32 @@ include guard 拉住的头不计入（口径与实测见
 
 静态判定在三个语料上做过对照实验（doctest / zlib / Lua，见
 [`experiments/candidate-precision-round3-20261019.md`](experiments/candidate-precision-round3-20261019.md)）：
-「疑似未使用」的推荐在三个语料上**零假阳性**——没有一条会推荐出编不过的删除；
+「疑似未使用」的推荐在 doctest 与 zlib 上**零假阳性**，Lua 上 19 条里 18 条成立
+（唯一例外是 `luac.c → lopnames.h`，预估 0.4 ms，别名判据的历史遗留，见
+[`docs/benchmark-report.md`](docs/benchmark-report.md) §9.13）；
 首条真有用的候选都排到第 1–2 位，而按纯行数排序（Header Hero 口径）要翻遍整张表。
 判定是纯文本层的：副作用型 include、`##` 拼接、别名链、命令行 `-D` 的条件分支
 求值都在这一层完成，不依赖 AST。
 
 「命中率低」的瓶颈也用失败原因分类量化过（[`experiments/candidate-precision-round5-20261019.md`](experiments/candidate-precision-round5-20261019.md)，
 四语料 100 个编译单元）：候选推送的浪费率约 4%，判定层的主要误差是**保守漏报**
-（47 条，集中在 UCRT 宏副作用误判与 unknown 层），且 47 条里只有 1 条预估超过
+（47 条，集中在 UCRT 宏副作用误判与 unknown 层——前者当天即修，见 §9.13），
+且 47 条里只有 1 条预估超过
 0.1 s——保守挡住的主要是小额机会。核心指标**「分析时间 → 已证实优化」为约 4.5 秒/条
 （每 100 TU 23 条）**；计时口径的大额候选另有静默改程序的实例（spdlog 上 −78% 的
 「提升」实为删掉公共 API 的实现，由汇编闸门拦下）。
+
+「无法判定」不是留给读者的作业：scan 报告把它列成**待验证队列**（按 verify 的
+测量顺序：疑似未使用 → 无法判定 → 在用），反事实实验逐个裁定。三语料 69 条
+队列候选里 46 条真能删（67%），其余由编译与汇编闸门拦下——**队列是「等编译器
+说话」，不是「猜不动就搁下」。** 判定层 2026-10-20 的分层改革（副作用只在
+「确定的执行」上拦，宏调用形态交给汇编闸门）让 13 条被误判「在用」的大额候选
+回到队列，其中 4 条实测 −3.4%~−4.3%；推荐层 26 条里 25 条真有用（见
+[`docs/benchmark-report.md`](docs/benchmark-report.md) §9.13）。
+
+计时锚定修复（clang `-ftime-report` 解析 + 前端锚，见
+[`experiments/results/timing-funnel-lua-20261019.md`](experiments/results/timing-funnel-lua-20261019.md)）
+把漏斗池内采纳率从 8% 提到 **25%**（确认采纳 1 → 5 条）。
 
 ### 3. CI 门禁（`gate`）
 

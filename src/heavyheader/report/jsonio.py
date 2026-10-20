@@ -134,6 +134,7 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 # 排到「疑似未使用」前面。label 是给人看的，不能让逻辑依赖它。
                 "usage_verdict": candidate.usage_verdict,
                 "usage_reason": candidate.usage_reason,
+                "side_effect_suspected": candidate.side_effect_suspected,
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
                 "advice": _advice_to_dict(candidate.advice),
@@ -357,6 +358,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
             usage_verdict=entry.get("usage_verdict")
             or _verdict_from_label(entry.get("usage_label")),
             usage_reason=entry.get("usage_reason", ""),
+            side_effect_suspected=bool(entry.get("side_effect_suspected", False)),
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
             advice=_advice_from_dict(entry.get("advice")),

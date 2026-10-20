@@ -394,7 +394,11 @@ def test_command_line_macro_is_not_keep_evidence(tmp_path):
         alias_defs={},
     )
     assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
-    assert "DOCTEST_CONFIG_DISABLE" in signal.unprovided
+    # 2026-10-20 起这条命中**根本不会被算成命中**：消失集合那一侧只认
+    # 「定义」（`#define` / 声明 / 原型），`#ifdef` 里的提到不算提供。
+    # 所以 `unprovided` 为空是预期——幻影命中的位置从「命中后剔除」提前到了
+    # 「不算命中」，最终判定不变（仍可删）。
+    assert "DOCTEST_CONFIG_DISABLE" not in signal.unprovided
 
 
 def test_vanishing_alias_with_surviving_target_is_a_provider(tmp_path):

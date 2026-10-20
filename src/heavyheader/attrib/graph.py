@@ -500,7 +500,12 @@ def find_removal_candidates(
         source_ids = index.source_ids(tu.source) or frozenset()
         reachable_counts: dict[str, int] = {}
         declarers: dict[str, frozenset[Path]] = {}
+        conditional_declarers: dict[str, frozenset[Path]] = {}
         alias_defs: dict[str, tuple[tuple[Path, str], ...]] = {}
+        macro_defs: dict[str, tuple[tuple[Path, frozenset[str]], ...]] = {}
+        #: 这个单元的 ``-D`` 宏：既决定哪些条件分支算死区，也决定幸存头的
+        #: 哪些声明「本次编译真的看得到」。一个单元只算一次。
+        unit_defines = compile_defines(tu)
         if source_ids:
             for path in reach_all:
                 for name in index.header_provider_ids(path) & source_ids:
@@ -518,17 +523,43 @@ def find_removal_candidates(
             # （doctest 的 DOCTEST_CONFIG_DISABLE——命令行 -D 给的，幻影命中
             # 曾把 4 条真可删的候选全顶成「在用」）。
             all_declarers: dict[str, set[Path]] = {}
+            all_conditional: dict[str, set[Path]] = {}
             all_aliases: dict[str, list[tuple[Path, str]]] = {}
+            # 声明者必须是**这次编译真的会看到**的声明：doctest 的
+            # ``class TraversalState`` 在 ``doctest.h`` 里被
+            # ``#if defined(DOCTEST_CONFIG_IMPLEMENT)`` 包着，本单元不编译那段，
+            # 按文本算「另有供给者」会把一条删了就编不过的候选推荐出去
+            # （实测 test_traversal.cpp → traversal.h）。
             for path in reach_all:
-                for name in index.header_provider_ids(path):
+                live = index.header_live_provider_ids(path, unit_defines)
+                for name in live:
                     all_declarers.setdefault(name, set()).add(path)
+                # 文本里有、本次编译看不到的声明：不能当供给者，也不能当
+                # 「谁都不提供」——只能当「判不了」，见 analyse_usage。
+                for name in index.header_provider_ids(path) - live:
+                    all_conditional.setdefault(name, set()).add(path)
                 for alias, target in index.header_aliases(path):
                     all_aliases.setdefault(alias, []).append((path, target))
             declarers = {
                 name: frozenset(paths) for name, paths in all_declarers.items()
             }
+            conditional_declarers = {
+                name: frozenset(paths) for name, paths in all_conditional.items()
+            }
             alias_defs = {
                 name: tuple(pairs) for name, pairs in all_aliases.items()
+            }
+            # **宏体里藏着的依赖**：只为源码真正提到的宏建表。Lua 的
+            # ``lua_getlocaledecpoint()`` 定义在幸存的 luaconf.h 里，体里才是
+            # ``localeconv``——不建这张表，``<locale.h>`` 会被判成「没用过」，
+            # 删掉直接编译失败（实测 liolib.c / lobject.c / lstrlib.c / llex.c）。
+            collected_macros: dict[str, list[tuple[Path, frozenset[str]]]] = {}
+            for path in reach_all:
+                for macro, body in index.macro_bodies(path).items():
+                    if macro in source_ids and body:
+                        collected_macros.setdefault(macro, []).append((path, body))
+            macro_defs = {
+                name: tuple(pairs) for name, pairs in collected_macros.items()
             }
         # ``##`` 拼接的字面词缀：源码写一半、头文件提供另一半，中间由宏拼起来。
         # 少了这一项，Lua 的 ``<float.h>`` 会被判成「疑似未使用」。
@@ -615,8 +646,10 @@ def find_removal_candidates(
                 reachable_counts=reachable_counts,
                 paste_affixes=affixes,
                 declarers=declarers,
+                conditional_declarers=conditional_declarers,
                 alias_defs=alias_defs,
-                defined_macros=compile_defines(tu),
+                macro_defs=macro_defs,
+                defined_macros=unit_defines,
             )
             candidates.append(
                 RemovalCandidate(
@@ -635,6 +668,7 @@ def find_removal_candidates(
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
                     usage_reason=_usage_reason(signal),
+                    side_effect_suspected=bool(signal.suspected_side_effects),
                     confidence=_confidence(exclusive, analysis, signal.verdict),
                     notes=_notes(tu, header, exclusive, sizes, signal)
                     + (
@@ -762,6 +796,19 @@ def _usage_reason(signal) -> str:
         return ""
     if signal.side_effects:
         return f"副作用：{signal.side_effects[0]}"
+    if signal.suspected_side_effects:
+        return (
+            f"疑似副作用：{signal.suspected_side_effects[0]}"
+            "（宏调用展开成声明还是执行看不出来，需编译器汇编校验）"
+        )
+    if signal.macro_expansion:
+        macro, token = signal.macro_expansion
+        owner = signal.provided_by.name if signal.provided_by is not None else "?"
+        return f"{macro} 展开后用到 {token}（由 {owner} 提供）"
+    if signal.note:
+        # 「判不了」的专用理由：比任何「另有供给 / 谁都不提供」都准确，
+        # 别让读者照着后两者去理解一个本就说不出结论的判定。
+        return signal.note
     if signal.pasted:
         return f"{'、'.join(signal.pasted[:2])} 由 ## 拼接产生（源码只写了一半）"
     if signal.provided_by is not None and signal.shared_identifiers:
@@ -780,7 +827,7 @@ def _usage_reason(signal) -> str:
     if signal.cross_provided:
         names = "、".join(signal.cross_provided[:2])
         return f"{names} 另有供给者"
-    return ""
+    return signal.note or ""
 
 
 def _confidence(exclusive: set[Path], analysis: _TuAnalysis, verdict) -> str:

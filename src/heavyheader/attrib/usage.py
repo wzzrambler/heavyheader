@@ -65,6 +65,7 @@ __all__ = [
     "definitions_in",
     "conditional_mentions",
     "side_effects_in",
+    "side_effect_kinds_in",
 ]
 
 
@@ -114,6 +115,18 @@ class UsageSignal:
     #: 编译通过、少解析一个文件，但 JUnit reporter 的静态注册整个消失——
     #: 汇编里 ``??__EDOCTEST_ANON_REPORTER_VAR_100`` 那段不见了。
     side_effects: tuple[str, ...] = ()
+    #: 消失集合里**疑似**靠执行起作用的语句：一句宏调用，文本层看不出它展开成
+    #: 声明还是展开成带动态初始化的对象。这类候选不给「可删」结论、也不直接
+    #: 判「在用」，而是进「无法判定」队列，由 verify 的汇编等价闸门裁定——
+    #: 证据从「文本猜的」换成「编译器说的」，这是唯一不靠白名单的升级路径。
+    suspected_side_effects: tuple[str, ...] = ()
+    #: 判定没有可复述的证据时（例如头文件只提供宏、或读不到）用一句话说明
+    #: 为什么判不了。空字符串 = 由其他字段推导理由，见 ``_usage_reason``。
+    note: str = ""
+    #: ``(宏名, 体里用到的名字)``：源码用的是幸存头里的宏，这个名字只在宏体里
+    #: 出现。理由要能写成「删了它，``lua_getlocaledecpoint`` 展开出来的
+    #: ``localeconv`` 就没了」，否则读者只看到「在用」却找不到依据。
+    macro_expansion: tuple[str, str] = ()
     #: 消失集合提供的名字里，有可能被 ``##`` **拼出来**的那几个。
     #: 源码写的是 ``MANT_DIG``，头文件提供的是 ``DBL_MANT_DIG``，中间靠
     #: ``#define l_floatatt(n) (DBL_##n)`` 接上——两边文本里都不存在
@@ -678,12 +691,40 @@ _NOT_A_SIDE_EFFECT = re.compile(
 )
 #: 带初始化的对象定义（``int counter = 0;``）。``const`` / ``constexpr`` 不算：
 #: 它们编译期就定了，删掉不改变程序。
-_OBJECT_DEFINITION = re.compile(
-    r"^(?!const\b|constexpr\b|static\s+const\b|static\s+constexpr\b|typedef\b|using\b)"
-    r"[A-Za-z_]\w*(?:\s*::\s*[A-Za-z_]\w*)*(?:\s*<[^;{}()]*>)?"
-    r"(?:\s*(?:const|volatile|static|extern|unsigned|signed|struct|enum|union)\b)*"
-    r"[\s\*&]*[A-Za-z_]\w*\s*=(?!=)"
-)
+#:
+#: 旧实现是一条大正则，只认 ``static X y = …`` 这种「一个类型词 + 名字」的
+#: 形态——``static int alpha_id = register_alpha();`` 因为中间多了一个 ``int``
+#: 就匹配不上。那是一条**静默漏报**：动态初始化的对象恰恰是最该拦下的副作用，
+#: 漏掉它等于把「删了程序少一块」的候选当推荐发出去。改成函数判据（见
+#: :func:`_defines_an_object`）。
+_ASSIGNMENT = re.compile(r"(?<![=!<>+\-*/%&|^])=(?!=)")
+#: 声明式的尾巴：``ident(...)`` 或 ``ident[...]`` 收尾。抹掉开头的属性宏之后
+#: 还剩这么一段，说明这句是**声明**，不是执行。
+#:
+#: 这条判据的来历：Windows UCRT 的系统头里到处是带 SAL 标注的声明——
+#: ``_Success_(return != 0) _ACRTIMP char* __cdecl gets_s(char*, rsize_t);``。
+#: 旧口径只看「以 ``名字(`` 开头且没有返回类型前缀」，于是整条 ``gets_s`` 的
+#: 声明被当成副作用，Lua 语料上 13 条「删了没事」的大额候选（stdio.h / stdlib.h）
+#: 因此被判成「正在使用」永久锁死。声明不执行任何东西：属性宏改的只是编译器
+#: 的诊断与优化提示，删掉头文件后程序行为不变。
+_DECLARATOR = re.compile(r"\b[A-Za-z_]\w*\s*(?:\([^;]*\)|\[[^\]]*\])\s*$")
+
+
+def _after_call(code: str, start: int) -> str | None:
+    """``code`` 里从 ``start`` 起那次调用的**右括号之后**的文本。
+
+    括号不配对时返回 ``None``——看不清就不下结论，让这条继续按副作用处理。
+    """
+    depth = 0
+    for position in range(start, len(code)):
+        char = code[position]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return code[position + 1 :]
+    return None
 
 
 _NAMESPACE_OPEN = re.compile(r"\bnamespace\b[^;{]*\Z")
@@ -701,9 +742,15 @@ def _top_level_statements(text: str) -> list[str]:
     out: list[str] = []
     buf: list[str] = []
     stack: list[bool] = []  # True = 这一层是 namespace
+    #: 上一行是还没结束的预处理指令（以 ``\`` 续行）。多行 ``#define`` 的**函数体**
+    #: 会被当成语句读进来，Lua ``lstate.h`` 的
+    #: ``#define gco2ts(o) check_exp(…, &((cast_u(o))->ts))`` 就是这么被误判成
+    #: 「名字空间作用域执行了一句 check_exp(...)」的。
+    preprocessor = False
     for line in text.splitlines():
-        if line.lstrip().startswith("#"):
-            continue  # 预处理指令自己不是语句
+        if preprocessor or line.lstrip().startswith("#"):
+            preprocessor = line.rstrip().endswith("\\")
+            continue
         for char in line:
             if char == "{":
                 stack.append(_NAMESPACE_OPEN.search("".join(buf)) is not None)
@@ -737,8 +784,34 @@ def side_effects_in(text: str) -> tuple[str, ...]:
     判据：
     * 语句以 ``名字(`` 开头且**没有**返回类型前缀 → 宏调用/函数调用；
     * 带 ``=`` 初始化的非 const 对象定义 → 真定义了一个东西。
+
+    第二刀（2026-10-20）：开头那次调用之后**如果还剩下一条声明**，这句就是
+    声明而不是执行。UCRT 的 ``_Success_(...) _ACRTIMP char* gets_s(...)`` 与
+    ``_CRT_INSECURE_DEPRECATE_GLOBALS(...) _ACRTIMP char** _get_pgmptr(void)``
+    都属于这一类——SAL 属性宏只是给编译器的提示，函数声明本身不执行任何东西。
+
+    两种证据强度分开返回（见 :func:`side_effect_kinds_in`）：对象定义是**确定**
+    的执行，调用形态只是**疑似**——文本层看不出一句宏调用展开成声明还是展开成
+    带动态初始化的对象。
     """
-    found: list[str] = []
+    return tuple(text for _kind, text in side_effect_kinds_in(text))
+
+
+def side_effect_kinds_in(text: str) -> tuple[tuple[str, str], ...]:
+    """名字空间作用域里的可疑语句，按证据强度分成 ``("object"|"call", 语句)``。
+
+    * ``object``：带初始化的对象定义。``static X y = register_it();`` 这种写法
+      在加载时就会执行，文本层**确定**它是副作用——删了程序真的少一块。
+    * ``call``：一句以宏名开头的调用，后面什么都没有。它可能展开成静态注册
+      （doctest 的 ``DOCTEST_REGISTER_REPORTER``），也可能展开成一串声明
+      （UCRT 的 ``__DEFINE_CPP_OVERLOAD_SECURE_FUNC_0_1(errno_t, strcat_s, …)``）。
+      文本层分不清，所以只记为**疑似**，由编译器裁定（见 verify 的汇编等价闸门）。
+
+    这个分层不是文字游戏：UCRT 的系统头里满是后一种形态，一律按「在用」处理会
+    把整个 stdio.h / stdlib.h / string.h 候选池永久锁死——Lua 语料上那是 13 条
+    「删了确实没事」的大额候选，其中 5 条实测能省 2.6%~3.3%。
+    """
+    found: list[tuple[str, str]] = []
     # 只抹注释、保留字符串字面量：报告里要原样显示这句做了什么
     # （``DOCTEST_REGISTER_REPORTER("junit", 0, JUnitReporter);`` 比
     # ``DOCTEST_REGISTER_REPORTER( , 0, JUnitReporter);`` 有用得多）。
@@ -748,11 +821,85 @@ def side_effects_in(text: str) -> tuple[str, ...]:
             continue
         call = _SIDE_EFFECT_CALL.match(code)
         if call and not _NOT_A_SIDE_EFFECT.search(call.group(1)):
-            found.append(code[:70])
+            if not _is_declaration(code, call):
+                found.append(("call", code[:70]))
+                continue
+        if _defines_an_object(code):
+            found.append(("object", code[:70]))
+    return tuple(found[:6])
+
+
+def _defines_an_object(code: str) -> bool:
+    """这句是不是「带初始化的对象定义」。
+
+    判据：顶层有一个赋值号，赋值号左边只由类型/名字/指针符号组成（没有括号，
+    所以不是函数声明或函数调用），也不是 ``const`` / ``typedef`` / ``using``。
+    对象在加载时就要初始化——初始化式只要不是字面量，就是一次执行。
+    """
+    if re.match(r"^(?:const\b|constexpr\b|typedef\b|using\b)", code):
+        return False
+    match = _ASSIGNMENT.search(code)
+    if match is None:
+        return False
+    head = code[: match.start()]
+    if "(" in head or ")" in head:
+        return False
+    return re.match(r"^[A-Za-z_][\w\s\*&:<>,\[\]]*$", head) is not None
+
+
+def _is_declaration(code: str, call: re.Match[str]) -> bool:
+    """开头的宏调用之后是否还跟着一条声明（→ 这句本身是声明）。
+
+    ``=`` 出现在尾巴里就当定义处理（``REGISTER(x) int y = f();`` 那种形态），
+    保持「宁可算副作用」的方向。
+    """
+    rest = _after_call(code, call.start())
+    if rest is None or "=" in rest:
+        return False
+    return _DECLARATOR.search(rest) is not None
+
+
+_PP_DEFINE = re.compile(r"^\s*#\s*define\s+([A-Za-z_]\w*)(\([^)]*\))?(.*)$")
+
+
+def _logical_lines(text: str):
+    r"""把以 ``\`` 续行的预处理语句拼成一整行。宏体的跨行形态在系统头里遍地都是。"""
+    buffer = ""
+    for line in text.splitlines():
+        if line.rstrip().endswith("\\"):
+            buffer += line.rstrip()[:-1] + " "
             continue
-        if _OBJECT_DEFINITION.match(code):
-            found.append(code[:70])
-    return tuple(found[:3])
+        buffer += line
+        yield buffer
+        buffer = ""
+    if buffer:
+        yield buffer
+
+
+def macro_bodies_in(text: str) -> dict[str, frozenset[str]]:
+    """头文件里每个宏**展开体**提到的标识符：``lua_getlocaledecpoint`` →
+    ``{localeconv, decimal_point}``。
+
+    为什么必须有这一项：源码写的是 ``lua_getlocaledecpoint()``（定义在幸存的
+    ``luaconf.h`` 里），真正的依赖 ``localeconv`` 只出现在宏体里。只看「源码提没
+    提到这个名字」的判定会把它判成「没用过 <locale.h>」——然后编译失败。实测
+    （Lua 5.4.7 ``liolib.c → locale.h``、``lobject.c/lstrlib.c/llex.c`` 同一条）
+    正是这个形态：宏体里的名字在源码里一个都找不到。
+
+    参数名不算：``#define sq(x) ((x)*(x))`` 的 ``x`` 是形参，不是依赖。
+    """
+    out: dict[str, set[str]] = {}
+    for logical in _logical_lines(text):
+        match = _PP_DEFINE.match(logical)
+        if not match:
+            continue
+        name, params, body = match.group(1), match.group(2) or "", match.group(3)
+        ids = set(_IDENTIFIER.findall(strip_comments(body)))
+        if params:
+            ids -= set(_IDENTIFIER.findall(params))
+        ids.discard(name)
+        out.setdefault(name, set()).update(ids)
+    return {key: frozenset(value) for key, value in out.items()}
 
 
 class IdentifierIndex:
@@ -780,6 +927,9 @@ class IdentifierIndex:
         "_sidefx",
         "_pastes",
         "_aliases",
+        "_macros",
+        "_live",
+        "_defined_ids",
     )
 
     def __init__(self) -> None:
@@ -793,6 +943,10 @@ class IdentifierIndex:
         self._sidefx: dict[Path, tuple[str, ...]] = {}
         self._pastes: dict[Path, tuple[frozenset[str], frozenset[str]]] = {}
         self._aliases: dict[Path, tuple[tuple[str, str], ...]] = {}
+        self._macros: dict[Path, dict[str, frozenset[str]]] = {}
+        self._live: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
+        self._defined_ids: dict[Path, frozenset[str]] = {}
+        self._defined_ids: dict[Path, frozenset[str]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
         cached = self._headers.get(path)
@@ -910,13 +1064,96 @@ class IdentifierIndex:
 
     def header_side_effects(self, path: Path) -> tuple[str, ...]:
         """这个头在名字空间作用域里执行的动作（见 :func:`side_effects_in`）。"""
+        return tuple(text for _kind, text in self.header_side_effect_kinds(path))
+
+    def header_side_effect_kinds(self, path: Path) -> tuple[tuple[str, str], ...]:
+        """按证据强度分层的可疑语句（见 :func:`side_effect_kinds_in`）。"""
         cached = self._sidefx.get(path)
         if cached is not None:
             return cached
         text = _read(path)
-        effects = side_effects_in(text) if text is not None else ()
+        effects = side_effect_kinds_in(text) if text is not None else ()
         self._sidefx[path] = effects
         return effects
+
+    def macro_bodies(self, path: Path) -> dict[str, frozenset[str]]:
+        """这个头的宏展开体里提到的标识符（见 :func:`macro_bodies_in`）。"""
+        cached = self._macros.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        bodies = macro_bodies_in(text) if text is not None else {}
+        self._macros[path] = bodies
+        return bodies
+
+    def header_live_provider_ids(
+        self, path: Path, defined_macros: frozenset[str] = frozenset()
+    ) -> frozenset[str]:
+        """幸存头里**这次编译真的会看到**的声明。
+
+        与 :meth:`header_provider_ids` 的差别只有一处：把声明落在
+        「本次编译不参与」的条件区间里的名字剔掉。实测（doctest
+        ``test_traversal.cpp → traversal.h``）：``doctest/doctest.h`` 里
+        ``class TraversalState`` 整段包在
+        ``#if defined(DOCTEST_CONFIG_IMPLEMENT) && !defined(...)`` 里，
+        这个单元根本不编译那段——文本层却把它当「另有供给者」，于是把一条
+        删了就编不过的候选推荐了出来。
+
+        方向是**保守**的：少算一个供给者 → 更容易判「在用」→ 少推荐。
+        条件表达式求不了值（``#if defined(A) || !defined(B)``）时也按不可信
+        处理，理由与 ``_blocking_conditional_regions`` 相同。
+        """
+        key = (path, defined_macros)
+        cached = self._live.get(key)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        if text is None:
+            live: frozenset[str] = frozenset()
+        else:
+            offsets = definition_offsets(text, prototypes=True)
+            dead = _blocking_conditional_regions(text, defined_macros)
+            live = frozenset(
+                name
+                for name in offsets
+                if not any(low <= offsets[name] < high for low, high in dead)
+            ) - self._renamed_names(path)
+        self._live[key] = live
+        return live
+
+    def header_conditional_provider_ids(self, path: Path) -> frozenset[str]:
+        """文本里有声明、但落在**本次编译不参与**的条件区间里的名字。
+
+        它们既不能当「另有供给者」（那会把真依赖判成可删），也不能当
+        「谁都不提供」（那会变成环境噪音、从证据里剔除，同样放行删除）。
+        唯一保守的用法是：**当作「判不了」，按在用处理**。
+        """
+        return self.header_provider_ids(path) - self.header_live_provider_ids(path)
+
+    def header_definition_ids(self, path: Path) -> frozenset[str]:
+        """这个头**定义**了哪些名字（宏、类型、原型/定义），「只是提到」不算。
+
+        用在**消失集合**那一侧：``lualib.h`` 里 ``LUAMOD_API int (luaopen_base)(…)``
+        只是**使用**了 ``LUAMOD_API``（它由 ``luaconf.h`` 定义），把「提到」算成
+        「提供」会让源码里的这次使用变成「只有这条 include 提供它」的证据，
+        一条本来可删的 include 因此被判「在用」。实测（Lua）：lualib.h 的
+        5 条候选全被这个幻影命中顶掉。
+
+        与 :meth:`header_provider_ids` 的唯一差别是**不剥别名**：闭包里的
+        ``#define X Y`` 是在定义宏 X，宏随头一起消失，X 就是它提供的
+        （fcntl.h 的 ``O_BINARY``）。
+        """
+        cached = self._defined_ids.get(path)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        ids = (
+            frozenset(definition_offsets(text, prototypes=True))
+            if text is not None
+            else frozenset()
+        )
+        self._defined_ids[path] = ids
+        return ids
 
     def source_defined_ids(self, path: Path) -> frozenset[str]:
         """源码自己提供的名字（见 :func:`definitions_in`）。"""
@@ -991,7 +1228,9 @@ def analyse_usage(
     reachable_counts: dict[str, int] | None = None,
     paste_affixes: tuple[frozenset[str], frozenset[str]] | None = None,
     declarers: dict[str, frozenset[Path]] | None = None,
+    conditional_declarers: dict[str, frozenset[Path]] | None = None,
     alias_defs: dict[str, tuple[tuple[Path, str], ...]] | None = None,
+    macro_defs: dict[str, tuple[tuple[Path, frozenset[str]], ...]] | None = None,
     defined_macros: frozenset[str] | None = None,
 ) -> UsageSignal:
     """Compare the identifiers a TU uses with those that disappear with an include.
@@ -1052,8 +1291,10 @@ def analyse_usage(
     #: 命中了、但源码自己就提供的名字。留着写进结论，读者才知道判定为什么
     #: 没把它们算成依赖。
     self_hits: set[str] = set()
-    #: (头文件, 语句) —— 消失集合里靠副作用起作用的头。
+    #: (头文件, 语句) —— 消失集合里**确定**靠副作用起作用的头。
     effects: list[tuple[Path, str]] = []
+    #: (头文件, 语句) —— 同上的**疑似**形态（宏调用，展开结果文本层看不到）。
+    suspected: list[tuple[Path, str]] = []
 
     for path in ordered:
         # 闭包一侧用**完整** header_ids：这里的头是要被删掉的，``#define X Y``
@@ -1071,9 +1312,9 @@ def analyse_usage(
         if first_nonempty is None:
             first_nonempty = path
         self_hits |= ids & source_ids & self_provided
-        for statement in index.header_side_effects(path):
-            effects.append((path, statement))
-        for name in ids & wanted_ids:
+        for kind, statement in index.header_side_effect_kinds(path):
+            (effects if kind == "object" else suspected).append((path, statement))
+        for name in index.header_definition_ids(path) & wanted_ids:
             # 第一次见到的声明者先记下；次数在整轮遍历完后才算得准。
             hits.setdefault(name, (path, 0))
             provider, count = hits[name]
@@ -1114,6 +1355,9 @@ def analyse_usage(
         # 源码提不提到它的名字都无关。它必须留在候选之外——删掉之后编译照样
         # 通过，程序却悄悄少了一块（doctest 的 junit.h / xml.h / console.h
         # 三条 ``DOCTEST_REGISTER_REPORTER`` 就是全部候选里排最前的三条）。
+        #
+        # 只有 ``object`` 这一类进得来：带初始化的对象定义在加载时就会执行，
+        # 文本层看得确凿。宏调用形态（``call``）走下面的「疑似」通道。
         return UsageSignal(
             verdict=UsageVerdict.IN_USE,
             header_identifier_count=total,
@@ -1121,6 +1365,31 @@ def analyse_usage(
             side_effects=tuple(text for _path, text in effects[:3]),
             self_provided=tuple(sorted(self_hits)[:8]),
         )
+
+    # **宏体里的依赖**：源码提到的是幸存头里的宏，真正的符号藏在宏的展开体里。
+    # 判据只有一条——那个名字**只有**消失集合提供（幸存侧一个声明者都没有），
+    # 宏又活下来继续展开它 → 删掉这条 include 就编不过。
+    if macro_defs and declarers is not None:
+        vanishing = {Path(p) for p in ordered}
+        for macro in sorted(macro_defs):
+            bodies = [
+                body for path, body in macro_defs[macro] if path not in vanishing
+            ]
+            if not bodies:
+                continue  # 宏自己随头消失，已经由下面的命中路径处理
+            for token in sorted(set().union(*bodies)):
+                if token in self_provided:
+                    continue
+                owners = declarers.get(token, frozenset())
+                if owners & vanishing and not (owners - vanishing):
+                    return UsageSignal(
+                        verdict=UsageVerdict.IN_USE,
+                        header_identifier_count=total,
+                        shared_identifiers=(token,),
+                        provided_by=sorted(owners & vanishing)[0],
+                        macro_expansion=(macro, token),
+                        self_provided=tuple(sorted(self_hits)[:8]),
+                    )
 
     if hits:
         # **供给者唯一性**：命中一个标识符只说明 TU 用到它，不说明它来自
@@ -1132,6 +1401,9 @@ def analyse_usage(
         # 这一条上——闭包有 275 个头，TU 随便提一个 string 就算在用。
         sole: dict[str, tuple[Path, int]] = {}
         cross: dict[str, tuple[Path, int]] = {}
+        #: 幸存侧只有条件编译区里的声明：既不能当「另有供给」，也不能当
+        #: 「谁都不提供」，只能记成「判不了」（见下面的注释）。
+        uncertain: dict[str, tuple[Path, int]] = {}
         #: 谁都不提供的命中：命令行 ``-D`` 或源码之外的世界给的，删除任何
         #: include 都带不走（doctest 的 ``DOCTEST_CONFIG_DISABLE``）。
         ambient: list[str] = []
@@ -1156,6 +1428,14 @@ def analyse_usage(
                     continue
                 if real:
                     sole[name] = (provider, count)
+                    continue
+                # 幸存侧只有**条件编译区**里的声明：本次编译看不到它，
+                # 但也不能说它不存在。两头都不能当证据用——不算「另有供给」
+                # （否则真依赖被放行：doctest test_traversal.cpp→traversal.h），
+                # 也不算「谁都不提供」（否则这些名字掉进 ambient 被当噪音剔除）。
+                # 唯一老实的结论是「判不了」，交给 verify 用编译裁决。
+                if (conditional_declarers or {}).get(name):
+                    uncertain[name] = (provider, count)
                     continue
                 aliases_for_name = alias_defs.get(name, ())
                 if any(h in vanishing for h, _t in aliases_for_name):
@@ -1244,13 +1524,23 @@ def analyse_usage(
                 conditional_only=weak,
                 unprovided=tuple(sorted(ambient)[:8]),
             )
-        if sole:
-            # 有命中，但全部过于普遍：这不是「在用」的证据，也不该算「没用」。
+        if sole or uncertain:
+            # 有命中，但证据都不可用：要么过于普遍（sole），要么幸存侧的声明
+            # 在条件编译区、本次编译看不到（uncertain）。这不是「在用」的证据，
+            # 也不该算「没用」。
             return UsageSignal(
                 verdict=UsageVerdict.UNKNOWN,
-                shared_identifiers=tuple(sorted(sole)[:8]),
+                shared_identifiers=tuple(sorted(sole or uncertain)[:8]),
                 header_identifier_count=total,
                 ambient_identifiers=tuple(sorted(sole)[:8]),
+                note=(
+                    ""
+                    if sole
+                    else (
+                        f"{'、'.join(sorted(uncertain)[:2])} 只在幸存头文件的条件编译区里"
+                        "声明，本次编译看不到它——删不删由编译验证裁定"
+                    )
+                ),
                 cross_provided=tuple(sorted(cross)[:8]),
                 self_provided=tuple(sorted(self_hits)[:8]),
                 unprovided=tuple(sorted(ambient)[:8]),
@@ -1269,19 +1559,22 @@ def analyse_usage(
                 pasted=tuple(pasted),
                 unprovided=tuple(sorted(ambient)[:8]),
             )
-        return UsageSignal(
-            verdict=UsageVerdict.PLAUSIBLY_UNUSED,
-            shared_identifiers=tuple(sorted(cross)[:8]),
-            header_identifier_count=total,
-            cross_provided=tuple(sorted(cross)[:8]),
-            self_provided=tuple(sorted(self_hits)[:8]),
-            unprovided=tuple(sorted(ambient)[:8]),
+        return _plausibly_unused_or_suspected(
+            total=total,
+            cross=cross,
+            self_hits=self_hits,
+            ambient=ambient,
+            suspected=suspected,
         )
 
     if total == 0:
         # Includes nothing, declares nothing, or could not be read.  Saying
         # "unused" here would be a guess dressed up as a finding.
-        return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
+        return UsageSignal(
+            verdict=UsageVerdict.UNKNOWN,
+            header_identifier_count=0,
+            note="头文件里读不出任何可比较的名字（空文件、读不到，或全是条件编译）",
+        )
 
     if not extra and first_nonempty is not None:
         text = _read(first_nonempty)
@@ -1290,7 +1583,14 @@ def analyse_usage(
             # its "identifiers" are the names of the headers it forwards, so a
             # naive comparison reports a false unused.  With a closure this
             # branch is never reached -- the closure is the real comparison.
-            return UsageSignal(verdict=UsageVerdict.UNKNOWN, header_identifier_count=0)
+            return UsageSignal(
+                verdict=UsageVerdict.UNKNOWN,
+                header_identifier_count=0,
+                note=(
+                    "这个头只做转发或只提供宏（没有函数/类型声明），"
+                    "它的作用取决于后续头怎么用这些宏"
+                ),
+            )
 
     pasted = _pasted_names()
     if pasted:
@@ -1300,8 +1600,45 @@ def analyse_usage(
             self_provided=tuple(sorted(self_hits)[:8]),
             pasted=tuple(pasted),
         )
+    return _plausibly_unused_or_suspected(
+        total=total,
+        cross={},
+        self_hits=self_hits,
+        ambient=[],
+        suspected=suspected,
+    )
+
+
+def _plausibly_unused_or_suspected(
+    *,
+    total: int,
+    cross: dict[str, tuple[Path, int]],
+    self_hits: set[str],
+    ambient: list[str],
+    suspected: list[tuple[Path, str]],
+) -> UsageSignal:
+    """文本层指向「可删」时的最后一关：有没有**疑似**副作用没结清。
+
+    有就退成「无法判定」而不是给出推荐——文本层看不清那句宏调用展开了什么，
+    而 verify 的汇编等价闸门看得清。这不是放宽，是把结论从「文本猜的」换成
+    「编译器验的」：闸门默认在 verify 里开着，且对携带
+    ``side_effect_suspected`` 的候选强制开启。
+    """
+    if suspected:
+        return UsageSignal(
+            verdict=UsageVerdict.UNKNOWN,
+            header_identifier_count=total,
+            provided_by=suspected[0][0],
+            suspected_side_effects=tuple(text for _path, text in suspected[:3]),
+            cross_provided=tuple(sorted(cross)[:8]),
+            self_provided=tuple(sorted(self_hits)[:8]),
+            unprovided=tuple(sorted(ambient)[:8]),
+        )
     return UsageSignal(
         verdict=UsageVerdict.PLAUSIBLY_UNUSED,
+        shared_identifiers=tuple(sorted(cross)[:8]),
         header_identifier_count=total,
+        cross_provided=tuple(sorted(cross)[:8]),
         self_provided=tuple(sorted(self_hits)[:8]),
+        unprovided=tuple(sorted(ambient)[:8]),
     )

@@ -116,6 +116,15 @@ class VerifyOptions:
     #: real concurrency -- this is the difference between 2 minutes and 20
     #: seconds on a 200-candidate pool.
     jobs: int = 4
+    #: 计时阶段的并发度。**默认 1（串行）**，与上面的探针并发分开。
+    #:
+    #: 为什么必须分开：这台机器上一次编译的墙钟 215 ms 里只有 29 ms 是编译器
+    #: 自己的（其余是进程启动 + 文件系统），并发把每个编译都拖慢 20–25%，
+    #: 且拖慢量随负载抖动。实测同一批 4 条「删了就省 3–4%」的候选：
+    #: 串行 4/4 复现；``jobs=4`` 时 0/4 复现（基线从 215 ms 涨到 270 ms，
+    #: 第一遍 percent 6.7% / 第二遍 1.3%，稳定性全毁）。探针阶段只回答
+    #: 「编不编得过」，并发无害；计时阶段回答「省多少」，并发就是噪声源。
+    timing_jobs: int = 1
     #: 代码等价校验：删掉这一行之后，编出来的还是不是同一个程序。
     #:
     #: 为什么需要：2026-10-19 实测里，删掉 ``<iomanip>`` 后编译通过，但目标文件
@@ -791,6 +800,9 @@ def verify_candidates(
     #: 闸门是否真的可用：MSVC 没有 ``-S``/``-g0`` 这套写法，硬开会把每个候选
     #: 都误报成「代码变了」。能力不够时直接不跑，报告也不许声称做过校验。
     codegen_ok = verify.codegen_check and codegen.supported(driver)
+    #: 闸门本身能不能用（与「本轮开没开」无关）。疑似副作用候选强制用它，
+    #: 但编译器不支持 ``-S`` 时（MSVC）也不能假装校验过。
+    codegen_capable = codegen.supported(driver)
 
     def _probe_one(index: int, source_path: Path, line_number: int) -> None:
         candidate, source_path, line_number = pending[index]
@@ -812,9 +824,12 @@ def verify_candidates(
                 verify.probe_runs,
                 verify.timeout,
             )
-            if error is None and codegen_ok:
-                # 比的是「同一个源文件、去掉那一行之后，编出来的汇编是否一字不差」。
-                # 两次用同一份 options、同一个输出路径；源码目录由 codegen.compare 掩平。
+            if error is None and (
+                codegen_ok or (candidate.side_effect_suspected and codegen_capable)
+            ):
+                # 疑似副作用**强制**过闸门：文本层说不清那句宏调用展开成什么，
+                # 那就让编译器说。这里不跟随 ``--check-codegen`` 开关——关掉它
+                # 是用户的性能选择，不是允许在没证据时下结论的许可。
                 probe_codegen[index] = codegen.compare(
                     driver,
                     source_path,
@@ -846,7 +861,7 @@ def verify_candidates(
     baselines = _BaselineCache()
     survivors: list[tuple[int, RemovalCandidate, float]] = []
 
-    for index, (candidate, source_path, _line_number) in enumerate(pending):
+    for index, (candidate, _source_path, _line_number) in enumerate(pending):
         patched_seconds = probe_seconds.get(index)
         if patched_seconds is None:
             results.append(
@@ -858,6 +873,18 @@ def verify_candidates(
             )
             continue
         codegen_pair = probe_codegen.get(index)
+        if candidate.side_effect_suspected and codegen_pair is None:
+            # 文本层怀疑这个头靠「被包含时执行」起作用，而编译器又不肯给汇编
+            # 指纹（MSVC 的 ``-S`` 方言不同）。没有合格证据就不下结论——报成
+            # 编译不过或没收益都是编数字，这里如实说「判不了」。
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="error",
+                    message="疑似副作用：本轮拿不到汇编指纹，无法证明程序未变（保守判为不可删）",
+                )
+            )
+            continue
         if codegen_pair is not None and not codegen_pair[0].same_as(codegen_pair[1]):
             results.append(
                 VerificationResult(
@@ -882,14 +909,51 @@ def verify_candidates(
             )
             continue
 
-        baseline_seconds = baselines.get(
+        # 基线不在这里测：留到下面的「同并发度预热」之后统一取，否则串行测得
+        # 的基线会和并行测得的补丁侧不可比（见预热处的注释）。
+        survivors.append((index, candidate, patched_seconds))
+
+    # 完整测量本身也可以并行（每个候选一次 patched 编译，runs 次取最小）。
+    # measured: pending 下标 -> (基线秒, 移除后秒, 移除后 GGC 内存字节,
+    #                               移除后侧被丢弃的计时行)
+    measured: dict[int, tuple[float, float, int | None, tuple[str, ...]]] = {}
+
+    # **基线必须与补丁侧同并发度**。基线原先在下面的 for 循环里串行测，补丁侧
+    # 却在 jobs 宽的线程池里跑——两边看到的机器负载不是一个量级。实测这台机器
+    # 一次编译墙钟 215 ms 里只有 29 ms 是编译器自己的（其余是进程启动），
+    # 4 路并发下每个编译都被拖慢 40–50 ms，于是 52 条候选**全部**被记成「更慢」，
+    # 差值的符号由测量装置决定而不是由代码决定。先在同一个池子里把基线测完，
+    # 两侧就吃同样的争抢（每单元一次，缓存仍然有效）。
+    if survivors and verify.timing_jobs > 1:
+        units = sorted({pending[index][1] for index, _c, _s in survivors})
+
+        def _warm(unit: Path) -> None:
+            try:
+                baselines.get(
+                    driver,
+                    unit,
+                    _unit_options_for_path(scan, unit, options, effective_includes),
+                    verify.runs,
+                    verify.timeout,
+                )
+            except Exception:  # noqa: BLE001 - 基线失败下面会按单元再报一次
+                pass
+
+        with ThreadPoolExecutor(max_workers=max(1, verify.timing_jobs)) as pool:
+            list(pool.map(_warm, units))
+
+    # 预热之后取基线：并行/串行两条路径到这里都只是查缓存。取不到（基线编不过）
+    # 的候选如实报错，不参与比较。
+    kept: list[tuple[int, RemovalCandidate, float]] = []
+    for index, candidate, patched_seconds in survivors:
+        source_path = pending[index][1]
+        if baselines.get(
             driver,
             source_path,
             _unit_options(scan, candidate, options, effective_includes),
             verify.runs,
             verify.timeout,
-        )
-        if baseline_seconds is None:
+        ) is None:
             results.append(
                 VerificationResult(
                     candidate=candidate,
@@ -898,12 +962,8 @@ def verify_candidates(
                 )
             )
             continue
-        survivors.append((index, candidate, patched_seconds))
-
-    # 完整测量本身也可以并行（每个候选一次 patched 编译，runs 次取最小）。
-    # measured: pending 下标 -> (基线秒, 移除后秒, 移除后 GGC 内存字节,
-    #                               移除后侧被丢弃的计时行)
-    measured: dict[int, tuple[float, float, int | None, tuple[str, ...]]] = {}
+        kept.append((index, candidate, patched_seconds))
+    survivors = kept
 
     def _measure_one(index: int, source_path: Path, line_number: int) -> None:
         original_text = source_path.read_text(encoding="utf-8", errors="replace")
@@ -925,7 +985,9 @@ def verify_candidates(
         measured[index] = (baseline, seconds or 0.0, memory, discarded)
 
     if survivors:
-        with ThreadPoolExecutor(max_workers=max(1, verify.jobs)) as pool:
+        # 计时阶段用 ``timing_jobs``（默认串行）：并发会让每个编译都变慢且
+        # 抖动量随负载变化，见 VerifyOptions.timing_jobs 的实测记录。
+        with ThreadPoolExecutor(max_workers=max(1, verify.timing_jobs)) as pool:
             futures = {
                 pool.submit(
                     _measure_one,
@@ -1140,11 +1202,31 @@ def verify_candidates(
     # ------------------------------------------------- header-level sites
     # 放在最后：它要改公共头文件，期间不能有任何并发编译在用它。
     if multi_pending:
-        results.extend(
-            _verify_header_site(
-                scan, driver, options, effective_includes, verify, multi_pending, baselines
+        # 头文件级候选走「改一次头、重编一批单元」的路径，这条路径没有汇编闸门。
+        # 疑似副作用的候选**必须**有闸门才配得上结论，所以它们在这里就被拦下，
+        # 而不是靠「编译过了」冒充证据。
+        gated = [entry for entry in multi_pending if entry[0].side_effect_suspected]
+        multi_pending = [entry for entry in multi_pending if not entry[0].side_effect_suspected]
+        for candidate, _site, _line in gated:
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="error",
+                    message="疑似副作用：头文件级候选暂不支持汇编闸门，保守判为不可删",
+                )
             )
-        )
+        if multi_pending:
+            results.extend(
+                _verify_header_site(
+                    scan,
+                    driver,
+                    options,
+                    effective_includes,
+                    verify,
+                    multi_pending,
+                    baselines,
+                )
+            )
 
     # 失败也要留下痕迹。以前只有成功的候选被写回 scan，失败的候选在列表里
     # 看起来跟没探过一模一样——于是报告会把一个「已经实测编译不过」的候选

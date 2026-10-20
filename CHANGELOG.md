@@ -6,6 +6,21 @@
 
 ### 新增
 
+- **副作用分层：`object` 直接拦，`call` 交给编译器裁**（`attrib/usage.py`、
+  `verify.py`）。`side_effect_kinds_in` 把名字空间作用域里的可疑语句分成两类：
+  带初始化的对象定义（`static X y = register_it();`，文本层看得确凿，仍判「在用」）
+  与一句光秃秃的宏调用（展开成静态注册还是展开成一串声明，文本层分不出来）。
+  后者判「无法判定」并给候选打 `side_effect_suspected`，`verify` **无视
+  `--check-codegen` 开关**强制比汇编——证据从「文本猜的」换成「编译器验的」。
+  实测 Lua：10 条这类候选里 4 条 improved（−3.4%~−4.3%，复测通过）、1 条编不过、
+  5 条无收益，此前它们全部被判「在用」永远进不了池。
+- **宏体里的依赖**（`macro_bodies_in` / `macro_defs`）。源码用的宏若在幸存头里
+  定义、而宏体里某个名字只有这条 include 提供，判「在用」，理由写成
+  「`lua_getlocaledecpoint` 展开后用到 `localeconv`（由 `locale.h` 提供）」。
+  少了这一条，Lua 的 4 条 `→ locale.h` 候选会推荐出编不过的删除。
+- **`VerifyOptions.timing_jobs`（默认 1，串行）**。探针阶段仍然并行；计时阶段
+  串行。理由见下面的修复条目。
+
 - **scan 报告新增「待验证队列」小节**（`report/markdown.py`）。没跑 verify
   的扫描报告以前把「无法判定」层留给读者自己判断；现在按 `verify` 的测量
   顺序列出队列（疑似未使用 → 无法判定 → 在用），并给出分层计数。依据是
@@ -19,6 +34,24 @@
 
 ### 修复
 
+- **大范围误判：带属性的声明被当成了「执行」**（`attrib/usage.py`）。判据原来只看
+  「语句以 `名字(` 开头且没有返回类型前缀」，于是 UCRT 的
+  `_Success_(return != 0) _ACRTIMP char* gets_s(…);`、
+  `_CRT_INSECURE_DEPRECATE_GLOBALS(…) extern char* _pgmptr` 全被判成副作用——
+  stdio.h / stdlib.h / string.h 的候选永久「在用」。现在抹掉开头那次宏调用后
+  **若还剩一条声明**，就按声明处理。Lua 语料因此放开 13 条此前被判「在用」的大额候选。
+- **多行 `#define` 的续行被当成名字空间作用域的语句**（`_top_level_statements`）。
+  Lua `lstate.h` 的 `#define gco2ts(o) check_exp(…)` 让整个头凭空「有副作用」，
+  连带锁死 6 条删除机会。现在预处理指令连同续行整体跳过。
+- **「带初始化的对象定义」只认一种写法**（`_defines_an_object`）。原正则只匹配
+  `static X y = …`，`static int alpha_id = register_alpha();` 因为多了个类型词漏掉——
+  方向错的漏报（动态初始化的对象恰恰最该拦）。改成函数判据。
+- **计时阶段的并发把差值的符号交给了机器**（`verify.py`）。基线原先在循环里
+  串行测、补丁侧在 `jobs` 宽的池里跑；这台机器一次编译墙钟 215 ms 里只有 29 ms
+  是编译器自己的（其余是进程启动 + 文件系统），4 路并发把每个编译拖慢 20–25%
+  且抖动随负载变化。实测同一批 10 条候选：计时段 4 路并发 → 基线 267–282 ms、
+  **0/10 improved**；串行 → 基线 223–234 ms、**4/10 improved**。两处修：基线先
+  在同一个池子里预热再查缓存；计时段默认 `timing_jobs=1`。
 - **clang 的 `-ftime-report` 此前从未被解析**（`parse/timereport.py`）。解析
   正则只认 GCC 的「`name :` 数字」形态，而 clang 是「数字列在前、阶段名在后」
   （`0.0395 (100.0%)  Front end`）。后果：所有 clang 扫描一直走「TOTAL 缺失 →
@@ -32,6 +65,18 @@
   7.6ms 的真实收益估成 0.339s（虚高约 50 倍），新锚估 0.011s（1.5 倍）。
 
 ### 变更
+
+- **条件编译区里的声明不再当「另有供给者」**（`IdentifierIndex.header_live_provider_ids`
+  / `header_conditional_provider_ids`）。doctest `doctest.h` 里
+  `class TraversalState` 整段包在 `#if defined(DOCTEST_CONFIG_IMPLEMENT)` 里，
+  这个单元根本不编译那段；按文本算「另有供给」会把 `test_traversal.cpp → traversal.h`
+  这条删了就编不过的候选推荐出去。现在这类名字既不算供给者、也不算「谁都不提供」，
+  一律判「无法判定」并写清理由——由 verify 的编译裁决。代价是 Lua 队列从 32 条
+  涨到 58 条，推荐层从 20 条变成 19 条（三语料合计推荐 26 条，25 条真有用）。
+- **消失集合那一侧只认「定义」**（`header_definition_ids`）。`lualib.h` 里
+  `LUAMOD_API int (luaopen_base)(…)` 只是**使用**了 `LUAMOD_API`（真定义在
+  `luaconf.h`），把「提到」算成「提供」会让源码里的这次使用变成
+  「只有这条 include 提供它」的证据，lualib.h 的 5 条候选全被幻影命中顶掉。
 
 - **候选精度第五轮：失败原因分类 + 「分析时间→已证实优化」核心指标**（对照见
   [`experiments/candidate-precision-round5-20261019.md`](experiments/candidate-precision-round5-20261019.md)）。

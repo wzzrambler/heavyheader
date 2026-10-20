@@ -1,0 +1,31 @@
+{
+  "corpus": "zlib",
+  "root": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\zlib-develop",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "translation_units": 35,
+  "failed_translation_units": 1,
+  "baseline_seconds": 41.010907800053246,
+  "counts": {
+    "candidates": 47,
+    "plausibly_unused": 1,
+    "unknown": 3,
+    "in_use": 43,
+    "instantiation_sites": 0,
+    "guarded_repeat_zeroed": 1
+  },
+  "recommended": [
+    {
+      "tu": "inffast.c",
+      "header": "inffast.h",
+      "line": 9,
+      "estimated_lines_saved": 11
+    }
+  ],
+  "instantiation_sites": [],
+  "guarded_repeat": [
+    {
+      "tu": "minigzip.c",
+      "header": "stdlib.h"
+    }
+  ]
+}

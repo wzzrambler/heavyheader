@@ -1,0 +1,56 @@
+{
+  "corpus": "doctest",
+  "root": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\doctest-pristine",
+  "compiler": "C:/Program Files/LLVM/bin/clang++.exe",
+  "translation_units": 150,
+  "failed_translation_units": 1,
+  "baseline_seconds": 235.98923519981327,
+  "counts": {
+    "candidates": 130,
+    "plausibly_unused": 6,
+    "unknown": 5,
+    "in_use": 119,
+    "instantiation_sites": 0,
+    "guarded_repeat_zeroed": 0
+  },
+  "recommended": [
+    {
+      "tu": "default.cpp",
+      "header": "foo.h",
+      "line": 4,
+      "estimated_lines_saved": 44
+    },
+    {
+      "tu": "return42.cpp",
+      "header": "foo.h",
+      "line": 5,
+      "estimated_lines_saved": 44
+    },
+    {
+      "tu": "context_scope.cpp",
+      "header": "context_scope.h",
+      "line": 3,
+      "estimated_lines_saved": 20
+    },
+    {
+      "tu": "filters.cpp",
+      "header": "filters.h",
+      "line": 2,
+      "estimated_lines_saved": 27
+    },
+    {
+      "tu": "common.cpp",
+      "header": "common.h",
+      "line": 2,
+      "estimated_lines_saved": 24
+    },
+    {
+      "tu": "test_case.cpp",
+      "header": "test_case.h",
+      "line": 2,
+      "estimated_lines_saved": 23
+    }
+  ],
+  "instantiation_sites": [],
+  "guarded_repeat": []
+}

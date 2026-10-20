@@ -1037,12 +1037,88 @@ include guard，靠 `.c` 先 `#define FN …` 再 `#include` 它来「实例化�
 Lua 的 P@5 / P@10 也从 80% / 90% 升到 **100% / 100%**——那条假阳性原来排在
 第 4 位。
 
-#### 9.17.5 仍未解决：同名 include 的歧义
+#### 9.17.5 当时仍未解决：同名 include 的歧义
 
-还有 3 条候选（`backward_references.c → backward_references_inc.h` 等）在
+还有 6 条候选（`backward_references.c → backward_references_inc.h` 等）在
 `verify` 阶段被判 **ambiguous**——同一个源文件里有 3–19 行 include 都叫同一个
 名字（正是上面那套「重复包含片段」的写法），定位层拒绝猜行号，因此从未实测。
 这是**已知的缺口**，不是结论：工具宁可说「不知道改哪一行」，也不猜。
+
+它被 §9.18 关掉了：歧义不是一种情况，而是两种性质完全相反的情况。
+
+
+### 9.18 重复包含：同一条 include 行，两种性质相反的问题（2026-10-20）
+
+§9.17.5 留下的 6 条「行号歧义」候选，本节关掉。核心结论：**同一个源文件里
+出现多行同名 include，删掉第 k 行到底删掉了什么，取决于那个头带不带 include
+guard**——两种情形的答案正好相反。
+
+#### 9.18.1 两种情形，两种答案
+
+| | 带 guard 的接口头 | 不带 guard 的实现片段 |
+|---|---|---|
+| 重复包含时编译器做什么 | 第二次起被 guard 挡掉（空操作） | 每次都完整展开一遍 |
+| 删掉第 k 行省下什么 | **什么都不省**：头照样被解析一次 | 这一次实例化（≈ 片段自身的一次解析） |
+| 静态判据能不能回答 | 能：这不是机会 | **不能**：每次实例化生成哪些符号，取决于包含前那几句 `#define FN`，要展开宏才知道，而展开宏编译器比正则准 |
+| 工具的处理 | 保留一条候选、收益**按 0 计**并写明理由 | 拆成 N 条**实例化站点**候选，各带行号，判「无法判定」，交给实验；`verify` **强制**过汇编闸门 |
+
+两条纪律值得单独说：
+
+1. 「按 0 计」很容易被当成漏报，所以理由必须**长在候选身上**（`usage_reason` +
+   `notes`），不能只在文档里解释一遍。zlib 的 `minigzip.c → <stdlib.h>` 正是这种
+   情形：两个条件编译分支里各一处，删哪一处都不省解析。
+2. 估算口径跟着分家：片段站点省的是 `sizes.lines(header)`，**不是**它下游的闭包
+   ——那些头在别的实例化里照样被解析。`block_splitter_inc.h` 按闭包口径估 481
+   行，一次实例化只有片段自身那点文本。
+
+#### 9.18.2 brotli 实测：31 个站点，0 条可删，每条都有编译器给的理由
+
+| 单元 | 片段 | 站点 | 实测结局 |
+|---|---|---:|---|
+| `backward_references.c` | `backward_references_inc.h` | 19 | 19 compile-error（逐个报出 `CreateBackwardReferencesNH2` / `H3` / … / `DH65` 未声明） |
+| `bit_cost.c` | `bit_cost_inc.h` | 3 | 3 **codegen-changed** |
+| `block_splitter.c` | `block_splitter_inc.h` | 3 | 3 compile-error（`SplitByteVectorLiteral/Command/Distance`） |
+| `brotli_bit_stream.c` | `block_encoder_inc.h` | 3 | 3 compile-error（`BuildAndStoreEntropyCodesLiteral/Command/Distance`） |
+| `metablock.c` | `metablock_inc.h` | 3 | 3 compile-error（`BlockSplitterLiteral/Command/Distance`） |
+| **合计** | | **31** | **improved 0 / 31** |
+
+结论是「brotli 的每一次实例化都在用」——方向上和修复前（判「在用」）一致，
+但证据完全不同：以前是「理由含糊的静态判定 + 从未验证」，现在是 31 次实验、
+每次都给出编译器报的**具体符号**（`CreateBackwardReferencesNH40` 这种名字，
+正是 `#define FN(X) EXPAND_CAT(X, HASHER())` 拼出来的，静态文本本来就看不见）。
+
+#### 9.18.3 对照：没有强制闸门会怎样
+
+关掉「实现片段强制过闸门」这条纪律重跑同一批（`--no-force-instantiation`）：
+`bit_cost.c` 那 3 条从 **codegen-changed** 变成 **no-change（−8 ms）**。
+
+要注意它拦下的**不是**三条「会被误报成可删」的假阳性——improved 两边都是 0。
+它拦下的是三条**看起来无害的破坏性改动**：删掉一次实例化，编译照样通过、计时
+看不出差别（−8 ms 在噪声内），只有汇编指纹显示目标文件少了一个函数定义。
+没有闸门，读者看到的是「删了也没收益，顺手删了无妨」；有了闸门，结论是
+「程序被改了」。这正是这类候选不能沿用「编得过就算安全」的原因——只编译
+`-c` 不链接，少一个函数定义在编译期是**静默**的。
+
+#### 9.18.4 五语料回归：推荐层一格未动
+
+| 语料 | 候选总数 | 推荐层（疑似未使用） | 实例化站点 | guard 重复（按 0 计） |
+|---|---:|---:|---:|---:|
+| Lua 5.4.7 | 222 | **18**（与 §9.17.4 相同） | 0 | 0 |
+| doctest | 130 | **6**（相同） | 0 | 0 |
+| zlib | 47 | **1**（相同） | 0 | 1（`minigzip.c → <stdlib.h>`） |
+| zstd | 90 | **6** | 0 | 0 |
+| brotli | 110（84 − 6 旧歧义 + 31 站点 + 1） | **4**（与 §9.17.3 相同） | 31 | 1（`brotli.c → utime.h`） |
+
+四个语料上这条分支**从未触发**（没有「同一头被包含多次」的情形），所以本轮对
+它们的推荐层零影响——这正是回归要证明的：新逻辑只在 brotli 这类写法上启动。
+
+zstd 推荐层 7 → 6 的那一格（`fse_compress.c → hist.h`）**不是本轮的改动**：
+zstd 上实例化站点和 guard 归零都是 0，本轮代码路径没被触发。它是上一轮
+（§9.17 的实现片段修复）的连带影响——片段里的代码并进 TU 之后，这条被判成
+「在用」。顺手把它实测了一遍：`fse_compress.c → hist.h` 是
+**no-change（−2 ms）**，同批 `hist.c` / `huf_compress.c` / `zstd_compress.c` /
+`zstd_compress_superblock.c` / `zstd_opt.c` 的 `hist.h` 全部 compile-error。
+所以这一格是「真能删但没收益」，不是回归——推荐层少了一条空头承诺。
 
 
 ## 10. G3：门禁成立（2026-10-18）

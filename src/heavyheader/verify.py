@@ -238,6 +238,16 @@ def locate_include_line(
     return IncludeLocation(matches[0], "", 1)
 
 
+def _forced_codegen(candidate) -> bool:
+    """这条候选**必须**拿到汇编指纹才允许下结论，开关说了不算。
+
+    两类：文本层怀疑「被包含时执行」的副作用；以及实现片段的一次实例化——
+    后者删掉几乎总能编过（只是少一个函数定义），「编译通过」在这里根本不是
+    证据。关掉 ``--check-codegen`` 是性能选择，不是允许在没证据时下结论。
+    """
+    return candidate.side_effect_suspected or candidate.instantiation
+
+
 def _comment_out(source_text: str, line_number: int) -> str:
     lines = source_text.splitlines()
     index = line_number - 1
@@ -825,7 +835,7 @@ def verify_candidates(
                 verify.timeout,
             )
             if error is None and (
-                codegen_ok or (candidate.side_effect_suspected and codegen_capable)
+                codegen_ok or (_forced_codegen(candidate) and codegen_capable)
             ):
                 # 疑似副作用**强制**过闸门：文本层说不清那句宏调用展开成什么，
                 # 那就让编译器说。这里不跟随 ``--check-codegen`` 开关——关掉它
@@ -873,15 +883,25 @@ def verify_candidates(
             )
             continue
         codegen_pair = probe_codegen.get(index)
-        if candidate.side_effect_suspected and codegen_pair is None:
-            # 文本层怀疑这个头靠「被包含时执行」起作用，而编译器又不肯给汇编
-            # 指纹（MSVC 的 ``-S`` 方言不同）。没有合格证据就不下结论——报成
-            # 编译不过或没收益都是编数字，这里如实说「判不了」。
+        if _forced_codegen(candidate) and codegen_pair is None:
+            # 文本层怀疑这个头靠「被包含时执行」起作用（疑似副作用），或者这一
+            # 行只是**实现片段的一次实例化**——后者删掉通常只是让目标文件少一
+            # 个函数定义，编译照样通过，只有汇编指纹能证明「程序没变」。编译器
+            # 又不肯给指纹时（MSVC 的 ``-S`` 方言不同），没有合格证据就不下结
+            # 论——报成编译不过或没收益都是编数字，这里如实说「判不了」。
+            why = (
+                "疑似副作用"
+                if candidate.side_effect_suspected
+                else "实现片段的一次实例化"
+            )
             results.append(
                 VerificationResult(
                     candidate=candidate,
                     status="error",
-                    message="疑似副作用：本轮拿不到汇编指纹，无法证明程序未变（保守判为不可删）",
+                    message=(
+                        f"{why}：本轮拿不到汇编指纹，无法证明程序未变"
+                        "（保守判为不可删）"
+                    ),
                 )
             )
             continue

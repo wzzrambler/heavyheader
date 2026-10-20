@@ -135,6 +135,10 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 "usage_verdict": candidate.usage_verdict,
                 "usage_reason": candidate.usage_reason,
                 "side_effect_suspected": candidate.side_effect_suspected,
+                # 实现片段的实例化站点：丢了它，重载出来的候选会退化成一个
+                # 普通的「删掉整个头」候选——既高估收益（另外 N−1 处照旧解析
+                # 这个片段），又绕过强制的汇编闸门。
+                "instantiation": candidate.instantiation,
                 "confidence": candidate.confidence,
                 "notes": list(candidate.notes),
                 "advice": _advice_to_dict(candidate.advice),
@@ -359,6 +363,7 @@ def scan_from_dict(data: dict) -> ProjectScan:
             or _verdict_from_label(entry.get("usage_label")),
             usage_reason=entry.get("usage_reason", ""),
             side_effect_suspected=bool(entry.get("side_effect_suspected", False)),
+            instantiation=bool(entry.get("instantiation", False)),
             confidence=entry.get("confidence", "unknown"),
             notes=list(entry.get("notes", [])),
             advice=_advice_from_dict(entry.get("advice")),

@@ -1,0 +1,205 @@
+{
+  "corpus": "brotli",
+  "root": "C:\\Users\\31879\\AppData\\Local\\Temp\\brotli-1.1.0",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "translation_units": 32,
+  "failed_translation_units": 0,
+  "baseline_seconds": 44.404585700132884,
+  "counts": {
+    "candidates": 110,
+    "plausibly_unused": 4,
+    "unknown": 37,
+    "in_use": 69,
+    "instantiation_sites": 31,
+    "guarded_repeat_zeroed": 1
+  },
+  "recommended": [
+    {
+      "tu": "compound_dictionary.c",
+      "header": "quality.h",
+      "line": 13,
+      "estimated_lines_saved": 6837
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "dictionary_hash.h",
+      "line": 18,
+      "estimated_lines_saved": 25
+    },
+    {
+      "tu": "dictionary_hash.c",
+      "header": "dictionary_hash.h",
+      "line": 10,
+      "estimated_lines_saved": 25
+    },
+    {
+      "tu": "literal_cost.c",
+      "header": "literal_cost.h",
+      "line": 10,
+      "estimated_lines_saved": 32
+    }
+  ],
+  "instantiation_sites": [
+    {
+      "tu": "block_splitter.c",
+      "header": "block_splitter_inc.h",
+      "line": 93
+    },
+    {
+      "tu": "block_splitter.c",
+      "header": "block_splitter_inc.h",
+      "line": 100
+    },
+    {
+      "tu": "block_splitter.c",
+      "header": "block_splitter_inc.h",
+      "line": 105
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 61
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 66
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 71
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 76
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 81
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 86
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 91
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 96
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 101
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 106
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 111
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 116
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 126
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 130
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 134
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 138
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 142
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 146
+    },
+    {
+      "tu": "backward_references.c",
+      "header": "backward_references_inc.h",
+      "line": 150
+    },
+    {
+      "tu": "bit_cost.c",
+      "header": "bit_cost_inc.h",
+      "line": 23
+    },
+    {
+      "tu": "bit_cost.c",
+      "header": "bit_cost_inc.h",
+      "line": 27
+    },
+    {
+      "tu": "bit_cost.c",
+      "header": "bit_cost_inc.h",
+      "line": 31
+    },
+    {
+      "tu": "metablock.c",
+      "header": "metablock_inc.h",
+      "line": 290
+    },
+    {
+      "tu": "metablock.c",
+      "header": "metablock_inc.h",
+      "line": 294
+    },
+    {
+      "tu": "metablock.c",
+      "header": "metablock_inc.h",
+      "line": 298
+    },
+    {
+      "tu": "brotli_bit_stream.c",
+      "header": "block_encoder_inc.h",
+      "line": 923
+    },
+    {
+      "tu": "brotli_bit_stream.c",
+      "header": "block_encoder_inc.h",
+      "line": 928
+    },
+    {
+      "tu": "brotli_bit_stream.c",
+      "header": "block_encoder_inc.h",
+      "line": 933
+    }
+  ],
+  "guarded_repeat": [
+    {
+      "tu": "brotli.c",
+      "header": "utime.h"
+    }
+  ]
+}

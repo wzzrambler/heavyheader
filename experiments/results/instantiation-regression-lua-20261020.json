@@ -1,0 +1,128 @@
+{
+  "corpus": "lua",
+  "root": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "translation_units": 34,
+  "failed_translation_units": 0,
+  "baseline_seconds": 36.01351999986218,
+  "counts": {
+    "candidates": 222,
+    "plausibly_unused": 18,
+    "unknown": 59,
+    "in_use": 145,
+    "instantiation_sites": 0,
+    "guarded_repeat_zeroed": 0
+  },
+  "recommended": [
+    {
+      "tu": "llex.c",
+      "header": "locale.h",
+      "line": 13,
+      "estimated_lines_saved": 184
+    },
+    {
+      "tu": "llex.c",
+      "header": "lparser.h",
+      "line": 24,
+      "estimated_lines_saved": 171
+    },
+    {
+      "tu": "ltm.c",
+      "header": "lvm.h",
+      "line": 25,
+      "estimated_lines_saved": 141
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "lualib.h",
+      "line": 21,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "lcode.c",
+      "header": "lstring.h",
+      "line": 29,
+      "estimated_lines_saved": 57
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "lualib.h",
+      "line": 18,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "lualib.h",
+      "line": 20,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "ldo.c",
+      "header": "ltable.h",
+      "line": 30,
+      "estimated_lines_saved": 63
+    },
+    {
+      "tu": "lgc.c",
+      "header": "ldebug.h",
+      "line": 18,
+      "estimated_lines_saved": 64
+    },
+    {
+      "tu": "lparser.c",
+      "header": "ldebug.h",
+      "line": 19,
+      "estimated_lines_saved": 64
+    },
+    {
+      "tu": "liolib.c",
+      "header": "lualib.h",
+      "line": 23,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "lualib.h",
+      "line": 22,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "loslib.c",
+      "header": "lualib.h",
+      "line": 22,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "lstring.c",
+      "header": "ldebug.h",
+      "line": 17,
+      "estimated_lines_saved": 64
+    },
+    {
+      "tu": "lstrlib.c",
+      "header": "lualib.h",
+      "line": 26,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "ltablib.c",
+      "header": "lualib.h",
+      "line": 20,
+      "estimated_lines_saved": 52
+    },
+    {
+      "tu": "lundump.c",
+      "header": "ldebug.h",
+      "line": 18,
+      "estimated_lines_saved": 64
+    },
+    {
+      "tu": "lutf8lib.c",
+      "header": "lualib.h",
+      "line": 21,
+      "estimated_lines_saved": 52
+    }
+  ],
+  "instantiation_sites": [],
+  "guarded_repeat": []
+}

@@ -324,6 +324,17 @@ class RemovalCandidate:
     #: 为真时 verify **强制**打开汇编等价闸门：这类候选唯一的合格证据是编译器
     #: 说「汇编一字未变」，不是文本说「没提到它的名字」。
     side_effect_suspected: bool = False
+    #: 这一行 ``#include`` 是**实现片段的一次实例化**。片段 = 不带 include
+    #: guard 的项目内头（brotli 的 ``*_inc.h``），它靠「先 ``#define FN`` 再
+    #: ``#include``」被重复展开 N 次，每次生成一组不同的符号。
+    #:
+    #: 为什么必须单列：**删除第 k 次实例化 ≠ 让这个头消失**。另外 N−1 处
+    #: include 照旧把它展开，所以「删掉后哪些头不再被解析」这套判据在这里根本
+    #: 不成立——静态文本分不清每次实例化到底生成了哪些名字（要展开 ``FN`` 才
+    #: 知道，而展开宏这件事编译器比我们准）。因此这类候选一律判「无法判定」，
+    #: 交给实验裁决，并且 verify **强制**过汇编等价闸门：少一次实例化通常只是
+    #: 让目标文件少一个函数定义，编译仍然通过，只有汇编指纹抓得住。
+    instantiation: bool = False
     #: Why we think it is (or is not) safe to remove.
     confidence: str = "unknown"
     notes: list[str] = field(default_factory=list)

@@ -648,15 +648,46 @@ def find_removal_candidates(
             if analysis.processed_lines:
                 percent = saved / analysis.processed_lines * 100.0
             line = _include_line(tu, header)
-            site = (str(tu.source).lower(), header, line)
-            if site in seen_sites:
-                continue
-            seen_sites.add(site)
             # 行号有歧义时不猜（同名头出现多处），但也不能只给「行号未知」——
             # 把全部候选位置列出来，读者才知道要在哪些行之间做选择。
             ambiguous = (
                 () if line is not None else _ambiguous_include_lines(tu, header)
             )
+            if len(ambiguous) > 1 and not index.is_guarded(header):
+                # **实现片段的重复实例化**：这个头不带 include guard，被同一
+                # 个单元包含 N 次（每次前面 ``#define FN`` 不同，各生成一组
+                # 符号）。「删掉第 k 行」不等于「删掉这个头」——另外 N−1 处
+                # 照旧展开它。所以一条「按整个闭包估算」的候选在这里是**错
+                # 的**（brotli 实测：block_splitter_inc.h 估 481 行，一次实例
+                # 化只有自身那点解析量），而静态判据给不出答案（要展开 FN 才
+                # 知道这一处生成了哪些名字）。展开成 N 条站点候选，交给实验。
+                for position, lineno in enumerate(ambiguous, start=1):
+                    site = (str(tu.source).lower(), header, lineno)
+                    if site in seen_sites:
+                        continue
+                    seen_sites.add(site)
+                    candidates.append(
+                        _instantiation_candidate(
+                            tu,
+                            header,
+                            analysis,
+                            sizes,
+                            kinds,
+                            lineno,
+                            position,
+                            ambiguous,
+                        )
+                    )
+                continue
+            site = (str(tu.source).lower(), header, line)
+            if site in seen_sites:
+                continue
+            seen_sites.add(site)
+            # 带 guard 的头被包含多处（典型是条件编译的两个分支各一处）：删掉
+            # 任一行都不会减少解析量——guard 让第二次起成为空操作，头照样被
+            # 解析一次。这**不是**优化机会，但也不能默默消失（读者会以为工具
+            # 没看见），所以保留一条候选、把收益按 0 计，并把理由写清楚。
+            guarded_repeat = len(ambiguous) > 1
             # 用法判定必须覆盖「删掉这个 include 后不再被解析的那批头」，
             # 而不是候选头自己的那段文本——实验里 5 个失败候选全部栽在这里：
             # doctest_compatibility.h 自身没有 TEST_CASE，TEST_CASE 在它
@@ -682,22 +713,33 @@ def find_removal_candidates(
                     line=line,
                     kind=kinds.get(header, HeaderKind.SYSTEM),
                     exclusive_headers=sorted(exclusive),
-                    estimated_lines_saved=saved,
-                    estimated_percent=round(percent, 2),
-                    estimated_seconds_saved=_estimate_seconds(
-                        tu, analysis.processed_lines, saved
+                    estimated_lines_saved=0 if guarded_repeat else saved,
+                    estimated_percent=0.0 if guarded_repeat else round(percent, 2),
+                    estimated_seconds_saved=(
+                        0.0
+                        if guarded_repeat
+                        else _estimate_seconds(tu, analysis.processed_lines, saved)
                     ),
                     measured_seconds_saved=None,
                     verified=False,
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
-                    usage_reason=_usage_reason(signal),
+                    usage_reason=(
+                        _guarded_repeat_reason(header, ambiguous)
+                        if guarded_repeat
+                        else _usage_reason(signal)
+                    ),
                     side_effect_suspected=bool(signal.suspected_side_effects),
-                    confidence=_confidence(exclusive, analysis, signal.verdict),
+                    confidence=(
+                        "none" if guarded_repeat
+                        else _confidence(exclusive, analysis, signal.verdict)
+                    ),
                     notes=_notes(tu, header, exclusive, sizes, signal)
                     + (
                         [
-                            "同名 include 出现在第 "
+                            _guarded_repeat_note(header, ambiguous)
+                            if guarded_repeat
+                            else "同名 include 出现在第 "
                             + "、".join(str(n) for n in ambiguous)
                             + " 行（条件编译分支），请人工确认改哪一处"
                         ]
@@ -777,6 +819,80 @@ def _include_line(
         except OSError:
             return None
     return find_include_line(text, header)
+
+
+def _instantiation_candidate(
+    tu: TranslationUnit,
+    header: Path,
+    analysis,
+    sizes,
+    kinds: dict,
+    line: int,
+    position: int,
+    lines: tuple[int, ...],
+):
+    """实现片段（不带 include guard 的头）的第 ``position`` 次实例化。
+
+    为什么它不能按「删掉整个头」来算：另外 ``len(lines) - 1`` 处 include 还会
+    把同一个片段再展开一遍，所以删掉这一行省下的是**片段自身的一次解析**
+    （``sizes.lines(header)``），不是它下游闭包的那批头——那些头在别的实例化
+    里照样被解析。实测 brotli ``block_splitter.c → block_splitter_inc.h``：
+    闭包口径估 481 行，实际一次实例化只有片段自身那点文本。
+
+    用法判定一律 ``unknown``：每次实例化生成哪些符号取决于包含前那几句
+    ``#define FN``，要展开宏才知道，而展开宏这件事编译器比正则准。所以判定交
+    给 :mod:`heavyheader.verify`——并且由它**强制**过汇编等价闸门（少一次实例
+    化通常只是让目标文件少一个函数定义，编译照样通过，只有汇编指纹抓得住）。
+    """
+    saved = sizes.lines(header)
+    percent = 0.0
+    if analysis.processed_lines:
+        percent = saved / analysis.processed_lines * 100.0
+    where = "、".join(str(n) for n in lines)
+    return RemovalCandidate(
+        tu=tu.source,
+        header=header,
+        line=line,
+        kind=kinds.get(header, HeaderKind.SYSTEM),
+        exclusive_headers=[header],
+        estimated_lines_saved=saved,
+        estimated_percent=round(percent, 2),
+        estimated_seconds_saved=_estimate_seconds(
+            tu, analysis.processed_lines, saved
+        ),
+        measured_seconds_saved=None,
+        verified=False,
+        usage_label="无法判定",
+        usage_verdict="unknown",
+        usage_reason=(
+            f"实现片段（{header.name} 无 include guard）的第 {position}/"
+            f"{len(lines)} 次实例化：每次包含生成一组不同的符号，静态判据分不清"
+            "这一处生成的是哪一组，必须由实验裁决"
+        ),
+        instantiation=True,
+        confidence="guarded",
+        notes=[
+            f"{header.name} 在本单元被包含 {len(lines)} 次（第 {where} 行）；"
+            f"本条只针对第 {line} 行，按片段自身 {saved} 行的一次解析估算，"
+            "不是整个闭包"
+        ],
+    )
+
+
+def _guarded_repeat_reason(header: Path, lines: tuple[int, ...]) -> str:
+    return (
+        f"{header.name} 带 include guard，却在本单元被包含 {len(lines)} 次"
+        f"（第 {'、'.join(str(n) for n in lines)} 行）：删掉任何一行，其余那处"
+        "照旧把它解析一遍，省不下解析量"
+    )
+
+
+def _guarded_repeat_note(header: Path, lines: tuple[int, ...]) -> str:
+    return (
+        f"同名 include 出现在第 {'、'.join(str(n) for n in lines)} 行"
+        f"（条件编译分支）；{header.name} 带 include guard，删任一行都不减少"
+        "解析量——这不是优化机会，收益按 0 计"
+    )
 
 
 def _ambiguous_include_lines(tu: TranslationUnit, header: Path) -> tuple[int, ...]:

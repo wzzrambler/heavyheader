@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from fnmatch import fnmatch
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,11 +34,25 @@ def main() -> int:
     ap.add_argument("--corpus", required=True)
     ap.add_argument("--db", default=None)
     ap.add_argument("--compiler", required=True)
-    ap.add_argument("--only", default="suspected", choices=["suspected", "unknown", "all"])
+    ap.add_argument(
+        "--only",
+        default="suspected",
+        choices=["suspected", "unknown", "instantiation", "all"],
+    )
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument(
+        "--match",
+        default=None,
+        help="只留文件名（单元或头）命中这个 glob 的候选，例如 'hist.h'",
+    )
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--confirm", type=int, default=2)
     ap.add_argument("--gate", action="store_true", help="打开全局汇编闸门（默认关：验证强制逻辑）")
+    ap.add_argument(
+        "--no-force-instantiation",
+        action="store_true",
+        help="关掉「实现片段强制过闸门」这条纪律（只用于做对照：看它拦下了什么）",
+    )
     ap.add_argument("--jobs", type=int, default=1)
     args = ap.parse_args()
 
@@ -58,6 +73,16 @@ def main() -> int:
         pool = [c for c in pool if c.side_effect_suspected]
     elif args.only == "unknown":
         pool = [c for c in pool if c.usage_verdict == "unknown"]
+    elif args.only == "instantiation":
+        # 实现片段的实例化站点：静态判不了，只能实验裁决。这里默认**不开**
+        # 全局闸门——站点自身会强制开，能测出 improved 就证明强制生效了。
+        pool = [c for c in pool if c.instantiation]
+    if args.match:
+        pool = [
+            c
+            for c in pool
+            if fnmatch(c.tu.name, args.match) or fnmatch(c.header.name, args.match)
+        ]
     pool.sort(key=candidate_rank_key)
     if args.limit:
         pool = pool[: args.limit]
@@ -67,6 +92,12 @@ def main() -> int:
     # ``verify_candidates`` 自己按排名从 ``scan.candidates`` 取人，所以「只测这
     # 一组」的唯一办法是把扫描里的候选表换成这一组。
     scan.candidates = pool
+
+    if args.no_force_instantiation:
+        # 对照组：假装没这条纪律，看它会把什么放进 improved。
+        import heavyheader.verify as _verify_module
+
+        _verify_module._forced_codegen = lambda candidate: candidate.side_effect_suspected
 
     driver = detect_driver(args.compiler)
     # 走 scan 里记录过的选项；共享 fallback 只用于没有记录的情况。
@@ -84,9 +115,10 @@ def main() -> int:
     print(f"\n{'单元':<14}{'头文件':<13}{'结论':<16}说明")
     for result in sorted(results, key=lambda r: (r.candidate.tu.name, r.candidate.header.name)):
         c = result.candidate
-        print(
-            f"{c.tu.name:<14}{c.header.name:<13}{result.status:<16}{result.message[:90]}"
-        )
+        # 报错**理由**必须看得见：探针说「编不过」时，读者要能分辨那是「这个
+        # 实例化真的被用到」还是装置把补丁放错了地方（两者都叫 compile-error）。
+        first_line = result.message.strip().splitlines()[0] if result.message else ""
+        print(f"{c.tu.name:<22}{c.header.name:<26}{result.status:<16}{first_line[:170]}")
     improved = [r for r in results if r.status == "improved"]
     print(f"\nimproved {len(improved)}/{len(results)}")
     return 0

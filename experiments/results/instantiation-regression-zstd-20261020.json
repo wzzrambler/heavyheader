@@ -1,0 +1,56 @@
+{
+  "corpus": "zstd",
+  "root": "C:\\Users\\31879\\AppData\\Local\\Temp\\zstd-1.5.6",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "translation_units": 39,
+  "failed_translation_units": 0,
+  "baseline_seconds": 55.19148969982052,
+  "counts": {
+    "candidates": 90,
+    "plausibly_unused": 6,
+    "unknown": 8,
+    "in_use": 76,
+    "instantiation_sites": 0,
+    "guarded_repeat_zeroed": 0
+  },
+  "recommended": [
+    {
+      "tu": "zbuff_common.c",
+      "header": "zbuff.h",
+      "line": 15,
+      "estimated_lines_saved": 3303
+    },
+    {
+      "tu": "divsufsort.c",
+      "header": "divsufsort.h",
+      "line": 43,
+      "estimated_lines_saved": 67
+    },
+    {
+      "tu": "zstd_double_fast.c",
+      "header": "zstd_double_fast.h",
+      "line": 12,
+      "estimated_lines_saved": 50
+    },
+    {
+      "tu": "zdict.c",
+      "header": "divsufsort.h",
+      "line": 55,
+      "estimated_lines_saved": 67
+    },
+    {
+      "tu": "zstd_fast.c",
+      "header": "zstd_fast.h",
+      "line": 12,
+      "estimated_lines_saved": 38
+    },
+    {
+      "tu": "zstd_decompress_block.c",
+      "header": "zstd_ddict.h",
+      "line": 26,
+      "estimated_lines_saved": 44
+    }
+  ],
+  "instantiation_sites": [],
+  "guarded_repeat": []
+}

@@ -1,0 +1,184 @@
+{
+ "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\zstd-1.5.6",
+ "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+ "baseline_seconds": 53.395535,
+ "tu_count": 39,
+ "candidate_count": 90,
+ "verdicts": {
+  "plausibly_unused": 7,
+  "unknown": 7,
+  "in_use": 76
+ },
+ "rows": [
+  {
+   "tu": "zbuff_common.c",
+   "header": "zbuff.h",
+   "line": 15,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.013,
+   "estimated_percent": 3.48,
+   "reason": "ZBUFF_getErrorName、ZBUFF_isError 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "fse_compress.c",
+   "header": "hist.h",
+   "line": 21,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0005,
+   "estimated_percent": 0.08,
+   "reason": "count、src 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_double_fast.c",
+   "header": "zstd_double_fast.h",
+   "line": 12,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0003,
+   "estimated_percent": 0.05,
+   "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_doubleFast 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "divsufsort.c",
+   "header": "divsufsort.h",
+   "line": 43,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0003,
+   "estimated_percent": 0.49,
+   "reason": "num_indexes 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_fast.c",
+   "header": "zstd_fast.h",
+   "line": 12,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0002,
+   "estimated_percent": 0.04,
+   "reason": "ZSTD_REP_NUM、ZSTD_compressBlock_fast 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zdict.c",
+   "header": "divsufsort.h",
+   "line": 55,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0002,
+   "estimated_percent": 0.06,
+   "reason": "",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_decompress_block.c",
+   "header": "zstd_ddict.h",
+   "line": 26,
+   "verdict": "plausibly_unused",
+   "estimated_seconds_saved": 0.0001,
+   "estimated_percent": 0.04,
+   "reason": "dctx 由本文件自己定义",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "xxhash.c",
+   "header": "xxhash.h",
+   "line": 18,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0624,
+   "estimated_percent": 100.0,
+   "reason": "疑似副作用：__ANNOTATION(SAL_useHeader(void))（宏调用展开成声明还是执行看不出来，需编译器汇编校验）",
+   "side_effect_suspected": true
+  },
+  {
+   "tu": "divsufsort.c",
+   "header": "stdio.h",
+   "line": 40,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0227,
+   "estimated_percent": 34.47,
+   "reason": "NULL 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_compress_superblock.c",
+   "header": "zstd_compress_superblock.h",
+   "line": 14,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0187,
+   "estimated_percent": 2.81,
+   "reason": "ZSTD_CCtx_params、ZSTD_TARGETCBLOCKSIZE_MIN 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_ddict.c",
+   "header": "zstd_ddict.h",
+   "line": 25,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0134,
+   "estimated_percent": 2.88,
+   "reason": "ZSTD_dct_auto、ZSTD_dct_fullDict 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "pool.c",
+   "header": "debug.h",
+   "line": 15,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0007,
+   "estimated_percent": 0.12,
+   "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_opt.c",
+   "header": "zstd_opt.h",
+   "line": 13,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0005,
+   "estimated_percent": 0.07,
+   "reason": "ZSTD_updateTree、iend 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "divsufsort.c",
+   "header": "assert.h",
+   "line": 39,
+   "verdict": "unknown",
+   "estimated_seconds_saved": 0.0002,
+   "estimated_percent": 0.36,
+   "reason": "assert 只在幸存头文件的条件编译区里声明，本次编译看不到它——删不删由编译验证裁定",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "pool.c",
+   "header": "allocations.h",
+   "line": 13,
+   "verdict": "in_use",
+   "estimated_seconds_saved": 0.4973,
+   "estimated_percent": 82.37,
+   "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_ddict.c",
+   "header": "allocations.h",
+   "line": 17,
+   "verdict": "in_use",
+   "estimated_seconds_saved": 0.0002,
+   "estimated_percent": 0.05,
+   "reason": "ZSTD_customFree、ZSTD_customMalloc 由 allocations.h 提供",
+   "side_effect_suspected": false
+  },
+  {
+   "tu": "zstd_decompress.c",
+   "header": "allocations.h",
+   "line": 59,
+   "verdict": "in_use",
+   "estimated_seconds_saved": 0.0002,
+   "estimated_percent": 0.05,
+   "reason": "ZSTD_customCalloc、ZSTD_customFree 由 allocations.h 提供",
+   "side_effect_suspected": false
+  }
+ ]
+}

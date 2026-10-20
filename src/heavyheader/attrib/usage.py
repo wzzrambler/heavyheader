@@ -445,7 +445,7 @@ _CONDITIONAL_ELSE = re.compile(r"^\s*#\s*(?:else|elif)\b")
 
 
 def _blocking_conditional_regions(
-    text: str, defined: frozenset[str]
+    text: str, defined: frozenset[str], *, unverifiable: bool = True
 ) -> list[tuple[int, int]]:
     """**不能当作自供给**的条件区间（字符下标，半开）。
 
@@ -464,6 +464,11 @@ def _blocking_conditional_regions(
 
     ``#else`` 翻转当前半段的活死并分开记录。头文件侧**不要**用这个函数：
     头文件整个被 include guard 包着，全判死就什么声明都不剩了。
+
+    ``unverifiable=False`` 时只返回**判死了**的区间（``#if`` 表达式求不了值的
+    不算）。用在「源码里这个标识符算不算被用到」上：``#ifdef ZSTD_MULTITHREAD``
+    没定义时里面的引用确实不存在，但 ``#if defined(__cplusplus)`` 这种求不了值
+    的不能当死区——``__cplusplus`` 由编译器给，命令行里永远看不到它。
     """
     regions: list[tuple[int, int]] = []
     # 每层：[当前半段起点, 当前半段是否死, 祖先是否死, 守卫可求值?]
@@ -475,7 +480,7 @@ def _blocking_conditional_regions(
             return
         entry = stack[-1]
         # 判死、或守卫根本求不了值（复杂 #if）→ 这半段的定义不可信。
-        if entry[1] or not entry[3]:
+        if entry[1] or (unverifiable and not entry[3]):
             regions.append((entry[0], upto))
         entry[0] = upto
 
@@ -499,7 +504,7 @@ def _blocking_conditional_regions(
             stack.pop()
         offset += len(line)
     for entry in stack:  # 未闭合的条件块算到文件尾
-        if entry[1] or entry[2] or not entry[3]:
+        if entry[1] or entry[2] or (unverifiable and not entry[3]):
             regions.append((entry[0], offset))
     return regions
 
@@ -876,6 +881,20 @@ def _logical_lines(text: str):
         yield buffer
 
 
+_CONDITIONAL_DIRECTIVE = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef|elif)\b")
+
+
+def _conditional_directive_spans(text: str) -> list[tuple[int, int]]:
+    """所有条件指令行的字符区间。这些行上的标识符**始终**参与编译。"""
+    spans: list[tuple[int, int]] = []
+    offset = 0
+    for line in text.splitlines(keepends=True):
+        if _CONDITIONAL_DIRECTIVE.match(line):
+            spans.append((offset, offset + len(line)))
+        offset += len(line)
+    return spans
+
+
 def macro_bodies_in(text: str) -> dict[str, frozenset[str]]:
     """头文件里每个宏**展开体**提到的标识符：``lua_getlocaledecpoint`` →
     ``{localeconv, decimal_point}``。
@@ -930,6 +949,7 @@ class IdentifierIndex:
         "_macros",
         "_live",
         "_defined_ids",
+        "_live_src",
     )
 
     def __init__(self) -> None:
@@ -946,6 +966,7 @@ class IdentifierIndex:
         self._macros: dict[Path, dict[str, frozenset[str]]] = {}
         self._live: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
         self._defined_ids: dict[Path, frozenset[str]] = {}
+        self._live_src: dict[tuple[Path, frozenset[str]], frozenset[str]] = {}
         self._defined_ids: dict[Path, frozenset[str]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
@@ -1207,6 +1228,61 @@ class IdentifierIndex:
         self._supplied[key] = supplied
         return supplied
 
+    def source_live_ids(
+        self, path: Path, defined_macros: frozenset[str] = frozenset()
+    ) -> frozenset[str]:
+        """源码里**这次编译真的会用到**的标识符。
+
+        与 :meth:`source_ids` 的差别只有一处：**只出现在判死了的条件分支里**的
+        名字不算用到。判据与 ``source_self_supplied_ids`` 同源，但方向相反——
+        那边问「这个名字是不是本文件给的」，这边问「这个名字到底有没有被编译」。
+
+        实测（zstd ``lib/common/pool.c → allocations.h``）：``ZSTD_customCalloc``
+        与 ``ZSTD_customFree`` 的全部引用都在 ``#ifdef ZSTD_MULTITHREAD`` 里，
+        而本构建没有定义它。旧判定按「源码提到 + 只有这个头提供」判「在用」，
+        于是这条候选永远进不了推荐；真值是这个头**整个可删**——而且收益巨大：
+        384 ms → 213 ms（−44.5%），解析文件 184 → 32。这是 zstd 上最大的一条。
+
+        ``#if`` 表达式求不了值的区间**不算死区**（``unverifiable=False``）：
+        ``#if defined(__cplusplus)``、``#ifdef _WIN32`` 这类由编译器或平台决定，
+        命令行里看不到，按死区算会把真实使用抹掉。
+        """
+        key = (path, defined_macros)
+        cached = self._live_src.get(key)
+        if cached is not None:
+            return cached
+        text = _read(path)
+        ids = self.source_ids(path) or frozenset()
+        if text is None:
+            live = frozenset()
+        else:
+            regions = _blocking_conditional_regions(
+                text, defined_macros, unverifiable=False
+            )
+            if not regions:
+                live = ids
+            else:
+                # 条件指令**本身**永远是被求值的：``#ifdef NO_GZCOMPRESS`` 里的
+                # NO_GZCOMPRESS 决定走哪个分支，删掉定义会换分支（zlib
+                # zutil.c → gzguts.h 就是这样静默改程序的）。所以只有落在死区
+                # **且不在条件行上**的出现才不算「用到」。
+                guard_spans = _conditional_directive_spans(text)
+                stripped = _strip_noise(text)
+                alive: set[str] = set()
+                for match in _IDENTIFIER.finditer(stripped):
+                    name = match.group(0)
+                    if name in alive or name not in ids:
+                        continue
+                    position = match.start()
+                    dead = any(low <= position < high for low, high in regions)
+                    if not dead or any(
+                        low <= position < high for low, high in guard_spans
+                    ):
+                        alive.add(name)
+                live = frozenset(alive)
+        self._live_src[key] = live
+        return live
+
     def source_conditional_ids(self, path: Path) -> frozenset[str]:
         """源码只在条件编译判断里提到的名字（见 :func:`conditional_mentions`）。"""
         cached = self._conditional.get(path)
@@ -1266,9 +1342,11 @@ def analyse_usage(
     """
     index = index or IdentifierIndex()
 
-    source_ids = index.source_ids(source)
-    if source_ids is None:
-        return UsageSignal(verdict=UsageVerdict.UNKNOWN)
+    # 只用**这次编译真的会用到**的名字：判死了的 ``#ifdef`` 分支里的引用不算。
+    # 少了这一步，``#ifdef ZSTD_MULTITHREAD`` 里的 ``ZSTD_customCalloc`` 会让
+    # whole-header 依赖 ``allocations.h`` 永远「在用」——实测那是 zstd 上最大的
+    # 一条删除（−44.5%、解析文件 184→32）。
+    source_ids = index.source_live_ids(source, defined_macros or frozenset())
 
     # 源码自己定义的名字不算依赖证据：删掉头文件之后，这些名字由源码自己给出。
     # 不加这一步，``inffast.c`` 因为自己定义了 ``inflate_fast`` 而永远判「在用」

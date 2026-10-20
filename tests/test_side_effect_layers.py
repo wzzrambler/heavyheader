@@ -196,3 +196,56 @@ def test_provider_inside_a_dead_conditional_region_does_not_count(tmp_path):
     assert "TraversalState" in index.header_provider_ids(amalgam)
     assert "TraversalState" not in index.header_live_provider_ids(amalgam)
     assert "always_here" in index.header_live_provider_ids(amalgam)
+
+
+def test_mention_inside_a_dead_ifdef_branch_is_not_a_use(tmp_path):
+    """``#ifdef`` 没定义时，分支体里的引用不算「用到」。
+
+    实测 zstd ``lib/common/pool.c → allocations.h``：``ZSTD_customCalloc`` /
+    ``ZSTD_customFree`` 的全部引用都在 ``#ifdef ZSTD_MULTITHREAD`` 里，本构建
+    没定义它。旧判定据此判「在用」，而真值是这个头整个可删、且是 zstd 上最大的
+    一条（384 → 213 ms，解析文件 184 → 32）。
+    """
+    header = _write(tmp_path / "alloc.h", "void* ZSTD_customCalloc(unsigned long);\n")
+    source = _write(
+        tmp_path / "pool.c",
+        '#include "alloc.h"\n'
+        "#ifdef ZSTD_MULTITHREAD\n"
+        "void f(void) { ZSTD_customCalloc(8UL); }\n"
+        "#endif\n"
+        "int live(void) { return 0; }\n",
+    )
+    signal = analyse_usage(
+        source,
+        header,
+        closure=[header],
+        index=IdentifierIndex(),
+        declarers={"ZSTD_customCalloc": frozenset({header})},
+        alias_defs={},
+        defined_macros=frozenset(),
+    )
+    assert signal.verdict is UsageVerdict.PLAUSIBLY_UNUSED
+
+
+def test_mention_on_the_guard_line_still_counts_as_use(tmp_path):
+    """条件指令**本身**永远被求值：``#ifdef NO_GZ`` 里的宏删了会换分支。"""
+    header = _write(tmp_path / "gzguts.h", "#define NO_GZ 1\n")
+    source = _write(
+        tmp_path / "zutil.c",
+        '#include "gzguts.h"\n'
+        "#ifdef NO_GZ\n"
+        "int compact(void) { return 1; }\n"
+        "#else\n"
+        "int compact(void) { return 0; }\n"
+        "#endif\n",
+    )
+    signal = analyse_usage(
+        source,
+        header,
+        closure=[header],
+        index=IdentifierIndex(),
+        declarers={"NO_GZ": frozenset({header})},
+        alias_defs={},
+        defined_macros=frozenset(),
+    )
+    assert signal.verdict is UsageVerdict.IN_USE

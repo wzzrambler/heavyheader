@@ -34,6 +34,15 @@
 
 ### 修复
 
+- **源码侧按 `-D` 求值：死分支里的引用不算「用到」**（`IdentifierIndex.source_live_ids`）。
+  换语料换出来的最大一条：zstd `lib/common/pool.c → allocations.h`，
+  `ZSTD_customCalloc` / `ZSTD_customFree` 的全部引用都在
+  `#ifdef ZSTD_MULTITHREAD` 里，而单线程构建没定义它——旧判定据此判「在用」，
+  真值是这个头整个可删：**384 ms → 205 ms（−46.6%），解析文件 184 → 32**。
+  两个边界写进了测试：条件指令行本身永远算活（`#ifdef NO_GZCOMPRESS` 决定走哪个
+  分支）；求不了值的 `#if` 不算死区（`__cplusplus`、`_WIN32` 由编译器/平台给）。
+  三语料三真值零回归（Lua 18/19、doctest 6/6、zlib 1/1）。
+
 - **大范围误判：带属性的声明被当成了「执行」**（`attrib/usage.py`）。判据原来只看
   「语句以 `名字(` 开头且没有返回类型前缀」，于是 UCRT 的
   `_Success_(return != 0) _ACRTIMP char* gets_s(…);`、

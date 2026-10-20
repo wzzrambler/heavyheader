@@ -497,15 +497,16 @@ def find_removal_candidates(
         reach_all: set[Path] = set(directs)
         for other in directs:
             reach_all |= analysis.closures.get(other, set())
-        source_ids = index.source_ids(tu.source) or frozenset()
+        #: 这个单元的 ``-D`` 宏：既决定哪些条件分支算死区，也决定幸存头的
+        #: 哪些声明「本次编译真的看得到」。一个单元只算一次。
+        unit_defines = compile_defines(tu)
+        # 与 analyse_usage 同一口径：判死了的条件分支里提到的名字不算「用到」。
+        source_ids = index.source_live_ids(tu.source, unit_defines) or frozenset()
         reachable_counts: dict[str, int] = {}
         declarers: dict[str, frozenset[Path]] = {}
         conditional_declarers: dict[str, frozenset[Path]] = {}
         alias_defs: dict[str, tuple[tuple[Path, str], ...]] = {}
         macro_defs: dict[str, tuple[tuple[Path, frozenset[str]], ...]] = {}
-        #: 这个单元的 ``-D`` 宏：既决定哪些条件分支算死区，也决定幸存头的
-        #: 哪些声明「本次编译真的看得到」。一个单元只算一次。
-        unit_defines = compile_defines(tu)
         if source_ids:
             for path in reach_all:
                 for name in index.header_provider_ids(path) & source_ids:

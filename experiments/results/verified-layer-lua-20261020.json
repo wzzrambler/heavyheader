@@ -1,0 +1,63 @@
+{
+  "pool": 20,
+  "measured": 20,
+  "gate_ran": 7,
+  "gate_blocked": 1,
+  "tiers": {
+    "verified": 3,
+    "equivalent": 3,
+    "": 14
+  },
+  "statuses": {
+    "compile-error": 13,
+    "improved": 3,
+    "no-change": 3,
+    "codegen-changed": 1
+  },
+  "cross": {
+    "in_use|": 10,
+    "in_use|verified": 1,
+    "unknown|": 4,
+    "unknown|equivalent": 3,
+    "unknown|verified": 2
+  },
+  "verified": 3,
+  "verified_seconds_saved": 0.0195,
+  "outside_recommendation": 6,
+  "outside_recommendation_seconds_saved": 0.0211,
+  "layer": [
+    {
+      "tu": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7\\src\\lcode.c",
+      "header": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\ucrt\\stdlib.h",
+      "line": 16,
+      "usage_verdict": "in_use",
+      "tier": "verified",
+      "status": "improved",
+      "seconds_saved": 0.008978599999863945,
+      "percent_saved": 4.317552095138672,
+      "confirm_passes": 1
+    },
+    {
+      "tu": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7\\src\\liolib.c",
+      "header": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\ucrt\\stdlib.h",
+      "line": 17,
+      "usage_verdict": "unknown",
+      "tier": "verified",
+      "status": "improved",
+      "seconds_saved": 0.00595459999999548,
+      "percent_saved": 2.841229268486372,
+      "confirm_passes": 1
+    },
+    {
+      "tu": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7\\src\\lgc.c",
+      "header": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0\\ucrt\\stdio.h",
+      "line": 12,
+      "usage_verdict": "unknown",
+      "tier": "verified",
+      "status": "improved",
+      "seconds_saved": 0.004590699999880599,
+      "percent_saved": 2.2523868470267154,
+      "confirm_passes": 1
+    }
+  ]
+}

@@ -26,7 +26,7 @@ import datetime as _dt
 import sys
 from pathlib import Path
 
-from . import __version__, codegen
+from . import __version__, codegen, evidence
 from .attrib.edgecost import aggregate_edge_costs
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
@@ -296,6 +296,42 @@ def build_parser() -> argparse.ArgumentParser:
             "关掉代码等价校验，只判「能编过」。更快，但「能编过」不等于「代码没变」"
         ),
     )
+
+    verify.add_argument(
+        "--tier",
+        choices=["all", "verified", "equivalent", "compiles"],
+        default="all",
+        help="只看某一档证据的结论（默认 all）。verified = 汇编一致+省时过线+复测"
+        "成立；equivalent = 汇编一致但收益未过线；compiles = 只验过能编过",
+    )
+
+    verified = subparsers.add_parser(
+        "verified",
+        help="已验证层级：只列编译器证据（汇编一致+复测）撑住的候选",
+    )
+    add_common(verified)
+    verified.add_argument(
+        "--top",
+        type=int,
+        default=20,
+        help="验证前 N 个候选（默认 20）",
+    )
+    verified.add_argument(
+        "--runs", type=int, default=3, help="每侧重复编译次数，取最小值（默认 3）"
+    )
+    verified.add_argument(
+        "--confirm",
+        type=int,
+        default=2,
+        help="判为 improved 后复测几遍（默认 2；1 = 不复测）",
+    )
+    verified.add_argument(
+        "--include-equivalent",
+        action="store_true",
+        help="把「已证等价但收益未过线」那一档也列出来（默认不列：程序没变已证，"
+        "值不值得删未证）",
+    )
+    verified.add_argument("-o", "--output", type=Path, default=None, help="同时写出 JSON")
 
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
     add_common(gate)
@@ -779,15 +815,20 @@ def _cmd_verify(args) -> int:
     # 出现重名时补上一级目录来区分。
     names = [r.candidate.header.name for r in results]
     duplicated = {name for name in names if names.count(name) > 1}
-    for result in results:
+    wanted = getattr(args, "tier", "all") or "all"
+    shown = evidence.select(results, wanted)
+    if wanted != "all":
+        print(f"已按证据档过滤：只看 {wanted}（{evidence.describe(wanted)}）\n")
+    for result in shown:
         candidate = result.candidate
-        shown = candidate.header.name
-        if shown in duplicated:
+        shown_name = candidate.header.name
+        if shown_name in duplicated:
             parent = candidate.header.parent.name
             if parent:
-                shown = f"{parent}/{shown}"
-        print(f"## {shown} ← {candidate.tu.name}")
+                shown_name = f"{parent}/{shown_name}"
+        print(f"## {shown_name} ← {candidate.tu.name}")
         print(f"   状态：{result.status} — {result.message}")
+        print(f"   证据档：{_tier_line(result)}")
         if result.seconds_saved is not None and result.status == "improved":
             improved += 1
             print(
@@ -796,11 +837,158 @@ def _cmd_verify(args) -> int:
             )
         print()
 
-    print(f"小结：{improved}/{len(results)} 个候选实测有效。")
+    print(f"小结：{improved}/{len(shown)} 个候选实测有效。")
+    _print_tier_summary(results, shown, hint="--tier all 看全部")
     print(
         "注意：编译通过只说明语法上可移除，不等于语义上未使用。"
         "精确的未使用判定需要 AST 级分析，见 ROADMAP。"
     )
+    return 0
+
+
+def _tier_line(result) -> str:
+    """一条结论站在哪一层证据上，用一句话说清（不写「已验证」了事）。"""
+    tier = evidence.tier_of(result)
+    text = f"{evidence.TIER_SHORT.get(tier, tier)} — {evidence.describe(tier)}"
+    if tier == evidence.TIER_VERIFIED and getattr(result, "confirm_passes", 0):
+        text += f"（复测 {result.confirm_passes} 遍仍成立）"
+    return text
+
+
+def _print_tier_summary(results: list, shown: list, hint: str = "") -> None:
+    """分档计数 + 交叉表 + 「判据没推荐却被闸门抬上来」的条数。
+
+    三条一起印是因为它们互相限定：只印分档会让人以为强证据那批就是推荐集；
+    只印拦下数不说跑过多少，等于没说闸门有没有工作。
+    """
+    summary = evidence.summarise(results)
+    counts = summary["tiers"]
+    parts = "、".join(
+        f"{evidence.TIER_SHORT.get(t, t or '无证据')} {n} 条"
+        for t, n in counts.items()
+    )
+    print(f"证据分档（全部 {summary['measured']} 条）：{parts}。")
+    status_line = "、".join(f"{k} {v}" for k, v in summary["statuses"].items())
+    print(f"本轮状态：{status_line}。")
+    if summary["gate_ran"]:
+        print(
+            f"代码等价闸门：跑了 {summary['gate_ran']} 条，"
+            f"拦下 {summary['gate_blocked']} 条（汇编变了，已判 codegen-changed）。"
+        )
+    else:
+        print("代码等价闸门：本轮未跑（--no-check-codegen 或该工具链给不出汇编）。")
+    outside = summary["outside_recommendation"]
+    if outside:
+        print(
+            f"其中 {outside} 条被文本判据判为「在用 / 无法判定」，"
+            "是闸门证据把它们抬到上两档的——这批是已验证层级的全部增量。"
+        )
+    if len(shown) != len(results):
+        print(
+            f"（当前只显示 {len(shown)}/{len(results)} 条。{hint}）"
+            if hint
+            else f"（当前只显示 {len(shown)}/{len(results)} 条。）"
+        )
+    elif hint:
+        print(f"（{hint}）")
+
+
+def _cmd_verified(args) -> int:
+    """已验证层级：只把**编译器证据**撑住的候选列出来。
+
+    与 ``verify`` 的差别不是输出格式，是**筛选立场**：``verify`` 按文本判据
+    排的顺序报（疑似未使用优先），这里按证据强度报。实测里两者几乎不重叠
+    （Lua：最高档 9 条里推荐集贡献 0 条）——省时最多的那几条恰好是保守判据
+    不敢推荐的重复包含。
+    """
+    scan = _run_scan(args)
+    if not scan.candidates:
+        print("没有发现可精简的 include 候选。", file=sys.stderr)
+        return 0
+
+    driver = detect_driver(args.compiler)
+    if not codegen.supported(driver):
+        # 这一层的全部价值就建立在汇编证据上，给不出汇编就必须明说，不能降级。
+        print(
+            f"错误：{driver.family.value} 上暂无汇编指纹比对（-S/-g0 是 GCC/Clang "
+            "写法），已验证层级无法取证。改用 verify 看「仅编译通过」那一档。",
+            file=sys.stderr,
+        )
+        return 2
+    options = _scan_options_from_args(args).driver_options()
+    results = verify_candidates(
+        scan,
+        driver,
+        options,
+        verify=VerifyOptions(
+            top=args.top,
+            runs=args.runs,
+            timeout=args.timeout,
+            confirm_passes=max(1, args.confirm),
+            codegen_check=True,
+            # 这一层按预估收益排，不按文本判据排。判据在这里没有投票权：
+            # 实测 8 条落地收益里 7 条被判 in_use / unknown，按判据排的
+            # top-N 永远轮不到它们，而它们正是省时最多的那几条。
+            order="estimate",
+        ),
+        include_dirs=list(args.includes),
+        semantic=_build_semantic_backend(args),
+        build_path=_semantic_build_path(args) or scan.root,
+    )
+
+    tiers = [evidence.TIER_VERIFIED]
+    if args.include_equivalent:
+        tiers.append(evidence.TIER_EQUIVALENT)
+    layer = [r for r in results if evidence.tier_of(r) in tiers]
+    layer = evidence.sort_by_evidence(layer)
+
+    print("# HeavyHeader 已验证层级\n")
+    print(
+        "这一层**只收编译器证据**：删掉这一行之后，两侧各编到汇编、归一化后比哈希，"
+        "指纹一致才进得了这一层。「程序没变」是量出来的，不是推断出来的。\n"
+    )
+    print(
+        "> 它只对**本轮**负责。收益贴着噪声线的候选换一轮可能不在名单上——Lua 实测"
+        "同池同协议跑两次，进这一层的成员零重合（2 条 vs 3 条，都在 2%–4% 附近）。\n"
+    )
+    if not layer:
+        print("本轮没有任何候选拿到这一档证据（闸门全拦下，或收益全在噪声线下）。")
+    for result in layer:
+        candidate = result.candidate
+        saved = result.seconds_saved
+        gain = (
+            f"省 {saved * 1000:.0f} ms（{result.percent_saved:.1f}%）"
+            if saved is not None and result.percent_saved is not None
+            else "收益未过噪声线（可删，未必值得删）"
+        )
+        print(
+            f"- `{candidate.tu.name}` → `{candidate.header.name}`：{gain}；"
+            f"判据 {candidate.usage_verdict or '?'}；{_tier_line(result)}"
+        )
+    _print_tier_summary(
+        results,
+        layer,
+        hint="--include-equivalent 可把「已证等价但收益未过线」那档一并列出",
+    )
+
+    if args.output is not None:
+        payload = evidence.summarise(results)
+        payload["layer"] = [
+            {
+                "tu": str(r.candidate.tu),
+                "header": str(r.candidate.header),
+                "line": r.candidate.line,
+                "usage_verdict": r.candidate.usage_verdict,
+                "tier": evidence.tier_of(r),
+                "status": r.status,
+                "seconds_saved": r.seconds_saved,
+                "percent_saved": r.percent_saved,
+                "confirm_passes": getattr(r, "confirm_passes", 0),
+            }
+            for r in layer
+        ]
+        args.output.write_text(_json_pretty(payload), encoding="utf-8")
+        print(f"\n已写入 {args.output}")
     return 0
 
 
@@ -1245,6 +1433,7 @@ def _cmd_toolchains(args) -> int:
 _COMMANDS = {
     "scan": _cmd_scan,
     "verify": _cmd_verify,
+    "verified": _cmd_verified,
     "gate": _cmd_gate,
     "configs": _cmd_configs,
     "compare": _cmd_compare,

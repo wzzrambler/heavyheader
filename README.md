@@ -71,6 +71,7 @@ $ heavyheader scan ./src --format html -o report.html
 |---|---|
 | `scan` | 分析源码树，产出 Markdown / HTML / JSON 报告，可存为基线 |
 | `verify` | 对候选 include 真的删掉、重新编译、实测耗时差异 |
+| `verified` | **只列编译器证据撑住的候选**：汇编指纹一致 + 省时过噪声线 + 复测成立 |
 | `gate` | CI 门禁：头文件成本相对基线回归超阈值则流水线失败 |
 | `compare` | 对比两份扫描结果，定位成本上升的具体头文件 |
 | `blame` | 成本考古：把头文件成本回归归因到 commit、文件与 include 行 |

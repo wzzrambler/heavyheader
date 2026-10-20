@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .. import PROJECT_URL
+from .. import PROJECT_URL, evidence
 from ..attrib.advice import (
     MAINTENANCE_LEAN_LINES,
     MAINTENANCE_LEAN_SHARE,
@@ -376,6 +376,78 @@ def _rel(path: Path, root: Path) -> str:
         return str(Path(*parts[-2:])) if len(parts) > 1 else path.name
 
 
+def _tier_label(result) -> str:
+    """表格里那一格：档位简称 + 复测遍数。
+
+    档位全称放在本节口径里解释，格子里只放能一眼扫完的短标签——但
+    「仅编译通过」这一档必须连着警告，否则读者会把它读成「验证过」。
+    """
+    tier = evidence.tier_of(result)
+    short = evidence.TIER_SHORT.get(tier, tier or "无证据")
+    if tier == evidence.TIER_EQUIVALENT:
+        return f"{short}（收益未过线）"
+    if tier == evidence.TIER_COMPILES:
+        return f"{short}（**程序可能变了**）"
+    if tier == evidence.TIER_VERIFIED and getattr(result, "confirm_passes", 0):
+        return f"{short}（复测 {result.confirm_passes} 遍）"
+    return short
+
+
+def _verified_layer(results: list, root: Path) -> list[str]:
+    """已验证层级：编译器证据撑住的候选，与文本判据是否推荐无关。
+
+    这一节的存在理由是实测出来的：落地收益最多的那几条（重复包含的
+    stdio/stdlib/string）恰好被文本判据判成 ``in_use`` / ``unknown``。旧报告
+    只按判据排，于是**省时最多的建议从不出现**。这里改按证据强度列。
+    """
+    layer = [r for r in results if evidence.tier_of(r) in evidence.GATED_TIERS]
+    if not layer:
+        return []
+    summary = evidence.summarise(results)
+    lines = [
+        "### 已验证层级（按证据强度，不按文本判据）",
+        "",
+        f"本轮 {summary['measured']} 条实测里，{len(layer)} 条拿到编译器证据："
+        "两侧各编到汇编、归一化预处理行标记与局部标号后比哈希，指纹一致。"
+        "**「程序没变」是量出来的，不是推断出来的。**",
+        "",
+        "| 编译单元 | include | 文本判据 | 证据档 | 实测节省 |",
+        "|---|---|---|---|---:|",
+    ]
+    for result in evidence.sort_by_evidence(layer):
+        candidate = result.candidate
+        saved = result.seconds_saved
+        gain = (
+            f"**−{result.percent_saved:.1f}%**（{saved * 1000:.0f} ms）"
+            if saved and result.percent_saved
+            else "未过噪声线"
+        )
+        lines.append(
+            f"| `{_rel(candidate.tu, root)}` "
+            f"| `{_rel(candidate.header, root)}` "
+            f"| {candidate.usage_verdict or '?'} "
+            f"| {_tier_label(result)} "
+            f"| {gain} |"
+        )
+    lines += [""]
+    outside = summary["outside_recommendation"]
+    if outside:
+        lines += [
+            f"> **这一节里 {outside} 条被文本判据判为「在用 / 无法判定」**——"
+            "判据说不清的地方，编译器说得清。已验证层级的增量几乎全在这里；"
+            "反过来说，只按判据排序的报告永远看不到它们。",
+            "",
+        ]
+    if summary["gate_ran"]:
+        lines += [
+            f"> 代码等价闸门本轮跑了 {summary['gate_ran']} 条、"
+            f"拦下 {summary['gate_blocked']} 条（汇编变了）。"
+            "**只放行不拦截的闸门等于没有闸门**，所以拦下数必须和放行数一起看。",
+            "",
+        ]
+    return lines
+
+
 def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
     """The measured verdict, or an honest statement that nothing was measured.
 
@@ -446,8 +518,12 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
             for r in improved
         )
         has_test = any(getattr(r, "test_status", "") for r in improved)
+        has_tier = any(getattr(r, "evidence_tier", "") for r in improved)
         header = "| 编译单元 | include | 基线 | 移除后 | 节省 |"
         sep = "|---|---|---:|---:|---:|"
+        if has_tier:
+            header += " 证据档 |"
+            sep += "---|"
         if has_memory:
             header += " GGC 内存 |"
             sep += "---:|"
@@ -467,6 +543,8 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
                 f"| {result.patched_seconds * 1000:.0f} ms "
                 f"| **{saved:.1f}%** |"
             )
+            if has_tier:
+                row += f" {_tier_label(result)} |"
             if has_memory:
                 if (
                     result.baseline_memory_kb is not None
@@ -514,6 +592,8 @@ def _probe_section(scan: ProjectScan, root: Path) -> list[str]:
                 "但不可与编译器内部阶段计时混谈。",
                 "",
             ]
+
+    lines += _verified_layer(results, root)
 
     compiles = [r for r in results if r.status == "compiles"]
     if compiles:

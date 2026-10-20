@@ -50,6 +50,7 @@ from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import (
     ProjectScan,
     RemovalCandidate,
+    candidate_rank_key,
     tu_compile_seconds,
 )
 from .scanner import default_include_dirs
@@ -67,6 +68,7 @@ find_include_line = _includes.find_include_line
 __all__ = [
     "VerifyOptions",
     "VerificationResult",
+    "order_for_measurement",
     "verify_candidates",
     "find_include_line",
     "find_include_lines",
@@ -154,6 +156,29 @@ class VerifyOptions:
     #: the test suite is run against the patched unit.  A failing test
     #: demotes the verdict; a passing one is quoted in the advice.
     test_runner: object | None = None
+    #: 测量顺序。``"rank"`` = 按候选排序键（疑似未使用优先，默认行为）；
+    #: ``"estimate"`` = 只按预估收益降序。
+    #:
+    #: 为什么要有第二种：**已验证层级**里文本判据没有投票权。实测（Lua）8 条
+    #: 落地收益里 7 条被判成 ``in_use`` / ``unknown``——按判据排序时它们排在
+    #: tier 3，``--top 20`` 根本轮不到，于是省时最多的建议永远不被测量。
+    #: 按预估收益排是这一层能做的最中立的排序：它不采信判据，也不假装知道。
+    order: str = "rank"
+
+
+def order_for_measurement(
+    candidates: list[RemovalCandidate], order: str
+) -> list[RemovalCandidate]:
+    """按 ``order`` 排测量顺序。抽成函数是为了能单独测排序规则本身，
+    不必真的编译一遍。"""
+    if order == "estimate":
+        # 预估缺失的排最后，但仍留在池里：排最后不等于「没有机会」。
+        return sorted(
+            candidates,
+            key=lambda c: (c.estimated_seconds_saved is None,
+                           -(c.estimated_seconds_saved or 0.0)),
+        )
+    return sorted(candidates, key=candidate_rank_key)
 
 
 @dataclass(slots=True)
@@ -786,7 +811,7 @@ def verify_candidates(
         effective_includes = default_include_dirs(scan.root)
 
     limit = verify.top if verify.top and verify.top > 0 else len(scan.candidates)
-    ranked = scan.candidates_by_estimate()[: max(0, limit)]
+    ranked = order_for_measurement(list(scan.candidates), verify.order)[: max(0, limit)]
 
     # ---------------------------------------------------------------- semantic
     # 可选 AST 交叉检查（ROADMAP v0.3 路线 1）：对每个出现候选的单元跑一次

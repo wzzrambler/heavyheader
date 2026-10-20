@@ -272,16 +272,20 @@ $ heavyheader gate ./src --baseline baseline.json --max-regression 5
 
 ## 安装
 
-无第三方运行时依赖（Python 3.10+ 标准库），当前从源码安装：
+无第三方运行时依赖（Python 3.10+ 标准库）。两种装法：
 
 ```bash
+# 方式一：PyPI（v0.1.0，2026-10-19 发布；2026-10-21 在全新虚拟环境复验可用）
+pip install heavyheader
+
+# 方式二：源码安装（跟随 main 分支最新提交）
 git clone https://github.com/wzzrambler/heavyheader.git
 cd heavyheader
 pip install -e .
 ```
 
-PyPI 上架列入 [ROADMAP](ROADMAP.md) v0.4；发布纪律（tag → `release.yml`）见
-[GOVERNANCE.md](GOVERNANCE.md)。
+发布纪律（tag → `release.yml`）见 [GOVERNANCE.md](GOVERNANCE.md)；
+后续生态集成项列入 [ROADMAP](ROADMAP.md) v0.5。
 
 ## 快速开始
 

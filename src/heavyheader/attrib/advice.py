@@ -273,12 +273,13 @@ def _keep(candidate: RemovalCandidate, result: VerificationResult) -> RemovalAdv
 def _codegen_changed(
     candidate: RemovalCandidate, result: VerificationResult
 ) -> RemovalAdvice:
-    """编译通过，但生成的目标代码变了——这不是优化，是改语义。
+    """编译通过，但两侧汇编指纹不一致——这不是优化，是行为可能已经变了。
 
     与 :func:`_keep` 的区别：编译器没有否决，是**代码等价性检查**否决的。
-    两者都要留记录，但理由不同：前者是「删不掉」，后者是「删得掉，但删了程序
-    就变了」。实测案例：删掉 ``<iomanip>`` 后目标文件从 21,289 字节缩到
-    10,183 字节——能编过，但已不是同一个程序（差异原因不在本层判断之内）。
+    两者都要留记录，但理由不同：前者是「删不掉」，后者是「删得掉，但生成的
+    代码已经不一样」。实测案例：删掉 ``<iomanip>`` 后目标文件从 21,289 字节缩到
+    10,183 字节——能编过，但生成的已经不是同一份代码（差异原因不在本层判断之内，
+    不说「改了语义」这种本层证不了的话）。
     """
     reasons = [
         AdviceReason(

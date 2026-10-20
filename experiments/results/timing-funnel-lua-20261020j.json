@@ -1,0 +1,144 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7",
+  "aggregate_seconds": 8.228,
+  "noise_fraction": 0.01,
+  "pool": 12,
+  "compiled": 12,
+  "improved": 5,
+  "adopt_rate_on_pool": 0.417,
+  "adopt_rate_on_compiled": 0.417,
+  "details": [
+    {
+      "tu": "llex.c",
+      "header": "locale.h",
+      "usage": "plausibly_unused",
+      "estimate_s": 0.0009,
+      "status": "no-change",
+      "baseline_ms": 215.8,
+      "patched_ms": 220.0,
+      "percent_saved": -1.966,
+      "message": "差异在噪声范围内（-4 ms）"
+    },
+    {
+      "tu": "llex.c",
+      "header": "lparser.h",
+      "usage": "plausibly_unused",
+      "estimate_s": 0.0008,
+      "status": "no-change",
+      "baseline_ms": 215.8,
+      "patched_ms": 220.9,
+      "percent_saved": -2.39,
+      "message": "基线 216 ms → 移除后 221 ms"
+    },
+    {
+      "tu": "lgc.c",
+      "header": "stdio.h",
+      "usage": "unknown",
+      "estimate_s": 0.0281,
+      "status": "improved",
+      "baseline_ms": 230.4,
+      "patched_ms": 221.5,
+      "percent_saved": 3.881,
+      "message": "基线 230 ms → 移除后 221 ms"
+    },
+    {
+      "tu": "lbaselib.c",
+      "header": "stdlib.h",
+      "usage": "unknown",
+      "estimate_s": 0.011,
+      "status": "improved",
+      "baseline_ms": 233.5,
+      "patched_ms": 224.1,
+      "percent_saved": 4.016,
+      "message": "基线 233 ms → 移除后 224 ms"
+    },
+    {
+      "tu": "ldblib.c",
+      "header": "stdlib.h",
+      "usage": "unknown",
+      "estimate_s": 0.0103,
+      "status": "no-change",
+      "baseline_ms": 224.7,
+      "patched_ms": 219.5,
+      "percent_saved": 2.349,
+      "message": "基线 225 ms → 移除后 219 ms；复测未通过，各遍 percent_saved = 2.35% / 1.64%（阈值 2%）"
+    },
+    {
+      "tu": "lapi.c",
+      "header": "string.h",
+      "usage": "unknown",
+      "estimate_s": 0.0076,
+      "status": "improved",
+      "baseline_ms": 223.6,
+      "patched_ms": 215.7,
+      "percent_saved": 3.528,
+      "message": "基线 224 ms → 移除后 216 ms"
+    },
+    {
+      "tu": "lcorolib.c",
+      "header": "stdlib.h",
+      "usage": "unknown",
+      "estimate_s": 0.0071,
+      "status": "improved",
+      "baseline_ms": 222.4,
+      "patched_ms": 212.3,
+      "percent_saved": 4.519,
+      "message": "基线 222 ms → 移除后 212 ms"
+    },
+    {
+      "tu": "ldo.c",
+      "header": "lopcodes.h",
+      "usage": "unknown",
+      "estimate_s": 0.0022,
+      "status": "no-change",
+      "baseline_ms": 223.7,
+      "patched_ms": 226.6,
+      "percent_saved": -1.285,
+      "message": "差异在噪声范围内（-3 ms）"
+    },
+    {
+      "tu": "lcode.c",
+      "header": "stdlib.h",
+      "usage": "in_use",
+      "estimate_s": 0.0137,
+      "status": "no-change",
+      "baseline_ms": 227.2,
+      "patched_ms": 220.6,
+      "percent_saved": 2.903,
+      "message": "基线 227 ms → 移除后 221 ms；复测未通过，各遍 percent_saved = 2.90% / 1.91%（阈值 2%）"
+    },
+    {
+      "tu": "liolib.c",
+      "header": "stdlib.h",
+      "usage": "in_use",
+      "estimate_s": 0.0101,
+      "status": "improved",
+      "baseline_ms": 228.4,
+      "patched_ms": 222.1,
+      "percent_saved": 2.74,
+      "message": "基线 228 ms → 移除后 222 ms"
+    },
+    {
+      "tu": "lmathlib.c",
+      "header": "stdlib.h",
+      "usage": "in_use",
+      "estimate_s": 0.0094,
+      "status": "no-change",
+      "baseline_ms": 234.6,
+      "patched_ms": 238.8,
+      "percent_saved": -1.774,
+      "message": "差异在噪声范围内（-4 ms）"
+    },
+    {
+      "tu": "llex.c",
+      "header": "string.h",
+      "usage": "in_use",
+      "estimate_s": 0.008,
+      "status": "no-change",
+      "baseline_ms": 215.8,
+      "patched_ms": 212.4,
+      "percent_saved": 1.561,
+      "message": "差异在噪声范围内（+3 ms）"
+    }
+  ]
+}

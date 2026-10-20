@@ -217,6 +217,10 @@ include guard 拉住的头不计入（口径与实测见
 回到队列，其中 4 条实测 −3.4%~−4.3%；推荐层 26 条里 25 条真有用（见
 [`docs/benchmark-report.md`](docs/benchmark-report.md) §9.13）。
 
+剩余机会的**绝对量**也量过（同一语料，全部安全删除一次性应用）：Lua 的 19 个
+可组批单元合计 4.22 s → 4.19 s（−0.73%），折合全工程约 −0.4%——工具能准确指出
+可删的行，但这些工程里剩下的冗余本身就不多，见 §9.14。
+
 计时锚定修复（clang `-ftime-report` 解析 + 前端锚，见
 [`experiments/results/timing-funnel-lua-20261019.md`](experiments/results/timing-funnel-lua-20261019.md)）
 把漏斗池内采纳率从 8% 提到 **25%**（确认采纳 1 → 5 条）。

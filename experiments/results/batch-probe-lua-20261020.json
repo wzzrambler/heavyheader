@@ -1,0 +1,303 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7",
+  "compiler": "C:/Program Files/LLVM/bin/clang.exe",
+  "max_batch": 6,
+  "runs": 3,
+  "confirm": 2,
+  "check_codegen": true,
+  "pool": 77,
+  "groups": 19,
+  "rows": [
+    {
+      "tu": "lapi.c",
+      "count": 2,
+      "status": "improved",
+      "base_ms": 224.0264000138268,
+      "patched_ms": 214.3295000132639,
+      "percent": 4.328463073978962,
+      "confirm": [
+        4.328463073978962,
+        3.0647120210345653
+      ],
+      "message": "",
+      "headers": [
+        "string.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lbaselib.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 221.03879999485798,
+      "patched_ms": 219.02760001830757,
+      "percent": 0.9098854936767671,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "stdlib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lcode.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 221.85430000536144,
+      "patched_ms": 222.02420001849532,
+      "percent": -0.07658179856319107,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lstring.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lcorolib.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 214.59849999519065,
+      "patched_ms": 214.5662999828346,
+      "percent": 0.015004770469860922,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "stdlib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "ldblib.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 221.60270001040772,
+      "patched_ms": 218.64809998078272,
+      "percent": 1.3332870174804883,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "stdlib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "ldo.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 226.88449997804128,
+      "patched_ms": 223.2775999873411,
+      "percent": 1.5897516097614754,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "ltable.h",
+        "lopcodes.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lgc.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 223.31890001078136,
+      "patched_ms": 219.0272999869194,
+      "percent": 1.9217361466740097,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "ldebug.h",
+        "stdio.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "liolib.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 223.47330002230592,
+      "patched_ms": 230.7120999903418,
+      "percent": -3.239223642069703,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "llex.c",
+      "count": 3,
+      "status": "no-change",
+      "base_ms": 211.1023000034038,
+      "patched_ms": 217.09049999481067,
+      "percent": -2.836634177510297,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "locale.h",
+        "lparser.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lmathlib.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 222.62980000232346,
+      "patched_ms": 224.54090000246651,
+      "percent": -0.858420570886335,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "loslib.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 227.62270001112483,
+      "patched_ms": 228.41430001426488,
+      "percent": -0.34776847963817253,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lparser.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 212.72710000630468,
+      "patched_ms": 217.3727999906987,
+      "percent": -2.1838778342093352,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "ldebug.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lstring.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 210.91330001945607,
+      "patched_ms": 212.7922999789007,
+      "percent": -0.8908873737556121,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "ldebug.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lstrlib.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 235.23270001169294,
+      "patched_ms": 236.21290002483875,
+      "percent": -0.41669377305837185,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "ltablib.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 224.31660001166165,
+      "patched_ms": 217.18229999532923,
+      "percent": 3.180460124645935,
+      "confirm": [
+        3.180460124645935,
+        -3.0062299287588967
+      ],
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "ltm.c",
+      "count": 3,
+      "status": "improved",
+      "base_ms": 213.95979999215342,
+      "patched_ms": 207.59639999596402,
+      "percent": 2.9741100881673876,
+      "confirm": [
+        2.9741100881673876,
+        3.7486276535741117
+      ],
+      "message": "",
+      "headers": [
+        "lvm.h",
+        "string.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lundump.c",
+      "count": 2,
+      "status": "no-change",
+      "base_ms": 213.23730002040975,
+      "patched_ms": 216.19569999165833,
+      "percent": -1.3873745217020768,
+      "confirm": null,
+      "message": "",
+      "headers": [
+        "ldebug.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lutf8lib.c",
+      "count": 4,
+      "status": "improved",
+      "base_ms": 223.91860000789165,
+      "patched_ms": 211.43530000699684,
+      "percent": 5.5749276748134635,
+      "confirm": [
+        5.5749276748134635,
+        4.950300223654948
+      ],
+      "message": "",
+      "headers": [
+        "lualib.h",
+        "stdlib.h",
+        "string.h",
+        "lprefix.h"
+      ]
+    },
+    {
+      "tu": "lvm.c",
+      "count": 3,
+      "status": "improved",
+      "base_ms": 243.45599999651313,
+      "patched_ms": 234.80589999235235,
+      "percent": 3.5530444943992623,
+      "confirm": [
+        3.5530444943992623,
+        2.6596693568264755
+      ],
+      "message": "",
+      "headers": [
+        "stdio.h",
+        "stdlib.h",
+        "lprefix.h"
+      ]
+    }
+  ]
+}

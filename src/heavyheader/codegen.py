@@ -177,6 +177,14 @@ def compare(
     asm_path = workdir / "unit.s"
     staged = workdir / original.name
     workdir.mkdir(parents=True, exist_ok=True)
+    # 源码必须落到 workdir（两份同名、同路径，否则 ``__FILE__`` 会污染汇编），
+    # 但**同目录相对包含**（``#include "foo.h"``）在 workdir 里就找不到了——
+    # 原目录必须补进搜索路径。不补的后果不是「闸门更严」，而是「闸门拿不到
+    # 指纹」，而拿不到指纹会被下游当成「代码变了」（2026-10-20 实测：doctest
+    # 的 foo.h 候选整批因此误报成危险改动）。
+    options = dataclasses.replace(
+        options, include_dirs=[*options.include_dirs, original.parent]
+    )
     before_text = original.read_text(encoding="utf-8", errors="replace")
     after_text = patched.read_text(encoding="utf-8", errors="replace")
 

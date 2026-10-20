@@ -1,0 +1,238 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\doctest-pristine",
+  "pool": 11,
+  "runs": 3,
+  "confirm_passes": 2,
+  "gate_ran": 11,
+  "gate_blocked": 6,
+  "gate_blocked_detail": [
+    {
+      "tu": "return42.cpp",
+      "header": "foo.h",
+      "usage": "plausibly_unused",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "default.cpp",
+      "header": "foo.h",
+      "usage": "plausibly_unused",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "generators.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "asserts_used_outside_of_tests.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "enums.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "main.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "side_effect_suspected": false,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    }
+  ],
+  "tiers": {
+    "rejected": 6,
+    "equivalent": 5
+  },
+  "verdicts": {
+    "equivalent|human": 5,
+    "rejected|human": 6
+  },
+  "equivalent_lean_remove": 0,
+  "equivalent_lean_remove_lines": 0,
+  "cross": {
+    "in_use|rejected": 4,
+    "plausibly_unused|equivalent": 4,
+    "plausibly_unused|rejected": 2,
+    "unknown|equivalent": 1
+  },
+  "improved": 0,
+  "adopt_rate_on_pool": 0.0,
+  "verified_outside_recommendation": 0,
+  "details": [
+    {
+      "tu": "return42.cpp",
+      "header": "foo.h",
+      "usage": "plausibly_unused",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "default.cpp",
+      "header": "foo.h",
+      "usage": "plausibly_unused",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "filters.cpp",
+      "header": "filters.h",
+      "usage": "plausibly_unused",
+      "tier": "equivalent",
+      "status": "no-change",
+      "codegen_checked": true,
+      "codegen_identical": true,
+      "confirm_passes": 0,
+      "percent_saved": -1.511,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 27,
+      "message": "差异在噪声范围内（-6 ms）"
+    },
+    {
+      "tu": "common.cpp",
+      "header": "common.h",
+      "usage": "plausibly_unused",
+      "tier": "equivalent",
+      "status": "no-change",
+      "codegen_checked": true,
+      "codegen_identical": true,
+      "confirm_passes": 0,
+      "percent_saved": -1.721,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 24,
+      "message": "差异在噪声范围内（-7 ms）"
+    },
+    {
+      "tu": "test_case.cpp",
+      "header": "test_case.h",
+      "usage": "plausibly_unused",
+      "tier": "equivalent",
+      "status": "no-change",
+      "codegen_checked": true,
+      "codegen_identical": true,
+      "confirm_passes": 0,
+      "percent_saved": 3.218,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 23,
+      "message": "基线 438 ms → 移除后 424 ms；复测未通过，各遍 percent_saved = 3.22% / -4.16%（阈值 2%）"
+    },
+    {
+      "tu": "context_scope.cpp",
+      "header": "context_scope.h",
+      "usage": "plausibly_unused",
+      "tier": "equivalent",
+      "status": "no-change",
+      "codegen_checked": true,
+      "codegen_identical": true,
+      "confirm_passes": 0,
+      "percent_saved": 0.087,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 20,
+      "message": "差异在噪声范围内（+0 ms）"
+    },
+    {
+      "tu": "handler.cpp",
+      "header": "handler.h",
+      "usage": "unknown",
+      "tier": "equivalent",
+      "status": "no-change",
+      "codegen_checked": true,
+      "codegen_identical": true,
+      "confirm_passes": 0,
+      "percent_saved": 0.861,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 28,
+      "message": "差异在噪声范围内（+4 ms）"
+    },
+    {
+      "tu": "generators.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "asserts_used_outside_of_tests.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "enums.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    },
+    {
+      "tu": "main.cpp",
+      "header": "header.h",
+      "usage": "in_use",
+      "tier": "",
+      "status": "codegen-changed",
+      "codegen_checked": true,
+      "codegen_identical": false,
+      "confirm_passes": 0,
+      "percent_saved": null,
+      "verdict": "human",
+      "lean": "keep",
+      "review_gain_lines": 0,
+      "message": "移除后编译通过，但生成的代码与原来不同（重载解析或条件编译发生变化）"
+    }
+  ]
+}

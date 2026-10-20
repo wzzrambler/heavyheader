@@ -1,0 +1,27 @@
+{
+  "project": "C:\\Users\\31879\\AppData\\Local\\Temp\\upstream\\lua-5.4.7",
+  "findings": [
+    {
+      "tu": "lua.c",
+      "header": "windows.h",
+      "lines_saved": 293142,
+      "parse_shrink": 215,
+      "baseline_rc": 0,
+      "patched_rc": 0,
+      "input_replaced": true,
+      "baseline_asm_lines": 1805,
+      "patched_asm_lines": 1802,
+      "diff_added": 0,
+      "diff_removed": 3,
+      "removed_mnemonics": [],
+      "added_mnemonics": [],
+      "sample_removed": [
+        "\t.section\t.drectve,\"yni\"",
+        "\t.ascii\t\" /DEFAULTLIB:uuid.lib\"",
+        "\t.ascii\t\" /DEFAULTLIB:uuid.lib\""
+      ],
+      "sample_added": [],
+      "verdict": "生成代码减少（删掉后少了一段东西）"
+    }
+  ]
+}

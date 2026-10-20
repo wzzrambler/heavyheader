@@ -37,7 +37,14 @@ from typing import NamedTuple
 
 from . import codegen
 from . import includes as _includes
-from .attrib.advice import AGGREGATE_NOISE_FLOOR, TIME_NOISE_FLOOR, build_advice
+from .attrib.advice import (
+    AGGREGATE_NOISE_FLOOR,
+    TIER_COMPILES,
+    TIER_EQUIVALENT,
+    TIER_VERIFIED,
+    TIME_NOISE_FLOOR,
+    build_advice,
+)
 from .attrib.semantic import SemanticBackend, SemanticVerdict
 from .drivers.base import CompilationError, CompilerDriver, DriverOptions
 from .models import (
@@ -178,6 +185,18 @@ class VerificationResult:
     #: 空串 = 两侧都是编译器自己的 TOTAL 行。带着它是因为两种计时口径
     #: 不同，读者有权知道刚看到的那个秒数是谁量的。
     timing_note: str = ""
+    #: 代码等价闸门**是否真的跑过**。
+    #:
+    #: 与「本轮有没有开 ``--check-codegen``」是两件事：关掉开关是性能选择，
+    #: 但不能因为省了时间就声称验过等价性。库调用默认 False（CLI 的
+    #: ``verify`` 默认是开的）——没验过就不许说「程序没变」。
+    codegen_checked: bool = False
+    #: 闸门跑过时的结论：``True`` = 汇编指纹一致（程序等价已证）；``False`` =
+    #: 指纹不同（已转成 ``codegen-changed``，留着便于追溯）；``None`` = 没跑过。
+    codegen_identical: bool | None = None
+    #: 复测仍判 improved 的遍数（0 = 没复测）。收益结论的强度就挂在这个数上：
+    #: 0 遍的「省了 x%」与 2 遍仍成立的「省了 x%」不该用同一句话讲。
+    confirm_passes: int = 0
 
     @property
     def seconds_saved(self) -> float | None:
@@ -191,6 +210,28 @@ class VerificationResult:
         if saved is None or not self.baseline_seconds:
             return None
         return saved / self.baseline_seconds * 100.0
+
+    @property
+    def evidence_tier(self) -> str:
+        """这条结论站在哪一层证据上（常量见 :data:`TIER_*`）。
+
+        分层的起因：usage 判据是文本推断，实测是编译器给的证据，两者的可信度
+        不是一个量级，但旧界面把它们混在同一句「建议删除」里。分层之后，
+        「文本判不了、但汇编指纹证明等价」这类候选不再被当成可疑项。
+
+        反过来同样要紧：**没跑闸门就不能站到上面两层**。闸门在 CLI 里默认开，
+        但库调用默认关、MSVC 也给不出汇编——这几种情况下这里只返回
+        ``compiles_only``。
+        """
+        if self.status in ("compile-error", "ambiguous", "not-found", "error"):
+            return ""
+        if self.codegen_checked and self.codegen_identical:
+            # 闸门通过 = 删掉这一行之后编出来的目标代码字节级一致。
+            # 「程序没变」到此已被证明；剩下的只是「值不值得删」。
+            return TIER_VERIFIED if self.status == "improved" else TIER_EQUIVALENT
+        if self.status in ("improved", "no-change", "compiles"):
+            return TIER_COMPILES
+        return ""
 
 
 # --------------------------------------------------------------------------
@@ -246,6 +287,23 @@ def _forced_codegen(candidate) -> bool:
     证据。关掉 ``--check-codegen`` 是性能选择，不是允许在没证据时下结论。
     """
     return candidate.side_effect_suspected or candidate.instantiation
+
+
+def _codegen_fields(pair: tuple[object, object] | None) -> dict[str, object]:
+    """把闸门结论摊成 ``VerificationResult`` 的字段。
+
+    闸门结果以前只用一次（判 ``codegen-changed``）就丢掉，下游于是分不清
+    「验过且等价」与「根本没验」。现在每条结论都带着「验没验、验出什么」，
+    :attr:`VerificationResult.evidence_tier` 才有依据。
+    """
+    if pair is None:
+        return {}
+    before, after = pair
+    if not before.ok or not after.ok:
+        # 拿不到指纹就是**没验过**，不是「验出不同」。三者必须分开：
+        # 混成 False 会让「闸门不可用」被当成「发现危险改动」。
+        return {"codegen_checked": True, "codegen_identical": None}
+    return {"codegen_checked": True, "codegen_identical": before.same_as(after)}
 
 
 def _comment_out(source_text: str, line_number: int) -> str:
@@ -883,6 +941,25 @@ def verify_candidates(
             )
             continue
         codegen_pair = probe_codegen.get(index)
+        if codegen_pair is not None and (
+            not codegen_pair[0].ok or not codegen_pair[1].ok
+        ):
+            # 闸门没跑完 ≠ 代码变了。以前两者共用 ``same_as`` 的 False，于是
+            # 「这台机器/这套参数给不出汇编」被报成「发现危险改动」——既冤枉了
+            # 候选，也让上面的 verified 档失真。拿不到证据就如实说判不了。
+            note = codegen_pair[0].note or codegen_pair[1].note or "未知原因"
+            results.append(
+                VerificationResult(
+                    candidate=candidate,
+                    status="error",
+                    message=(
+                        f"代码等价校验未能完成（{note}），无法证明程序未变"
+                        "——保守判为不可删"
+                    ),
+                    **_codegen_fields(codegen_pair),
+                )
+            )
+            continue
         if _forced_codegen(candidate) and codegen_pair is None:
             # 文本层怀疑这个头靠「被包含时执行」起作用（疑似副作用），或者这一
             # 行只是**实现片段的一次实例化**——后者删掉通常只是让目标文件少一
@@ -913,6 +990,7 @@ def verify_candidates(
                     patched_seconds=patched_seconds,
                     message="移除后编译通过，但生成的代码与原来不同"
                     "（重载解析或条件编译发生变化）",
+                    **_codegen_fields(codegen_pair),
                 )
             )
             continue
@@ -925,6 +1003,7 @@ def verify_candidates(
                     status="compiles",
                     patched_seconds=patched_seconds,
                     message="移除后可以编译（未做耗时测量）",
+                    **_codegen_fields(codegen_pair),
                 )
             )
             continue
@@ -1089,6 +1168,7 @@ def verify_candidates(
             baseline_memory_kb=baselines.memory(pending[index][1]),
             patched_memory_kb=memory,
             timing_note=timing_note,
+            **_codegen_fields(probe_codegen.get(index)),
         )
         results.append(result)
         if result.status == "improved":
@@ -1142,8 +1222,12 @@ def verify_candidates(
                 result.message += (
                     "；复测未通过，各遍 percent_saved = "
                     + " / ".join(f"{value:.2f}%" for value in percents)
-                    + f"（阈值 {TIME_NOISE_FLOOR * 100:.0f}%）"
+                    +                     f"（阈值 {TIME_NOISE_FLOOR * 100:.0f}%）"
                 )
+            else:
+                # 复测全过才记账：``confirm_passes`` 是「收益结论站得住的第几遍」，
+                # 0 遍的「省了 x%」与 2 遍仍成立的「省了 x%」不该用同一句话讲。
+                result.confirm_passes = verify.confirm_passes - 1
         improved = [pair for pair in improved if pair[0] not in demoted]
 
     if improved:

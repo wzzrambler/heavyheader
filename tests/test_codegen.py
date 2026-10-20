@@ -162,3 +162,35 @@ def test_gate_is_unavailable_on_msvc():
     assert supported(driver) is True
     driver.family = CompilerFamily.CLANG
     assert supported(driver) is True
+
+
+def test_compare_finds_headers_next_to_the_source(tmp_path):
+    """同目录相对包含（``#include "foo.h"``）必须能找到头。
+
+    2026-10-20 实测踩到：``compare`` 把两份源码都落到 workdir 再编，而
+    ``#include "foo.h"`` 的查找顺序是「先当前文件所在目录」，于是头文件凭空
+    消失、指纹拿不到。更要命的是**拿不到指纹曾被下游当成「代码变了」**
+    （doctest 的 foo.h 候选整批因此被报成危险改动）。
+    """
+    if CLANG is None:
+        pytest.skip("需要 clang++")
+    driver = detect_driver(CLANG)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "foo.h").write_text("inline int foo() { return 7; }\n", encoding="utf-8")
+    source = src / "main.cpp"
+    source.write_text(
+        '#include "foo.h"\nint main() { return foo(); }\n', encoding="utf-8"
+    )
+    patched = src / "main.patched.cpp"
+    patched.write_text(
+        '// [heavyheader] #include "foo.h"\nint main() { return 0; }\n',
+        encoding="utf-8",
+    )
+
+    before, after = compare(
+        driver, source, patched, DriverOptions(), None, tmp_path / "work"
+    )
+    assert before.ok, before.note
+    # 打补丁那份少了 foo 的定义，编不过也无所谓——这里锁的是**基线侧拿得到指纹**。
+    assert before.digest

@@ -73,6 +73,9 @@ __all__ = [
     "MEMORY_NOISE_FLOOR",
     "MAINTENANCE_LEAN_LINES",
     "MAINTENANCE_LEAN_SHARE",
+    "TIER_VERIFIED",
+    "TIER_EQUIVALENT",
+    "TIER_COMPILES",
     "build_advice",
 ]
 
@@ -118,6 +121,28 @@ MAINTENANCE_LEAN_LINES = 1000
 #: the reader of this file stops paying for it.  Policy, like the line
 #: threshold above.
 MAINTENANCE_LEAN_SHARE = 0.25
+
+#: 证据层：一条结论站在哪一级证据上（2026-10-20 新增）。
+#:
+#: 起因是供给侧漏报的实测：8 条落地收益里 7 条被文本判据判成 ``in_use`` /
+#: ``unknown``，而它们全都过了汇编等价闸门。判据说不清、编译器说得清的时候，
+#: 界面却把两者混在同一句「建议删除」里——读者无法分辨哪句是证据、哪句是推断。
+#:
+#: 三档，逐级变强。**不许跨档引用**：站在 ``compiles_only`` 上的结论不能用
+#: 「程序没变」这种话，那是上面两档才配说的。
+#:
+#: ``verified``：闸门通过 + 收益过噪声线（+ 复测保留）→ 可删，且值得删
+#: ``equivalent``：闸门通过，收益不可测量 → 删了程序不变，但省不出时间
+#: ``compiles_only``：只证明删了能编过 → 没验过等价性
+#:
+#: 闸门默认是开的（CLI 的 ``verify --check-codegen`` 默认 True），但**能力**
+#: 与**开关**是两件事：MSVC 拿不到 ``-S`` 方言、库调用 ``VerifyOptions``
+#: 默认关闭、``--no-check-codegen`` 主动省时间——这几种情况下都只能停在
+#: ``compiles_only``，不许替它说「程序没变」。省下的两次编译不能变成一句
+#: 没量过的承诺。
+TIER_VERIFIED = "verified"
+TIER_EQUIVALENT = "equivalent"
+TIER_COMPILES = "compiles_only"
 
 
 def _fmt_ms(seconds: float | None) -> str:
@@ -295,6 +320,31 @@ def _cannot_locate(
     return RemovalAdvice(verdict=AdviceVerdict.HUMAN, reasons=reasons, lean="")
 
 
+def _equivalence_reason(result) -> AdviceReason:
+    """「删了之后程序有没有变」这条证据，到底验到了什么程度。
+
+    分层是必需的，不是修饰：``编译通过`` 与 ``汇编指纹一致`` 差着一个量级，
+    旧界面却把两者都写成一句「移除后编译通过」。默认配置下（闸门关闭）这里
+    必须说出「没验过」——省下的两次编译不能变成一句没量过的承诺。
+    """
+    tier = getattr(result, "evidence_tier", "")
+    if tier in (TIER_VERIFIED, TIER_EQUIVALENT):
+        return AdviceReason(
+            aspect=AdviceAspect.FUNCTION,
+            text="汇编指纹与原来一致：删掉这一行之后，这个单元生成的代码一字未变"
+            "——「程序没变」是量出来的，不是推断出来的",
+            evidence="两侧各编到汇编，归一化预处理行标记与编译器局部标号后比哈希"
+            "（不比 .o：同一份输入连编两次 .o 也不同）",
+        )
+    return AdviceReason(
+        aspect=AdviceAspect.FUNCTION,
+        text="本轮没有做代码等价校验（闸门未开启或该编译器给不出汇编）："
+        "「删了能编过」不等于「程序没变」，重载解析或条件编译可能已经改变",
+        evidence="实测案例：删掉 <iomanip> 后编译通过，目标文件却从 21,289 字节"
+        "缩到 10,183 字节——能编过，但已是另一个程序",
+    )
+
+
 def _remove(
     candidate: RemovalCandidate,
     result: VerificationResult,
@@ -314,6 +364,7 @@ def _remove(
                 "注意：编译通过不等于功能正确——合并前请跑一遍这个单元的测试"
             ),
         ),
+        _equivalence_reason(result),
         AdviceReason(
             aspect=AdviceAspect.BUILD,
             text=build_text,
@@ -555,6 +606,7 @@ def _human_with_lean(
             aspect=AdviceAspect.FUNCTION,
             text="移除后编译通过（真实编译验证）——功能上这个编辑是可行的",
         ),
+        _equivalence_reason(result),
         AdviceReason(
             aspect=AdviceAspect.BUILD,
             text=(
@@ -671,6 +723,7 @@ def build_advice(
                 aspect=AdviceAspect.FUNCTION,
                 text="移除后编译通过（真实编译验证，未做耗时测量）",
             ),
+            _equivalence_reason(result),
             AdviceReason(
                 aspect=AdviceAspect.MAINTENANCE,
                 text="删除后不再被解析的代码",

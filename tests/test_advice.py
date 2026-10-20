@@ -626,3 +626,112 @@ def test_pending_queue_absent_when_everything_is_verified(tmp_path):
     assert "待验证队列" not in text
     assert "建议删除" in text
 
+
+
+# ---------------------------------------------------------------------------
+# 证据层（2026-10-20）
+#
+# 起因是供给侧漏报的实测：8 条落地收益里 7 条被文本判据判成 in_use / unknown，
+# 却全都过了汇编等价闸门。判据说不清、编译器说得清的时候，界面不能把两者
+# 混在同一句「建议删除」里。
+# ---------------------------------------------------------------------------
+
+def test_evidence_tier_only_credits_a_gate_that_actually_ran(tmp_path):
+    """证据层只认「闸门跑过且一致」，不认「本轮想不想跑」。
+
+    闸门没跑（库调用默认关闭 / 编译器给不出汇编 / 主动省时间）时必须停在
+    ``compiles_only``：省下的两次编译不能变成一句没量过的「程序没变」。
+    """
+    candidate = _candidate(tmp_path)
+    table = [
+        # status,      checked, identical, expected tier
+        ("improved", False, None, "compiles_only"),
+        ("improved", True, True, "verified"),
+        ("no-change", True, True, "equivalent"),
+        ("no-change", False, None, "compiles_only"),
+        ("compiles", True, True, "equivalent"),
+        ("compiles", False, None, "compiles_only"),
+    ]
+    for status, checked, identical, expected in table:
+        result = _result(
+            candidate,
+            status,
+            baseline_seconds=1.0,
+            patched_seconds=0.8,
+            codegen_checked=checked,
+            codegen_identical=identical,
+        )
+        assert result.evidence_tier == expected, (status, checked, identical)
+
+
+def test_rejected_statuses_carry_no_tier(tmp_path):
+    """被否决的候选不参与分层——没有「可删」可言，就谈不到证据有多强。"""
+    candidate = _candidate(tmp_path)
+    for status in ("compile-error", "codegen-changed", "ambiguous", "not-found", "error"):
+        result = _result(
+            candidate,
+            status,
+            codegen_checked=True,
+            codegen_identical=(status != "codegen-changed"),
+        )
+        assert result.evidence_tier == "", status
+
+
+def test_remove_never_claims_equivalence_without_the_gate(tmp_path):
+    """闸门没跑时，REMOVE 不许说「程序没变」。
+
+    分层纪律里最容易被违反的一条，也是最危险的一条：一句没量过的承诺比
+    不做校验更糟，因为读者会照着它合并。
+    """
+    candidate = _candidate(tmp_path)
+    ungated = build_advice(
+        candidate,
+        _result(candidate, "improved", baseline_seconds=1.0, patched_seconds=0.8),
+        None,
+    )
+    assert ungated.verdict is AdviceVerdict.REMOVE
+    plain = " ".join(f"{r.text} {r.evidence or ''}" for r in ungated.reasons)
+    assert "没有做代码等价校验" in plain
+    assert "一字未变" not in plain
+
+    gated = build_advice(
+        candidate,
+        _result(
+            candidate,
+            "improved",
+            baseline_seconds=1.0,
+            patched_seconds=0.8,
+            codegen_checked=True,
+            codegen_identical=True,
+        ),
+        None,
+    )
+    assert gated.verdict is AdviceVerdict.REMOVE
+    proven = " ".join(f"{r.text} {r.evidence or ''}" for r in gated.reasons)
+    assert "一字未变" in proven
+    assert "没有做代码等价校验" not in proven
+
+
+def test_no_change_says_equivalence_is_proven_when_the_gate_passed(tmp_path):
+    """收益不可测量 ≠ 什么都不确定：闸门过了就该把「程序不变」单独讲清楚。
+
+    这一档正是供给侧那 12 条 UCRT 疑似副作用的落点：文本判不了，编译器判了，
+    只是省下的时间落在噪声里。
+    """
+    candidate = _candidate(tmp_path)
+    advice = build_advice(
+        candidate,
+        _result(
+            candidate,
+            "no-change",
+            baseline_seconds=1.0,
+            patched_seconds=0.99,
+            codegen_checked=True,
+            codegen_identical=True,
+        ),
+        None,
+    )
+    text = " ".join(f"{r.text} {r.evidence or ''}" for r in advice.reasons)
+    assert "一字未变" in text
+    # 收益那一半仍然不许夸大。
+    assert "不能声称构建更快" in text

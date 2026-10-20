@@ -56,6 +56,67 @@ def aggregate_baseline(db: Path, compiler: str) -> float:
     return best
 
 
+def select_pool(scan, precision_rows: list[dict], noise_fraction: float) -> dict:
+    """按「已证实 ∩ 预估过噪声线」选送测池，并留下被排除者的证据。
+
+    抽成函数是因为有两个调用方：本脚本（算采纳率）和 ``repeat_probe``
+    （量重复测量分布）。两处必须共用**同一条选池规则**，否则「25%」和它的
+    逐条证据会来自两个不同的分母——那正是这条时间序列一直在防的事。
+
+    ``excluded`` 是「已证实有用、但预估低于噪声线」的候选。把它们记下来而不
+    是丢掉，是因为**没送测不等于没收益**：这些候选确实减少了解析文件，只是在
+    这台机器上时间不可分辨。
+    """
+    by_key = {(str(c.tu).lower(), c.header.name, c.line): c for c in scan.candidates}
+    tu_total = {
+        str(t.source).lower(): t.total_wall_seconds() for t in scan.ok_tus
+    }
+    pool: list = []
+    excluded: list[dict] = []
+    skipped = {"sub-noise": 0, "not-proven": 0, "missing": 0, "no-estimate": 0}
+    for row in precision_rows:
+        if not row.get("useful"):
+            skipped["not-proven"] += 1
+            continue
+        key = (row["tu"].lower(), Path(row["header"]).name, row["line"])
+        candidate = by_key.get(key)
+        if candidate is None:
+            skipped["missing"] += 1
+            continue
+        # 预估与噪声线同 scale：都按「受影响单元自己的编译时长」算。TU 级候选
+        # 的 reach 是 1，噪声线 = 该单元总时长 × 噪声比例；拿全工程聚合当分母
+        # 会把所有单 TU 候选全部误判为「不可分辨」。
+        estimate = candidate.estimated_seconds_saved
+        if estimate is None:
+            skipped["no-estimate"] += 1
+            continue
+        noise = (tu_total.get(str(candidate.tu).lower()) or 0.0) * noise_fraction
+        if estimate < noise:
+            skipped["sub-noise"] += 1
+            excluded.append(
+                {
+                    "tu": Path(row["tu"]).name,
+                    "header": Path(row["header"]).name,
+                    "line": row["line"],
+                    "lines_saved": row.get("lines_saved"),
+                    "estimate_s": round(estimate, 5),
+                    "noise_s": round(noise, 5),
+                }
+            )
+            continue
+        pool.append(
+            replace(
+                candidate,
+                measured_seconds_saved=None,
+                verified=False,
+                probe_status="",
+                advice=None,
+            )
+        )
+    pool.sort(key=candidate_rank_key)
+    return {"pool": pool, "skipped": skipped, "excluded": excluded}
+
+
 def run(args) -> dict:
     precision = json.loads(args.precision_json.read_text(encoding="utf-8"))
     scan = scan_project(
@@ -72,42 +133,9 @@ def run(args) -> dict:
     print(f"全工程聚合基线 {aggregate:.2f}s（仅作背景；预筛用各候选自己单元的"
           f" {args.noise_fraction:.0%} 噪声线）")
 
-    by_key = {(str(c.tu).lower(), c.header.name, c.line): c for c in scan.candidates}
-    tu_total = {
-        str(t.source).lower(): t.total_wall_seconds() for t in scan.ok_tus
-    }
-    pool = []
-    skipped = {"sub-noise": 0, "not-proven": 0, "missing": 0, "no-estimate": 0}
-    for row in precision["rows_by_rank"]:
-        if not row.get("useful"):
-            skipped["not-proven"] += 1
-            continue
-        key = (row["tu"].lower(), Path(row["header"]).name, row["line"])
-        candidate = by_key.get(key)
-        if candidate is None:
-            skipped["missing"] += 1
-            continue
-        # 预估与噪声线同 scale：都按「受影响单元自己的编译时长」算。TU 级候选
-        # 的 reach 是 1，噪声线 = 该单元总时长 × 噪声比例；拿全工程聚合当分母
-        # 会把所有单 TU 候选全部误判为「不可分辨」。
-        estimate = candidate.estimated_seconds_saved
-        if estimate is None:
-            skipped["no-estimate"] += 1
-            continue
-        noise = (tu_total.get(str(candidate.tu).lower()) or 0.0) * args.noise_fraction
-        if estimate < noise:
-            skipped["sub-noise"] += 1
-            continue
-        pool.append(
-            replace(
-                candidate,
-                measured_seconds_saved=None,
-                verified=False,
-                probe_status="",
-                advice=None,
-            )
-        )
-    pool.sort(key=candidate_rank_key)
+    selected = select_pool(scan, precision["rows_by_rank"], args.noise_fraction)
+    pool = selected["pool"]
+    skipped = selected["skipped"]
     print(f"已证实 {sum(1 for r in precision['rows_by_rank'] if r.get('useful'))} 条；"
           f"其中预估过噪声线并匹配到候选 {len(pool)} 条"
           f"（跳过：未证实 {skipped['not-proven']} / 噪声线以下 "

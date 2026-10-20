@@ -305,7 +305,7 @@ def build(path: str) -> None:
         SP(34),
         P("项目负责人：王子周", "meta"),
         P("申报主体类型：开源社区（个人）", "meta"),
-        P("文档版本：v6.0（评审版）", "meta"),
+        P("完整版（含全部逐轮实验记录与复现入口）", "meta"),
         P("数据冻结：2026 年 10 月 21 日", "meta"),
         SP(6),
         P(
@@ -319,9 +319,10 @@ def build(path: str) -> None:
             "meta",
         ),
         P(
-            "另有一版 16 页《作品介绍文档·精简评审版》（v7.0），"
+            "另有一版《作品介绍文档·精简评审版》（15 页），"
             "见同目录《HeavyHeader-作品介绍文档-精简评审版.pdf》；"
-            "两版数字一致，章节对应关系见该版附录 A。",
+            "两版数字一致，章节对应关系见仓库 "
+            "<font face='%s'>docs/restructure-map.md</font>。" % _MONO,
             "meta",
         ),
         PageBreak(),

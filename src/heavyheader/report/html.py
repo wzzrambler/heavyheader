@@ -136,6 +136,17 @@ def _rel(path: Path, root: Path) -> str:
         return str(Path(*parts[-2:])) if len(parts) > 1 else path.name
 
 
+def _downstream_short(candidate) -> str:
+    """HTML 候选表的「下游引用」格。口径与 Markdown 版一致：
+    TU 级候选标「未分析」，头文件级没有下游引用标「—」。
+    """
+    if not candidate.is_header_site and not candidate.downstream_files:
+        return "未分析"
+    if not candidate.downstream_files:
+        return "—"
+    return f"{len(candidate.downstream_files)} 文件"
+
+
 def _bar_chart(rows: list[tuple[str, int, bool]], unit: str) -> str:
     if not rows:
         return '<p class="note">没有可显示的数据。</p>'
@@ -341,19 +352,21 @@ def render_html(
         for candidate in scan.candidates_by_estimate()[:25]:
             rows.append(
                 "<tr>"
-                f'<td class="mono path">{_esc(_rel(candidate.tu, root))}</td>'
+                f'<td class="mono path">{_esc(_rel(candidate.site, root))}</td>'
                 f'<td class="mono path">{_esc(_rel(candidate.header, root))}</td>'
                 f'<td class="num">{len(candidate.exclusive_headers)}</td>'
                 f'<td class="num">{_fmt_int(candidate.estimated_lines_saved)}</td>'
                 f'<td class="num">{candidate.estimated_percent:.1f}%</td>'
+                f"<td>{_esc(_downstream_short(candidate))}</td>"
                 f'<td><span class="tag {_esc(candidate.confidence)}">'
                 f"{_esc(candidate.confidence)}</span></td>"
                 "</tr>"
             )
         candidates_table = (
             '<div class="panel"><table><thead><tr>'
-            "<th>编译单元</th><th>include</th><th class='num'>独占闭包</th>"
-            "<th class='num'>预计省行数</th><th class='num'>预计占比</th><th>置信度</th>"
+            "<th>改动位置</th><th>include</th><th class='num'>独占闭包</th>"
+            "<th class='num'>预计省行数</th><th class='num'>预计占比</th>"
+            "<th>下游引用</th><th>置信度</th>"
             "</tr></thead><tbody>" + "".join(rows) + "</tbody></table></div>"
         )
     else:

@@ -1,0 +1,699 @@
+{
+  "date": "2026-10-18",
+  "project": "zlib",
+  "tus": 15,
+  "scan_seconds": 7.01,
+  "enumerable_rows": 16,
+  "pass": {
+    "owner": 4,
+    "consumer_any": 1,
+    "consumer_all": 1
+  },
+  "name_frequency": {
+    "Bytef": 1,
+    "ZEXPORT": 16,
+    "Z_NULL": 1,
+    "adler32": 3,
+    "adler32_combine": 3,
+    "NULL": 5,
+    "adler32_combine64": 4,
+    "CHAR_BIT": 3,
+    "va_end": 1,
+    "va_list": 2,
+    "va_start": 1,
+    "Assert": 1,
+    "Byte": 1,
+    "DEF_MEM_LEVEL": 2,
+    "ERR_MSG": 1,
+    "Z_STREAM_ERROR": 1,
+    "gzFile": 4,
+    "gzclose": 3,
+    "gzclose_r": 3,
+    "O_APPEND": 1,
+    "O_BINARY": 1,
+    "O_CREAT": 1,
+    "O_EXCL": 1,
+    "O_RDONLY": 1,
+    "_S_IREAD": 1,
+    "_S_IWRITE": 1,
+    "errno": 3
+  },
+  "rows": [
+    {
+      "site": "zutil.h",
+      "site_name": "zutil.h",
+      "header": "zlib.h",
+      "line": null,
+      "reach": 9,
+      "saved": 5149,
+      "amplified": 46341,
+      "owner": "in_use",
+      "owner_ids": [
+        "FAR",
+        "MAX_MEM_LEVEL",
+        "MAX_WBITS",
+        "MSDOS",
+        "OS2"
+      ],
+      "consumers": 10,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\adler32.c",
+        "verdict": "in_use",
+        "ids": [
+          "Bytef",
+          "ZEXPORT",
+          "Z_NULL",
+          "adler32",
+          "adler32_combine"
+        ],
+        "provided_by": "zconf.h",
+        "freq": {
+          "Bytef": 1,
+          "ZEXPORT": 16,
+          "Z_NULL": 1,
+          "adler32": 3,
+          "adler32_combine": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\adler32.c",
+        "ids": [
+          "Bytef",
+          "Z_NULL"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zutil.h",
+      "site_name": "zutil.h",
+      "header": "string.h",
+      "line": null,
+      "reach": 9,
+      "saved": 418,
+      "amplified": 3762,
+      "owner": "in_use",
+      "owner_ids": [
+        "memcmp",
+        "memcpy",
+        "memset"
+      ],
+      "consumers": 10,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\crc32.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "string.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zutil.h",
+      "site_name": "zutil.h",
+      "header": "stdlib.h",
+      "line": null,
+      "reach": 9,
+      "saved": 1182,
+      "amplified": 10638,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 10,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\crc32.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "stdlib.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\inftrees.c",
+        "ids": [
+          "max",
+          "min"
+        ]
+      },
+      "was_broken": false,
+      "known_win": true
+    },
+    {
+      "site": "zlib.h",
+      "site_name": "zlib.h",
+      "header": "zconf.h",
+      "line": null,
+      "reach": 15,
+      "saved": 3243,
+      "amplified": 48645,
+      "owner": "in_use",
+      "owner_ids": [
+        "Bytef",
+        "FAR",
+        "STDC",
+        "ZEXPORT",
+        "ZEXPORTVA"
+      ],
+      "consumers": 18,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\adler32.c",
+        "verdict": "in_use",
+        "ids": [
+          "Bytef",
+          "ZEXPORT",
+          "adler32",
+          "adler32_combine",
+          "adler32_combine64"
+        ],
+        "provided_by": "zconf.h",
+        "freq": {
+          "Bytef": 1,
+          "ZEXPORT": 16,
+          "adler32": 3,
+          "adler32_combine": 3,
+          "adler32_combine64": 4
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\adler32.c",
+        "ids": [
+          "Bytef"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zconf.h",
+      "site_name": "zconf.h",
+      "header": "stddef.h",
+      "line": null,
+      "reach": 15,
+      "saved": 292,
+      "amplified": 4380,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 19,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\compress.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "__stddef_null.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zconf.h",
+      "site_name": "zconf.h",
+      "header": "limits.h",
+      "line": null,
+      "reach": 15,
+      "saved": 2094,
+      "amplified": 31410,
+      "owner": "in_use",
+      "owner_ids": [
+        "UINT_MAX",
+        "ULONG_MAX",
+        "USHRT_MAX",
+        "__int64"
+      ],
+      "consumers": 19,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzguts.h",
+        "verdict": "in_use",
+        "ids": [
+          "CHAR_BIT"
+        ],
+        "provided_by": "limits.h",
+        "freq": {
+          "CHAR_BIT": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "INT_MAX"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zconf.h",
+      "site_name": "zconf.h",
+      "header": "types.h",
+      "line": null,
+      "reach": 15,
+      "saved": 147,
+      "amplified": 2205,
+      "owner": "in_use",
+      "owner_ids": [
+        "__int64",
+        "off64_t",
+        "off_t"
+      ],
+      "consumers": 19,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "zconf.h",
+      "site_name": "zconf.h",
+      "header": "stdarg.h",
+      "line": null,
+      "reach": 15,
+      "saved": 159,
+      "amplified": 2385,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 19,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzwrite.c",
+        "verdict": "in_use",
+        "ids": [
+          "va_end",
+          "va_list",
+          "va_start"
+        ],
+        "provided_by": "__stdarg_va_arg.h",
+        "freq": {
+          "va_end": 1,
+          "va_list": 2,
+          "va_start": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzwrite.c",
+        "ids": [
+          "va_end",
+          "va_start"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "deflate.h",
+      "site_name": "deflate.h",
+      "header": "zutil.h",
+      "line": null,
+      "reach": 2,
+      "saved": 7233,
+      "amplified": 14466,
+      "owner": "in_use",
+      "owner_ids": [
+        "Byte",
+        "Bytef",
+        "MAX_MATCH",
+        "MIN_MATCH",
+        "STDC"
+      ],
+      "consumers": 2,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\deflate.c",
+        "verdict": "in_use",
+        "ids": [
+          "Assert",
+          "Byte",
+          "Bytef",
+          "DEF_MEM_LEVEL",
+          "ERR_MSG"
+        ],
+        "provided_by": "zutil.h",
+        "freq": {
+          "Assert": 1,
+          "Byte": 1,
+          "Bytef": 1,
+          "DEF_MEM_LEVEL": 2,
+          "ERR_MSG": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\deflate.c",
+        "ids": [
+          "Assert",
+          "Byte",
+          "Bytef",
+          "ERR_MSG",
+          "ERR_RETURN"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "stdio.h",
+      "line": null,
+      "reach": 5,
+      "saved": 2328,
+      "amplified": 11640,
+      "owner": "in_use",
+      "owner_ids": [
+        "_snprintf",
+        "_vsnprintf",
+        "snprintf",
+        "vsnprintf"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzclose.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "stdio.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "sprintf"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "zlib.h",
+      "line": null,
+      "reach": 5,
+      "saved": 3287,
+      "amplified": 16435,
+      "owner": "in_use",
+      "owner_ids": [
+        "CHAR_BIT",
+        "FAR",
+        "MAX_MEM_LEVEL",
+        "MSDOS",
+        "STDC"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzclose.c",
+        "verdict": "in_use",
+        "ids": [
+          "ZEXPORT",
+          "Z_STREAM_ERROR",
+          "gzFile",
+          "gzclose",
+          "gzclose_r"
+        ],
+        "provided_by": "zlib.h",
+        "freq": {
+          "ZEXPORT": 16,
+          "Z_STREAM_ERROR": 1,
+          "gzFile": 4,
+          "gzclose": 3,
+          "gzclose_r": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzclose.c",
+        "ids": [
+          "Z_STREAM_ERROR"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "string.h",
+      "line": null,
+      "reach": 5,
+      "saved": 418,
+      "amplified": 2090,
+      "owner": "in_use",
+      "owner_ids": [
+        "strerror"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzclose.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "string.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "strcat",
+          "strcpy",
+          "strlen"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "stdlib.h",
+      "line": null,
+      "reach": 5,
+      "saved": 1182,
+      "amplified": 5910,
+      "owner": "in_use",
+      "owner_ids": [
+        "errno",
+        "free",
+        "malloc"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzclose.c",
+        "verdict": "in_use",
+        "ids": [
+          "NULL"
+        ],
+        "provided_by": "stdlib.h",
+        "freq": {
+          "NULL": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "wcstombs"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "fcntl.h",
+      "line": null,
+      "reach": 5,
+      "saved": 534,
+      "amplified": 2670,
+      "owner": "in_use",
+      "owner_ids": [
+        "eof"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "verdict": "in_use",
+        "ids": [
+          "O_APPEND",
+          "O_BINARY",
+          "O_CREAT",
+          "O_EXCL",
+          "O_RDONLY"
+        ],
+        "provided_by": "fcntl.h",
+        "freq": {
+          "O_APPEND": 1,
+          "O_BINARY": 1,
+          "O_CREAT": 1,
+          "O_EXCL": 1,
+          "O_RDONLY": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "O_APPEND",
+          "O_BINARY",
+          "O_CREAT",
+          "O_EXCL",
+          "O_RDONLY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "stat.h",
+      "line": null,
+      "reach": 5,
+      "saved": 285,
+      "amplified": 1425,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "verdict": "in_use",
+        "ids": [
+          "_S_IREAD",
+          "_S_IWRITE"
+        ],
+        "provided_by": "stat.h",
+        "freq": {
+          "_S_IREAD": 1,
+          "_S_IWRITE": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzlib.c",
+        "ids": [
+          "_S_IREAD",
+          "_S_IWRITE"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "gzguts.h",
+      "site_name": "gzguts.h",
+      "header": "errno.h",
+      "line": null,
+      "reach": 5,
+      "saved": 241,
+      "amplified": 1205,
+      "owner": "in_use",
+      "owner_ids": [
+        "EAGAIN",
+        "EWOULDBLOCK",
+        "errno"
+      ],
+      "consumers": 5,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\zlib\\gzread.c",
+        "verdict": "in_use",
+        "ids": [
+          "errno"
+        ],
+        "provided_by": "errno.h",
+        "freq": {
+          "errno": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    }
+  ]
+}

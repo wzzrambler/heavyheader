@@ -357,6 +357,16 @@ class RemovalCandidate:
     #: 删掉这一行后必须重新编译的编译单元（头文件级候选才有多个）。
     #: 空 = 只有 ``tu`` 一个，即旧的 TU 级候选。
     affected_tus: list[Path] = field(default_factory=list)
+    #: **下游引用**：除拥有这一行的文件之外，还有哪些文件的名字来自即将消失
+    #: 的集合。为什么需要它：可行性闸门只问「拥有这一行的文件用不用」，而
+    #: 头文件级删除会改变**所有**包含者的可见性——doctest 的 16 条闸门候选里
+    #: 8 条编译不过，每一条的报错符号都写在下游文件里（``std::sort`` 写在
+    #: ``context.cpp``，``<algorithm>`` 的 include 行在 ``prelude.h``）。
+    #: 这不是判定（判定只由 verify 给），是风险证据：下游引用 > 0 的候选
+    #: 大概率删不得，= 0 的也可能因为宏 / ADL / 模板而失败。
+    downstream_files: list[Path] = field(default_factory=list)
+    #: 下游引用命中的名字（去重、截断），给报告的「下游引用」列用。
+    downstream_names: list[str] = field(default_factory=list)
 
     @property
     def site(self) -> Path:

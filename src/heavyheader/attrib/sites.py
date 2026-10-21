@@ -167,6 +167,9 @@ def find_header_candidates(
     closures = _closures(children)
     parsed = tu_parsed_files(scan, closures)
     tu_sources = set(parsed)
+    all_parsed: set[Path] = set()
+    for files in parsed.values():
+        all_parsed |= files
 
     # 每个 TU 的「解析了多少行」与「编译了多久」，用于把行数换算成秒。
     processed_lines = {
@@ -196,6 +199,46 @@ def find_header_candidates(
             exclusive.add(header)
         exclusive -= shared
         return exclusive
+
+    def downstream_of(
+        site_file: Path, exclusive: set[Path], affected: list[Path]
+    ) -> tuple[list[Path], list[str]]:
+        """哪些文件的名字会随这一行一起消失（不含拥有这一行的文件本身）。
+
+        闸门只问「拥有这一行的文件用不用」，这对头文件级的删除是不够的：
+        删一行改变的是**所有**包含者的可见性。doctest 的 8 条编译失败里，
+        每一条的报错符号都写在下游文件里——``std::sort`` 在 ``context.cpp``，
+        而 ``<algorithm>`` 的 include 行在 ``prelude.h``。只看 owner 的闸门
+        对「能否编译」没有预测力（50% vs 47%，§9.8），加上下游证据之后它
+        才第一次有了信息量。
+
+        只对**过了闸门**的候选计算：全量 66 对 × 几百个文件会是可感知的
+        开销，而没过闸门的行根本不会出现在报告里。命中名字只取声明级
+        （``header_ids``），所以 ``data.cpp`` 里的 ``.at(...)`` 不会再被
+        ``<unordered_set>`` 的成员名污染。
+        """
+        doomed: set[str] = set()
+        for path in exclusive:
+            doomed |= index.header_ids(path)
+        if not doomed:
+            return [], []
+        consumers: set[Path] = set(affected)
+        for path in all_parsed:
+            if site_file in closures.get(path, frozenset()):
+                consumers.add(path)
+        files: list[Path] = []
+        names: set[str] = set()
+        for path in sorted(consumers):
+            if path == site_file:
+                continue
+            ids = index.source_ids(path)
+            if not ids:
+                continue
+            hits = ids & doomed
+            if hits:
+                files.append(path)
+                names |= hits
+        return files, sorted(names)[:8]
 
     def reject(
         reason: str,
@@ -334,6 +377,10 @@ def find_header_candidates(
                 if counted:
                     seconds = round(total_seconds, 4)
 
+            downstream_files, downstream_names = downstream_of(
+                site_file, exclusive, affected
+            )
+
             candidates.append(
                 RemovalCandidate(
                     tu=representative,
@@ -348,7 +395,9 @@ def find_header_candidates(
                     verified=False,
                     usage_label=signal.label,
                     usage_verdict=signal.verdict.value,
-                    confidence=_confidence(saved, len(affected), signal),
+                    confidence=_confidence(
+                        saved, len(affected), signal, bool(downstream_files)
+                    ),
                     notes=_notes(
                         site_file,
                         header,
@@ -357,9 +406,13 @@ def find_header_candidates(
                         basis,
                         covered,
                         signal,
+                        downstream_files,
+                        downstream_names,
                     ),
                     site_file=site_file,
                     affected_tus=list(affected),
+                    downstream_files=downstream_files,
+                    downstream_names=downstream_names,
                 )
             )
 
@@ -400,12 +453,21 @@ def _block_detail(signal) -> str:
     return "文本判定给不出结论，工具选择不猜"
 
 
-def _confidence(saved: int, reach: int, signal) -> str:
+def _confidence(
+    saved: int, reach: int, signal, has_downstream: bool = False
+) -> str:
     """与 graph._confidence 同形的三档，但换成了头文件级的判据。
 
     门槛按「放大后行数」定，而不是单 TU 行数：一个 288 行的 include 在
     单个 TU 里微不足道，被 24 个 TU 各解析一遍就是近 7000 行。
+
+    下游引用把置信度直接压到 low，无论行数多大：收益再大，删了下游就断，
+    「值不值得做」要等 verify 重新编译全部受影响单元之后才有答案。实测
+    （doctest 16 条闸门候选，§9.3b）：下游引用 > 0 的 9 条里 6 条编译失败；
+    但也有 1 条经复测省时 3.0%——所以这只影响置信度，不做一票否决。
     """
+    if has_downstream:
+        return "low"
     amplified = saved * reach
     if signal.verdict is not UsageVerdict.PLAUSIBLY_UNUSED:
         return "low"
@@ -424,6 +486,8 @@ def _notes(
     basis: str = "lines",
     covered: tuple[int, int] | None = None,
     signal=None,
+    downstream_files: list[Path] | None = None,
+    downstream_names: list[str] | None = None,
 ) -> list[str]:
     notes = [
         f"这一行在头文件 {site_file.name} 里，被 {reach} 个编译单元解析",
@@ -450,6 +514,19 @@ def _notes(
         notes.append(
             "⚠ 文本判定给不出结论（命中的标识符在几十个头里都出现，属环境噪音）；"
             "本条因 `--allow-unknown-sites` 才被列出，可信度低于其他候选"
+        )
+    if downstream_files:
+        # 措辞必须是「风险」而不是「会失败」：doctest 有一条下游引用 > 0 的
+        # 候选（prelude.h -> <unordered_set>）实测省时 3.0%。这里只把证据
+        # 摆出来，结论留给 verify。
+        shown = "、".join((downstream_names or [])[:3])
+        more = "…" if len(downstream_names or []) > 3 else ""
+        files = "、".join(Path(f).name for f in downstream_files[:3])
+        more_f = "…" if len(downstream_files) > 3 else ""
+        notes.append(
+            f"⚠ 下游引用：{len(downstream_files)} 个文件（{files}{more_f}）使用了"
+            f"即将消失的名字（{shown}{more}）。删这一行很可能连带编译失败，"
+            "是否真的可删由 verify 重编全部受影响单元后给出"
         )
     notes.append(
         "可行性判定基于「该文件自身正文不使用即将消失的标识符」；"

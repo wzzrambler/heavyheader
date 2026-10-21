@@ -1,0 +1,3176 @@
+{
+  "date": "2026-10-18",
+  "project": "json",
+  "tus": 25,
+  "scan_seconds": 34.95,
+  "enumerable_rows": 70,
+  "pass": {
+    "owner": 2,
+    "consumer_any": 5,
+    "consumer_all": 3
+  },
+  "name_frequency": {
+    "CHECK": 1,
+    "CHECK_THROWS_WITH_AS": 1,
+    "TEST_CASE": 27,
+    "begin": 8,
+    "copy": 6,
+    "string": 13,
+    "literals": 4,
+    "byte": 3,
+    "first": 2,
+    "second": 3,
+    "type": 31,
+    "iterator": 14,
+    "is_array": 5,
+    "cbegin": 2,
+    "size": 13,
+    "vector": 9,
+    "count": 4,
+    "distance": 2,
+    "equal": 3,
+    "find": 9,
+    "get": 11,
+    "byte_container_with_subtype": 1,
+    "detail": 35,
+    "end": 8,
+    "uint8_t": 8,
+    "value": 35,
+    "string_t": 3,
+    "allocator": 26,
+    "adjacent_find": 2,
+    "all_of": 2,
+    "any_of": 2,
+    "JSON_DIAGNOSTICS": 2,
+    "JSON_USE_LEGACY_DISCARDED_VALUE_COMPARISON": 1,
+    "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+    "NLOHMANN_JSON_NAMESPACE_END": 38,
+    "NLOHMANN_JSON_VERSION_MAJOR": 1,
+    "AllocatorType": 2,
+    "ArrayType": 1,
+    "BasicJsonType": 14,
+    "BinaryType": 2,
+    "BooleanType": 1,
+    "IteratorType": 3,
+    "array": 6,
+    "binary": 1,
+    "binary_t": 2,
+    "enable_if_t": 13,
+    "equivalent": 2,
+    "is_lt": 2,
+    "const_iterator": 6,
+    "erase": 8,
+    "forward": 5,
+    "isnan": 2,
+    "j1": 1,
+    "resize": 4,
+    "adl_serializer": 4,
+    "nlohmann": 29,
+    "identity_tag": 1,
+    "Args": 6,
+    "JSON_DISABLE_ENUM_SERIALIZATION": 1,
+    "JSON_HAS_CPP_17": 1,
+    "JSON_HAS_EXPERIMENTAL_FILESYSTEM": 1,
+    "JSON_HAS_FILESYSTEM": 1,
+    "is_arithmetic": 3,
+    "is_same": 10,
+    "value_type": 21,
+    "SIZE_MAX": 3,
+    "JSON_HEDLEY_UNLIKELY": 1,
+    "assert": 1,
+    "numeric_limits": 2,
+    "add_pointer": 2,
+    "allocator_traits": 3,
+    "json_sax": 2,
+    "InputAdapterType": 3,
+    "SAX": 2,
+    "char_type": 3,
+    "clear": 2,
+    "data": 5,
+    "empty": 1,
+    "primitive_iterator_t": 1,
+    "CharType": 2,
+    "StringType": 6,
+    "istream": 5,
+    "ostream": 6,
+    "reserve": 4,
+    "JSON_HEDLEY_NON_NULL": 2,
+    "JSON_HEDLEY_RETURNS_NON_NULL": 2,
+    "TEST_DATA_DIRECTORY": 1,
+    "Approx": 2,
+    "doctest": 3
+  },
+  "rows": [
+    {
+      "site": "tests\\thirdparty\\doctest\\doctest_compatibility.h",
+      "site_name": "doctest_compatibility.h",
+      "header": "doctest.h",
+      "line": null,
+      "reach": 25,
+      "saved": 7160,
+      "amplified": 179000,
+      "owner": "in_use",
+      "owner_ids": [
+        "Approx",
+        "CAPTURE",
+        "CHECK_THROWS_WITH",
+        "DOCTEST_ANONYMOUS",
+        "DOCTEST_CAPTURE"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "CHECK",
+          "CHECK_THROWS_WITH_AS",
+          "TEST_CASE",
+          "begin",
+          "copy"
+        ],
+        "provided_by": "doctest.h",
+        "freq": {
+          "CHECK": 1,
+          "CHECK_THROWS_WITH_AS": 1,
+          "TEST_CASE": 27,
+          "begin": 8,
+          "copy": 6
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "ids": [
+          "CHECK",
+          "CHECK_THROWS_WITH_AS",
+          "it"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "tests\\thirdparty\\doctest\\doctest_compatibility.h",
+      "site_name": "doctest_compatibility.h",
+      "header": "iosfwd",
+      "line": null,
+      "reach": 25,
+      "saved": 8086,
+      "amplified": 202150,
+      "owner": "in_use",
+      "owner_ids": [
+        "string"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "string"
+        ],
+        "provided_by": "stringfwd.h",
+        "freq": {
+          "string": 13
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "ids": [
+          "ifstream"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "tests\\thirdparty\\doctest\\doctest.h",
+      "site_name": "doctest.h",
+      "header": "ciso646",
+      "line": null,
+      "reach": 25,
+      "saved": 2129,
+      "amplified": 53225,
+      "owner": "in_use",
+      "owner_ids": [
+        "NOMINMAX",
+        "terminate"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-class_parser.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "literals"
+        ],
+        "provided_by": "c++config.h",
+        "freq": {
+          "literals": 4
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "cstddef",
+      "line": null,
+      "reach": 25,
+      "saved": 199,
+      "amplified": 4975,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "byte"
+        ],
+        "provided_by": "cstddef",
+        "freq": {
+          "byte": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "functional",
+      "line": null,
+      "reach": 25,
+      "saved": 6338,
+      "amplified": 158450,
+      "owner": "in_use",
+      "owner_ids": [
+        "allocator_type",
+        "decay",
+        "difference_type",
+        "enable_if",
+        "enable_if_t"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "first",
+          "second"
+        ],
+        "provided_by": "tuple",
+        "freq": {
+          "first": 2,
+          "second": 3
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-constructor2.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "type"
+        ],
+        "provided_by": null,
+        "freq": {
+          "type": 31
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-constructor1.cpp",
+        "ids": [
+          "make_tuple"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "iterator",
+      "line": null,
+      "reach": 25,
+      "saved": 362,
+      "amplified": 9050,
+      "owner": "in_use",
+      "owner_ids": [
+        "iterator"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-assert_macro.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "iterator"
+        ],
+        "provided_by": "stream_iterator.h",
+        "freq": {
+          "iterator": 14
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "memory",
+      "line": null,
+      "reach": 25,
+      "saved": 11201,
+      "amplified": 280025,
+      "owner": "in_use",
+      "owner_ids": [
+        "enable_if",
+        "exception",
+        "is_array",
+        "iterator",
+        "less"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "is_array"
+        ],
+        "provided_by": "shared_ptr.h",
+        "freq": {
+          "is_array": 5
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-constructor2.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "type"
+        ],
+        "provided_by": null,
+        "freq": {
+          "type": 31
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-cbor.cpp",
+        "ids": [
+          "store"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "utility",
+      "line": null,
+      "reach": 25,
+      "saved": 326,
+      "amplified": 8150,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "vector",
+      "line": null,
+      "reach": 25,
+      "saved": 5831,
+      "amplified": 145775,
+      "owner": "in_use",
+      "owner_ids": [
+        "cbegin",
+        "emplace_back",
+        "erase",
+        "hash",
+        "insert"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "cbegin",
+          "size"
+        ],
+        "provided_by": "vector.tcc",
+        "freq": {
+          "cbegin": 2,
+          "size": 13
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-byte_container_with_subtype.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "vector"
+        ],
+        "provided_by": null,
+        "freq": {
+          "vector": 9
+        }
+      },
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "adl_serializer.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 38914,
+      "amplified": 972850,
+      "owner": "in_use",
+      "owner_ids": [
+        "AllocatorType",
+        "ArrayType",
+        "BinaryType",
+        "BooleanType",
+        "CompatibleType"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "count",
+          "distance",
+          "equal",
+          "find",
+          "get"
+        ],
+        "provided_by": "hashtable.h",
+        "freq": {
+          "count": 4,
+          "distance": 2,
+          "equal": 3,
+          "find": 9,
+          "get": 11
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "ids": [
+          "invalid_iterator",
+          "j1",
+          "number_integer",
+          "sum"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "byte_container_with_subtype.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 103,
+      "amplified": 2575,
+      "owner": "in_use",
+      "owner_ids": [
+        "BinaryType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "byte_container_with_subtype"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-byte_container_with_subtype.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "byte_container_with_subtype"
+        ],
+        "provided_by": "byte_container_with_subtype.hpp",
+        "freq": {
+          "byte_container_with_subtype": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-byte_container_with_subtype.cpp",
+        "ids": [
+          "byte_container_with_subtype"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "hash.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 129,
+      "amplified": 3225,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "hash"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail"
+        ],
+        "provided_by": "hash.hpp",
+        "freq": {
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "binary_reader.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 22210,
+      "amplified": 555250,
+      "owner": "in_use",
+      "owner_ids": [
+        "InputAdapterType",
+        "IteratorType",
+        "SAX",
+        "add_pointer",
+        "begin"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "end",
+          "find",
+          "get",
+          "is_array"
+        ],
+        "provided_by": "input_adapters.hpp",
+        "freq": {
+          "begin": 8,
+          "end": 8,
+          "find": 9,
+          "get": 11,
+          "is_array": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "ids": [
+          "ifstream"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "parser.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 519,
+      "amplified": 12975,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "InputAdapterType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "detail",
+        "parse_event_t"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "uint8_t"
+        ],
+        "provided_by": "parser.hpp",
+        "freq": {
+          "detail": 35,
+          "uint8_t": 8
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-cbor.cpp",
+        "ids": [
+          "parse_event_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "internal_iterator.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 167,
+      "amplified": 4175,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "internal_iterator"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail"
+        ],
+        "provided_by": "internal_iterator.hpp",
+        "freq": {
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-class_iterator.cpp",
+        "ids": [
+          "primitive_iterator_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "iter_impl.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 751,
+      "amplified": 18775,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "IteratorType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail"
+        ],
+        "provided_by": "iter_impl.hpp",
+        "freq": {
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-class_iterator.cpp",
+        "ids": [
+          "iter_impl"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "json_reverse_iterator.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 130,
+      "amplified": 3250,
+      "owner": "in_use",
+      "owner_ids": [
+        "Base",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "json_reverse_iterator"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail"
+        ],
+        "provided_by": "json_reverse_iterator.hpp",
+        "freq": {
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-class_iterator.cpp",
+        "ids": [
+          "Base",
+          "json_reverse_iterator"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "json_custom_base_class.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 39,
+      "amplified": 975,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "conditional",
+        "detail",
+        "is_same"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "type",
+          "value"
+        ],
+        "provided_by": "json_custom_base_class.hpp",
+        "freq": {
+          "type": 31,
+          "value": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "json_pointer.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 988,
+      "amplified": 24700,
+      "owner": "in_use",
+      "owner_ids": [
+        "JSON_HEDLEY_DEPRECATED_FOR",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "StringType",
+        "json_pointer"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-allocator.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "string_t"
+        ],
+        "provided_by": "json_pointer.hpp",
+        "freq": {
+          "string_t": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-deserialization.cpp",
+        "ids": [
+          "rhs"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "json_ref.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 78,
+      "amplified": 1950,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "json_ref"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail"
+        ],
+        "provided_by": "json_ref.hpp",
+        "freq": {
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "binary_writer.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 1985,
+      "amplified": 49625,
+      "owner": "in_use",
+      "owner_ids": [
+        "AllocatorType",
+        "BasicJsonType",
+        "CharType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-allocator.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "allocator"
+        ],
+        "provided_by": "output_adapters.hpp",
+        "freq": {
+          "allocator": 26
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-convenience.cpp",
+        "ids": [
+          "output_adapter"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "serializer.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 9141,
+      "amplified": 228525,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "JSON_HEDLEY_NON_NULL",
+        "JSON_HEDLEY_RETURNS_NON_NULL",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "size",
+          "string"
+        ],
+        "provided_by": "locale_facets_nonio.tcc",
+        "freq": {
+          "size": 13,
+          "string": 13
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-cbor.cpp",
+        "ids": [
+          "error_handler_t",
+          "setfill",
+          "setw"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "ordered_map.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 359,
+      "amplified": 8975,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "less",
+        "pair",
+        "vector"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-allocator.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "allocator",
+          "vector"
+        ],
+        "provided_by": "ordered_map.hpp",
+        "freq": {
+          "allocator": 26,
+          "vector": 9
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "macro_unscope.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 203,
+      "amplified": 5075,
+      "owner": "unknown",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": false,
+      "any_unknown": true,
+      "trigger": null,
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "unknown",
+        "ids": [],
+        "provided_by": null,
+        "freq": {}
+      },
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\json.hpp",
+      "site_name": "json.hpp",
+      "header": "algorithm",
+      "line": null,
+      "reach": 25,
+      "saved": 9297,
+      "amplified": 232425,
+      "owner": "in_use",
+      "owner_ids": [
+        "all_of",
+        "begin",
+        "copy",
+        "count",
+        "difference_type"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "adjacent_find",
+          "all_of",
+          "any_of",
+          "begin",
+          "copy"
+        ],
+        "provided_by": "algorithmfwd.h",
+        "freq": {
+          "adjacent_find": 2,
+          "all_of": 2,
+          "any_of": 2,
+          "begin": 8,
+          "copy": 6
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "ids": [
+          "adjacent_find",
+          "all_of",
+          "any_of",
+          "copy_if",
+          "copy_n"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\adl_serializer.hpp",
+      "site_name": "adl_serializer.hpp",
+      "header": "abi_macros.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 100,
+      "amplified": 2500,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "JSON_DIAGNOSTICS",
+          "JSON_USE_LEGACY_DISCARDED_VALUE_COMPARISON",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "NLOHMANN_JSON_VERSION_MAJOR"
+        ],
+        "provided_by": "abi_macros.hpp",
+        "freq": {
+          "JSON_DIAGNOSTICS": 2,
+          "JSON_USE_LEGACY_DISCARDED_VALUE_COMPARISON": 1,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "NLOHMANN_JSON_VERSION_MAJOR": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "JSON_USE_LEGACY_DISCARDED_VALUE_COMPARISON",
+          "NLOHMANN_JSON_VERSION_MAJOR",
+          "NLOHMANN_JSON_VERSION_MINOR",
+          "NLOHMANN_JSON_VERSION_PATCH"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\adl_serializer.hpp",
+      "site_name": "adl_serializer.hpp",
+      "header": "from_json.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 63288,
+      "amplified": 1582200,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "adl_serializer",
+        "forward",
+        "from_json",
+        "identity_tag"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "AllocatorType",
+          "ArrayType",
+          "BasicJsonType",
+          "BinaryType",
+          "BooleanType"
+        ],
+        "provided_by": "json_fwd.hpp",
+        "freq": {
+          "AllocatorType": 2,
+          "ArrayType": 1,
+          "BasicJsonType": 14,
+          "BinaryType": 2,
+          "BooleanType": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "Args",
+          "ArrayType",
+          "BooleanType",
+          "CompatibleType",
+          "JSONSerializer"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\adl_serializer.hpp",
+      "site_name": "adl_serializer.hpp",
+      "header": "to_json.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 717,
+      "amplified": 17925,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "nlohmann",
+        "to_json"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "IteratorType",
+          "array",
+          "binary",
+          "binary_t"
+        ],
+        "provided_by": "to_json.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "IteratorType": 3,
+          "array": 6,
+          "binary": 1,
+          "binary_t": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "binary",
+          "boolean",
+          "external_constructor",
+          "number_float",
+          "number_integer"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "array",
+      "line": null,
+      "reach": 25,
+      "saved": 1815,
+      "amplified": 45375,
+      "owner": "in_use",
+      "owner_ids": [
+        "array",
+        "enable_if_t",
+        "get",
+        "move",
+        "type"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "array",
+          "enable_if_t",
+          "equivalent",
+          "get",
+          "is_lt"
+        ],
+        "provided_by": "array",
+        "freq": {
+          "array": 6,
+          "enable_if_t": 13,
+          "equivalent": 2,
+          "get": 11,
+          "is_lt": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-comparison.cpp",
+        "ids": [
+          "is_eq",
+          "is_gt"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "forward_list",
+      "line": null,
+      "reach": 25,
+      "saved": 2684,
+      "amplified": 67100,
+      "owner": "in_use",
+      "owner_ids": [
+        "begin",
+        "end",
+        "resize",
+        "size_type",
+        "value_type"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "const_iterator",
+          "end",
+          "erase",
+          "iterator"
+        ],
+        "provided_by": "forward_list.tcc",
+        "freq": {
+          "begin": 8,
+          "const_iterator": 6,
+          "end": 8,
+          "erase": 8,
+          "iterator": 14
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-constructor1.cpp",
+        "ids": [
+          "forward_list"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "map",
+      "line": null,
+      "reach": 25,
+      "saved": 26488,
+      "amplified": 662200,
+      "owner": "in_use",
+      "owner_ids": [
+        "array",
+        "begin",
+        "declval",
+        "enable_if_t",
+        "end"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "forward"
+        ],
+        "provided_by": "move.h",
+        "freq": {
+          "forward": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "allocator_traits",
+          "back_inserter",
+          "destroy",
+          "distance",
+          "insert_iterator"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "unordered_map",
+      "line": null,
+      "reach": 25,
+      "saved": 7748,
+      "amplified": 193700,
+      "owner": "in_use",
+      "owner_ids": [
+        "clear",
+        "forward",
+        "mapped_type",
+        "second",
+        "size"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "forward"
+        ],
+        "provided_by": "hashtable.h",
+        "freq": {
+          "forward": 5
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-constructor1.cpp",
+        "ids": [
+          "unordered_map",
+          "unordered_multimap"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "valarray",
+      "line": null,
+      "reach": 25,
+      "saved": 9994,
+      "amplified": 249850,
+      "owner": "in_use",
+      "owner_ids": [
+        "begin",
+        "end",
+        "resize",
+        "value_type"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "end",
+          "isnan",
+          "j1",
+          "resize"
+        ],
+        "provided_by": "valarray",
+        "freq": {
+          "begin": 8,
+          "end": 8,
+          "isnan": 2,
+          "j1": 1,
+          "resize": 4
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "size"
+        ],
+        "provided_by": null,
+        "freq": {
+          "size": 13
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "isnan",
+          "j1"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "exceptions.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 11177,
+      "amplified": 279425,
+      "owner": "in_use",
+      "owner_ids": [
+        "Allocator",
+        "BasicJsonType",
+        "Compare",
+        "ConstructibleArrayType",
+        "ConstructibleObjectType"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "adl_serializer",
+          "nlohmann"
+        ],
+        "provided_by": "type_traits.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "adl_serializer": 4,
+          "nlohmann": 29
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "ArrayType",
+          "BooleanType",
+          "CompatibleType",
+          "JSONSerializer",
+          "JSON_CATCH"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\from_json.hpp",
+      "site_name": "from_json.hpp",
+      "header": "identity_tag.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 21,
+      "amplified": 525,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "identity_tag"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail",
+          "identity_tag"
+        ],
+        "provided_by": "identity_tag.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35,
+          "identity_tag": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "ids": [
+          "identity_tag"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "value_t.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 5548,
+      "amplified": 138700,
+      "owner": "in_use",
+      "owner_ids": [
+        "JSON_HEDLEY_NON_NULL",
+        "array",
+        "size",
+        "type",
+        "value_t"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "Args",
+          "JSON_DISABLE_ENUM_SERIALIZATION",
+          "JSON_HAS_CPP_17",
+          "JSON_HAS_EXPERIMENTAL_FILESYSTEM",
+          "JSON_HAS_FILESYSTEM"
+        ],
+        "provided_by": "detected.hpp",
+        "freq": {
+          "Args": 6,
+          "JSON_DISABLE_ENUM_SERIALIZATION": 1,
+          "JSON_HAS_CPP_17": 1,
+          "JSON_HAS_EXPERIMENTAL_FILESYSTEM": 1,
+          "JSON_HAS_FILESYSTEM": 1
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "unknown",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": null,
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "JSON_DISABLE_ENUM_SERIALIZATION",
+          "JSON_HAS_CPP_17",
+          "JSON_HAS_EXPERIMENTAL_FILESYSTEM",
+          "JSON_HAS_FILESYSTEM",
+          "JSON_HEDLEY_UNLIKELY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "string_escape.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 72,
+      "amplified": 1800,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "escape"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "string_escape.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "escape"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "position_t.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 37,
+      "amplified": 925,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "position_t"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "position_t.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "cpp_future.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 171,
+      "amplified": 4275,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "array",
+        "detail",
+        "enable_if_t"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "cpp_future.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "priority_tag"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "type_traits.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 3204,
+      "amplified": 80100,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonContext",
+        "BasicJsonType",
+        "detail",
+        "enable_if_t",
+        "is_basic_json_context"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "adl_serializer",
+          "detail",
+          "nlohmann"
+        ],
+        "provided_by": "type_traits.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "adl_serializer": 4,
+          "detail": 35,
+          "nlohmann": 29
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "object_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "string_concat.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 695,
+      "amplified": 17375,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "concat",
+        "detail",
+        "enable_if_t"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "string_concat.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "concat"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\exceptions.hpp",
+      "site_name": "exceptions.hpp",
+      "header": "numeric",
+      "line": null,
+      "reach": 25,
+      "saved": 1193,
+      "amplified": 29825,
+      "owner": "in_use",
+      "owner_ids": [
+        "accumulate",
+        "enable_if_t"
+      ],
+      "consumers": 28,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "enable_if_t",
+          "is_arithmetic",
+          "is_same",
+          "value_type"
+        ],
+        "provided_by": "numeric",
+        "freq": {
+          "enable_if_t": 13,
+          "is_arithmetic": 3,
+          "is_same": 10,
+          "value_type": 21
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "ids": [
+          "iota"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\value_t.hpp",
+      "site_name": "value_t.hpp",
+      "header": "cstdint",
+      "line": null,
+      "reach": 25,
+      "saved": 1530,
+      "amplified": 38250,
+      "owner": "unknown",
+      "owner_ids": [
+        "uint8_t"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "SIZE_MAX"
+        ],
+        "provided_by": "stdint.h",
+        "freq": {
+          "SIZE_MAX": 3
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "unknown",
+        "ids": [
+          "uint8_t"
+        ],
+        "provided_by": null,
+        "freq": {
+          "uint8_t": 8
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "ids": [
+          "int16_t",
+          "int32_t",
+          "int8_t",
+          "uint16_t",
+          "uint32_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\value_t.hpp",
+      "site_name": "value_t.hpp",
+      "header": "macro_scope.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 6578,
+      "amplified": 164450,
+      "owner": "in_use",
+      "owner_ids": [
+        "JSON_HAS_THREE_WAY_COMPARISON",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "value_t"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "detected.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "JSON_DISABLE_ENUM_SERIALIZATION",
+          "JSON_HAS_CPP_17",
+          "JSON_HAS_EXPERIMENTAL_FILESYSTEM",
+          "JSON_HAS_FILESYSTEM",
+          "JSON_HEDLEY_UNLIKELY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\macro_scope.hpp",
+      "site_name": "macro_scope.hpp",
+      "header": "detected.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 94,
+      "amplified": 2350,
+      "owner": "in_use",
+      "owner_ids": [
+        "detail",
+        "is_detected_exact"
+      ],
+      "consumers": 30,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "detected.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "is_detected_lazy"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\macro_scope.hpp",
+      "site_name": "macro_scope.hpp",
+      "header": "hedley.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 2045,
+      "amplified": 51125,
+      "owner": "in_use",
+      "owner_ids": [
+        "JSON_HEDLEY_HAS_ATTRIBUTE"
+      ],
+      "consumers": 30,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "JSON_HEDLEY_UNLIKELY"
+        ],
+        "provided_by": "hedley.hpp",
+        "freq": {
+          "JSON_HEDLEY_UNLIKELY": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\conversions\\from_json.hpp",
+        "ids": [
+          "JSON_HEDLEY_UNLIKELY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\macro_scope.hpp",
+      "site_name": "macro_scope.hpp",
+      "header": "version",
+      "line": null,
+      "reach": 25,
+      "saved": 2752,
+      "amplified": 68800,
+      "owner": "in_use",
+      "owner_ids": [
+        "__cpp_lib_filesystem",
+        "__cpp_lib_ranges",
+        "__cpp_lib_three_way_comparison"
+      ],
+      "consumers": 30,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\macro_scope.hpp",
+      "site_name": "macro_scope.hpp",
+      "header": "cassert",
+      "line": null,
+      "reach": 25,
+      "saved": 1205,
+      "amplified": 30125,
+      "owner": "in_use",
+      "owner_ids": [
+        "assert"
+      ],
+      "consumers": 30,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-allocator.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "assert"
+        ],
+        "provided_by": "assert.h",
+        "freq": {
+          "assert": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-allocator.cpp",
+        "ids": [
+          "assert"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\detected.hpp",
+      "site_name": "detected.hpp",
+      "header": "void_t.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 24,
+      "amplified": 600,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "type",
+        "void_t"
+      ],
+      "consumers": 31,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "void_t.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "site_name": "type_traits.hpp",
+      "header": "limits",
+      "line": null,
+      "reach": 25,
+      "saved": 2239,
+      "amplified": 55975,
+      "owner": "in_use",
+      "owner_ids": [
+        "numeric_limits"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-bjdata.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "numeric_limits"
+        ],
+        "provided_by": "limits",
+        "freq": {
+          "numeric_limits": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "site_name": "type_traits.hpp",
+      "header": "iterator_traits.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 61,
+      "amplified": 1525,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "difference_type",
+        "enable_if_t"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "iterator_traits.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "site_name": "type_traits.hpp",
+      "header": "begin.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 17,
+      "amplified": 425,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END"
+        ],
+        "provided_by": "begin.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "site_name": "type_traits.hpp",
+      "header": "end.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 17,
+      "amplified": 425,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END"
+        ],
+        "provided_by": "end.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\meta\\type_traits.hpp",
+      "site_name": "type_traits.hpp",
+      "header": "json_fwd.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 75,
+      "amplified": 1875,
+      "owner": "in_use",
+      "owner_ids": [
+        "Args",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "ObjectType",
+        "json_pointer"
+      ],
+      "consumers": 29,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "adl_serializer",
+          "nlohmann"
+        ],
+        "provided_by": "json_fwd.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "adl_serializer": 4,
+          "nlohmann": 29
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "ArrayType",
+          "BooleanType",
+          "JSONSerializer",
+          "NumberFloatType",
+          "NumberIntegerType"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\string_concat.hpp",
+      "site_name": "string_concat.hpp",
+      "header": "cstring",
+      "line": null,
+      "reach": 25,
+      "saved": 3227,
+      "amplified": 80675,
+      "owner": "in_use",
+      "owner_ids": [
+        "strlen"
+      ],
+      "consumers": 29,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\to_json.hpp",
+      "site_name": "to_json.hpp",
+      "header": "iteration_proxy.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 242,
+      "amplified": 6050,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "enable_if_t",
+        "get"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail",
+          "nlohmann"
+        ],
+        "provided_by": "iteration_proxy.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35,
+          "nlohmann": 29
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\conversions\\to_json.hpp",
+      "site_name": "to_json.hpp",
+      "header": "std_fs.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 29,
+      "amplified": 725,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "std_fs"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\adl_serializer.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "std_fs.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "site_name": "binary_reader.hpp",
+      "header": "input_adapters.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 45571,
+      "amplified": 1139275,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "begin",
+        "char_type",
+        "clear"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "IteratorType",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "add_pointer",
+          "allocator_traits"
+        ],
+        "provided_by": "input_adapters.hpp",
+        "freq": {
+          "IteratorType": 3,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "add_pointer": 2,
+          "allocator_traits": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "allocator_traits",
+          "cend",
+          "crbegin",
+          "crend",
+          "destroy"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "site_name": "binary_reader.hpp",
+      "header": "json_sax.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 727,
+      "amplified": 18175,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "json_sax_dom_parser"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail",
+          "json_sax"
+        ],
+        "provided_by": "json_sax.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35,
+          "json_sax": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "json_sax_dom_callback_parser"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "site_name": "binary_reader.hpp",
+      "header": "lexer.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 1633,
+      "amplified": 40825,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "InputAdapterType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "InputAdapterType",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "lexer.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "InputAdapterType": 3,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "lexer_base"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\binary_reader.hpp",
+      "site_name": "binary_reader.hpp",
+      "header": "is_sax.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 159,
+      "amplified": 3975,
+      "owner": "in_use",
+      "owner_ids": [
+        "BasicJsonType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "SAX",
+        "detail"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "BasicJsonType",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "SAX",
+          "detail"
+        ],
+        "provided_by": "is_sax.hpp",
+        "freq": {
+          "BasicJsonType": 14,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "SAX": 2,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\input_adapters.hpp",
+      "site_name": "input_adapters.hpp",
+      "header": "numeric",
+      "line": null,
+      "reach": 25,
+      "saved": 1193,
+      "amplified": 29825,
+      "owner": "in_use",
+      "owner_ids": [
+        "enable_if_t",
+        "is_same",
+        "iterator_traits",
+        "value_type"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "numeric_limits",
+          "value_type"
+        ],
+        "provided_by": "numeric",
+        "freq": {
+          "numeric_limits": 2,
+          "value_type": 21
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-algorithms.cpp",
+        "ids": [
+          "iota"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\input\\input_adapters.hpp",
+      "site_name": "input_adapters.hpp",
+      "header": "istream",
+      "line": null,
+      "reach": 25,
+      "saved": 41208,
+      "amplified": 1030200,
+      "owner": "in_use",
+      "owner_ids": [
+        "FILE",
+        "advance",
+        "begin",
+        "char_type",
+        "clear"
+      ],
+      "consumers": 27,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "char_type",
+          "clear",
+          "data",
+          "empty"
+        ],
+        "provided_by": "range_access.h",
+        "freq": {
+          "begin": 8,
+          "char_type": 3,
+          "clear": 2,
+          "data": 5,
+          "empty": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\detail\\input\\binary_reader.hpp",
+        "ids": [
+          "empty",
+          "snprintf",
+          "to_string"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\iterators\\internal_iterator.hpp",
+      "site_name": "internal_iterator.hpp",
+      "header": "primitive_iterator.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 132,
+      "amplified": 3300,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "primitive_iterator_t"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail",
+          "primitive_iterator_t"
+        ],
+        "provided_by": "primitive_iterator.hpp",
+        "freq": {
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35,
+          "primitive_iterator_t": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "primitive_iterator_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\output\\binary_writer.hpp",
+      "site_name": "binary_writer.hpp",
+      "header": "output_adapters.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 147,
+      "amplified": 3675,
+      "owner": "in_use",
+      "owner_ids": [
+        "CharType",
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "output_adapter_t"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "AllocatorType",
+          "CharType",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "StringType"
+        ],
+        "provided_by": "output_adapters.hpp",
+        "freq": {
+          "AllocatorType": 2,
+          "CharType": 2,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "StringType": 6
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "ids": [
+          "output_adapter",
+          "output_adapter_t"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\output\\serializer.hpp",
+      "site_name": "serializer.hpp",
+      "header": "iomanip",
+      "line": null,
+      "reach": 25,
+      "saved": 9713,
+      "amplified": 242825,
+      "owner": "in_use",
+      "owner_ids": [
+        "char_traits",
+        "data",
+        "size",
+        "string"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "data",
+          "istream",
+          "ostream",
+          "reserve",
+          "size"
+        ],
+        "provided_by": "locale_facets_nonio.tcc",
+        "freq": {
+          "data": 5,
+          "istream": 5,
+          "ostream": 6,
+          "reserve": 4,
+          "size": 13
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-cbor.cpp",
+        "ids": [
+          "setfill",
+          "setw"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\output\\serializer.hpp",
+      "site_name": "serializer.hpp",
+      "header": "to_chars.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 1118,
+      "amplified": 27950,
+      "owner": "in_use",
+      "owner_ids": [
+        "NLOHMANN_JSON_NAMESPACE_BEGIN",
+        "NLOHMANN_JSON_NAMESPACE_END",
+        "detail",
+        "to_chars"
+      ],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "in_use",
+        "ids": [
+          "JSON_HEDLEY_NON_NULL",
+          "JSON_HEDLEY_RETURNS_NON_NULL",
+          "NLOHMANN_JSON_NAMESPACE_BEGIN",
+          "NLOHMANN_JSON_NAMESPACE_END",
+          "detail"
+        ],
+        "provided_by": "to_chars.hpp",
+        "freq": {
+          "JSON_HEDLEY_NON_NULL": 2,
+          "JSON_HEDLEY_RETURNS_NON_NULL": 2,
+          "NLOHMANN_JSON_NAMESPACE_BEGIN": 41,
+          "NLOHMANN_JSON_NAMESPACE_END": 38,
+          "detail": 35
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "include\\nlohmann\\detail\\macro_unscope.hpp",
+      "site_name": "macro_unscope.hpp",
+      "header": "hedley_undef.hpp",
+      "line": null,
+      "reach": 25,
+      "saved": 158,
+      "amplified": 3950,
+      "owner": "unknown",
+      "owner_ids": [],
+      "consumers": 26,
+      "any_in_use": false,
+      "any_unknown": true,
+      "trigger": null,
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\include\\nlohmann\\json.hpp",
+        "verdict": "unknown",
+        "ids": [],
+        "provided_by": null,
+        "freq": {}
+      },
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "tests\\src\\make_test_data_available.hpp",
+      "site_name": "make_test_data_available.hpp",
+      "header": "test_data.hpp",
+      "line": null,
+      "reach": 4,
+      "saved": 1,
+      "amplified": 4,
+      "owner": "in_use",
+      "owner_ids": [
+        "TEST_DATA_DIRECTORY"
+      ],
+      "consumers": 4,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "TEST_DATA_DIRECTORY"
+        ],
+        "provided_by": "test_data.hpp",
+        "freq": {
+          "TEST_DATA_DIRECTORY": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "ids": [
+          "TEST_DATA_DIRECTORY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "tests\\src\\make_test_data_available.hpp",
+      "site_name": "make_test_data_available.hpp",
+      "header": "doctest.h",
+      "line": null,
+      "reach": 4,
+      "saved": 9235,
+      "amplified": 36940,
+      "owner": "in_use",
+      "owner_ids": [
+        "REQUIRE_MESSAGE",
+        "TEST_CASE"
+      ],
+      "consumers": 4,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "Approx",
+          "CHECK",
+          "TEST_CASE",
+          "doctest",
+          "size"
+        ],
+        "provided_by": "doctest.h",
+        "freq": {
+          "Approx": 2,
+          "CHECK": 1,
+          "TEST_CASE": 27,
+          "doctest": 3,
+          "size": 13
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\json\\tests\\src\\unit-binary_formats.cpp",
+        "ids": [
+          "CHECK"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    }
+  ]
+}

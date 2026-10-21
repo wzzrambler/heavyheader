@@ -150,6 +150,15 @@ def scan_to_dict(scan: ProjectScan) -> dict:
                 if candidate.site_file is None
                 else str(candidate.site_file),
                 "affected_tus": [str(p) for p in candidate.affected_tus],
+                # 下游引用：删这一行会影响哪些别的文件。空的两种含义不同——
+                # 「还没算」（TU 级候选）与「算过、确实没有」，所以用 None
+                # 区分，与 baseline_seconds 缺失不记 0 是同一条纪律。
+                "downstream_files": None
+                if not hasattr(candidate, "downstream_files")
+                else [str(p) for p in candidate.downstream_files],
+                "downstream_names": None
+                if not hasattr(candidate, "downstream_names")
+                else list(candidate.downstream_names),
             }
             for candidate in scan.candidates
         ],
@@ -369,6 +378,9 @@ def scan_from_dict(data: dict) -> ProjectScan:
             advice=_advice_from_dict(entry.get("advice")),
             site_file=Path(raw_site) if (raw_site := entry.get("site_file")) else None,
             affected_tus=[Path(p) for p in entry.get("affected_tus", [])],
+            # 旧 JSON 缺字段 = 「没算过」，保持空表而不是猜一个。
+            downstream_files=[Path(p) for p in entry.get("downstream_files") or []],
+            downstream_names=list(entry.get("downstream_names") or []),
         )
         for entry in data.get("candidates", [])
     ]

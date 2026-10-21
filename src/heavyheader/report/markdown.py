@@ -50,6 +50,23 @@ def _verdict_cell(candidate) -> str:
     return label
 
 
+def _downstream_cell(candidate, root: Path) -> str:
+    """候选表的「下游引用」列。
+
+    ``—`` 有两种含义必须分开：TU 级候选根本不做这个分析（删一行只影响
+    一个编译单元，下游就是它自己）；头文件级候选是「算过、确实没有」。
+    所以用 ``未分析`` / ``—`` 两种文案，绝不用同一个符号糊弄两种状态。
+    名字只展示前两个，全量在 JSON 的 ``downstream_names`` 里。
+    """
+    if not candidate.is_header_site and not candidate.downstream_files:
+        return "未分析"
+    if not candidate.downstream_files:
+        return "—"
+    names = "、".join(candidate.downstream_names[:2])
+    more = "…" if len(candidate.downstream_names) > 2 else ""
+    return f"{len(candidate.downstream_files)} 文件（{names}{more}）"
+
+
 def _reason_line(reason) -> str:
     if reason.evidence:
         return f"  - **{reason.aspect.value}**：{reason.text}（{reason.evidence}）"
@@ -747,18 +764,20 @@ def render_markdown(scan: ProjectScan) -> str:
         )
         lines.append("")
         lines.append(
-            "| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 | 使用状态 | 判据 | 结论 |"
+            "| 编译单元 | include | 独占闭包 | 预计省行数 | 预计占比 |"
+            " 使用状态 | 判据 | 下游引用 | 结论 |"
         )
-        lines.append("|---|---|---:|---:|---:|---|---|---|")
+        lines.append("|---|---|---:|---:|---:|---|---|---|---|")
         for candidate in scan.candidates_by_estimate()[:20]:
             lines.append(
-                f"| `{_rel(candidate.tu, root)}` "
+                f"| `{_rel(candidate.site, root)}` "
                 f"| `{_rel(candidate.header, root)}` "
                 f"| {len(candidate.exclusive_headers)} "
                 f"| {_fmt_int(candidate.estimated_lines_saved)} "
                 f"| {candidate.estimated_percent:.1f}% "
                 f"| {candidate.usage_label} "
                 f"| {candidate.usage_reason or '—'} "
+                f"| {_downstream_cell(candidate, root)} "
                 f"| {_verdict_cell(candidate)} |"
             )
         lines.append("")

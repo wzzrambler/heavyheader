@@ -171,6 +171,61 @@ class HeaderSiteTests(unittest.TestCase):
         )
         self.assertEqual(found, [])
 
+    def test_downstream_usage_is_reported_as_evidence_not_verdict(self) -> None:
+        """下游有人用、owner 没用：候选保留，但必须带着风险证据。
+
+        这正是 doctest 8/16 编译失败的形状：``std::sort`` 写在下游
+        ``context.cpp``，``<algorithm>`` 的 include 行在 ``prelude.h``。
+        闸门问 owner 不问下游，所以它放行了；现在证据跟着候选走，
+        置信度压到 low——但判定仍然只由 verify 给。
+        """
+        proj = self.tree.dir / "proj"
+        doomed = proj / "doomed.h"
+        doomed.write_text("#pragma once\nstruct DownWidget {};\n", encoding="utf-8")
+        shared = self.tree.shared
+        shared.write_text(
+            '#pragma once\n#include "proj/doomed.h"\n#include "proj/used.h"\n'
+            "SharedWidget make_one();\n",
+            encoding="utf-8",
+        )
+        for source in self.tree.units:
+            body = source.read_text(encoding="utf-8")
+            source.write_text(body + f"DownWidget dw_{source.stem};\n", encoding="utf-8")
+
+        units = [
+            _tu(
+                str(source),
+                [
+                    (str(source), str(shared), 0),
+                    (str(shared), str(doomed), 1),
+                    (str(shared), self.tree.used, 1),
+                ],
+            )
+            for source in self.tree.units
+        ]
+        scan = ProjectScan(
+            root=proj,
+            compiler="g++",
+            compiler_family=CompilerFamily.GCC,
+            standard="c++17",
+            tus=units,
+        )
+        sizes = HeaderSizes()
+        build_header_stats(scan, sizes)
+        kinds = classify_headers(proj, {h for tu in scan.ok_tus for h in tu.dependencies})
+        found = find_header_candidates(scan, sizes, kinds)
+        candidate = next(c for c in found if c.header == doomed)
+        self.assertTrue(candidate.downstream_files)
+        self.assertIn("DownWidget", candidate.downstream_names)
+        self.assertEqual(candidate.confidence, "low")
+        self.assertTrue(any("下游引用" in note for note in candidate.notes))
+
+    def test_no_downstream_usage_keeps_high_confidence(self) -> None:
+        found = find_header_candidates(self.scan, self.sizes, self.kinds)
+        candidate = next(c for c in found if c.header == self.tree.unused)
+        self.assertEqual(candidate.downstream_files, [])
+        self.assertEqual(candidate.downstream_names, [])
+
     def test_defaults_keep_old_candidates_unchanged(self) -> None:
         candidate = RemovalCandidate(
             tu=self.tree.units[0],

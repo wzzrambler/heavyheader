@@ -55,6 +55,8 @@ from enum import Enum
 from pathlib import Path
 
 from ..includes import strip_comments
+from .decls import BUILTIN as _BUILTIN
+from .decls import IGNORED as _IGNORED
 
 __all__ = [
     "UsageVerdict",
@@ -150,26 +152,11 @@ class UsageSignal:
 
 _IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
-# Words that carry no information about whether a header is used: language
-# keywords, preprocessor noise, and the handful of tokens that appear in
-# essentially every header.
-_IGNORED = frozenset(
-    """
-    alignas alignof and and_eq asm auto bitand bitor bool break case catch char
-    char8_t char16_t char32_t class compl concept const consteval constexpr
-    constinit const_cast continue co_await co_return co_yield decltype default
-    delete do double dynamic_cast else enum explicit export extern false float
-    for friend goto if inline int long mutable namespace new noexcept not
-    not_eq nullptr operator or or_eq private protected public register
-    reinterpret_cast requires return short signed sizeof static static_assert
-    static_cast struct switch template this thread_local throw true try
-    typedef typeid typename union unsigned using virtual void volatile
-    wchar_t while xor xor_eq
-    define defined elif else endif error ifdef ifndef include line pragma
-    undef warning once
-    std size_t ptrdiff_t nullptr_t
-    """.split()
-)
+# 词表 ``_IGNORED`` / ``_BUILTIN`` 在 :mod:`heavyheader.attrib.decls` 里定义，
+# 以 ``IGNORED`` / ``BUILTIN`` 的名字导入到这里：两个模块必须用同一套词表，
+# 否则「头声明了什么」与「源码用了什么」会按不同口径过滤，判定结果无法解释。
+# 实测：zlib 的 ``_MSC_VER`` / ``__STDC_VERSION__`` / ``__attribute__`` 三条
+# 幻影命中（见 decls 模块的注释）正是靠同一套词表才两边一起消失。
 
 #: 「重命名」而不是「声明」：``#define inflate_fast z_inflate_fast`` 只是给符号
 #: 起了个别名，真正提供声明的仍然是 ``inffast.h``。实测（zlib）：删掉
@@ -195,30 +182,16 @@ _RENAME_TARGET_IS_A_MACRO = frozenset(
     """.split()
 )
 
-# 编译器内建：这些标识符**永远不由某个头文件提供**，而是编译器自己预定义，
-# 或者是语言扩展关键字。把它们算作「使用证据」会造成系统性假阴性。
-#
-# 实测来源：zlib 的 ``zutil.h -> <stdlib.h>`` 被判「正在使用」，证据是
-# ``_MSC_VER``、``__STDC_VERSION__``、``__attribute__``（由 ``malloc.h``
-# 提供）——这三个都不可能由 ``<stdlib.h>`` 被删除而消失：前两个是编译器
-# 预定义宏，第三个是 GCC 扩展关键字。闸门因此拦下了一条**经复测确认省时
-# 2.125%** 的改动（`experiments/results/g2-confirm-picks-zlib-20261018.json`）。
-#
-# 判据是「删掉包含它的头之后，这个标识符还会不会存在」。编译器预定义的一定
-# 还在，所以不能算依赖。
-_BUILTIN = frozenset(
-    """
-    __GNUC__ __GNUC_MINOR__ __GNUC_PATCHLEVEL__ __clang__ __clang_major__
-    _MSC_VER _MSC_FULL_VER __STDC__ __STDC_VERSION__ __STDC_HOSTED__
-    __cplusplus __OBJC__ __ASSEMBLER__
-    __attribute__ __attribute __declspec __extension__ __inline __restrict
-    __asm__ __volatile__ __forceinline __thread __typeof__ typeof
-    """.split()
-)
-
 
 def identifiers_in(text: str) -> set[str]:
-    """Extract meaningful identifiers from C++ source text."""
+    """Any meaningful identifier in C** source text.
+
+    Used for the *using* side of the comparison (a source file, a translation
+    unit).  A local variable named ``size`` is a real use of the word, so no
+    declaration-scope filtering happens here -- that is the whole difference
+    between this function and :func:`heavyheader.attrib.decls.declared_names`,
+    which is what the *provided* side uses.
+    """
     found: set[str] = set()
     for match in _IDENTIFIER.finditer(text):
         word = match.group(0)
@@ -1019,6 +992,19 @@ class IdentifierIndex:
         self._defined_ids: dict[Path, frozenset[str]] = {}
 
     def header_ids(self, path: Path) -> frozenset[str]:
+        """这个头**提供**哪些名字——用在**消失集合**那一侧。
+
+        口径刻意**宽**：正文里出现过的每个标识符都算，连参数名与成员名也算。
+        宁可多算也不漏——漏掉一个名字，一条真依赖就没有证据，判定会指向删除。
+
+        收紧这一侧（只认声明作用域）的方案见
+        :mod:`heavyheader.attrib.decls` 的 ``declared_names``，它修的是
+        「参数名/成员名制造假命中 → 过度保守」那一侧；但主线随后的三轮精度
+        工作改用 ``declarers`` 集合语义来消解这类命中（区分「另有供给者」、
+        「别名目标」、「条件编译区」四种命运），全部归档实验数据都基于这套
+        口径。两件事不能同时换：换了这边，那些数字与代码行为就不再对应。
+        所以 ``declared_names`` 目前只作为声明作用域提取能力存在，未接入判定。
+        """
         cached = self._headers.get(path)
         if cached is not None:
             return cached

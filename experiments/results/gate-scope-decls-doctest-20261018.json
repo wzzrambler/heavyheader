@@ -1,0 +1,2646 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "scan_seconds": 30.68,
+  "enumerable_rows": 66,
+  "pass": {
+    "owner": 17,
+    "consumer_any": 3,
+    "consumer_all": 2
+  },
+  "name_frequency": {
+    "AssertData": 4,
+    "DOCTEST_MSVC": 1,
+    "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+    "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+    "assertType": 1,
+    "log": 4,
+    "type": 28,
+    "exception": 7,
+    "STDOUT_FILENO": 2,
+    "_fileno": 1,
+    "stdout": 2,
+    "abort": 3,
+    "strcmp": 2,
+    "strlen": 2,
+    "strstr": 3,
+    "begin": 3,
+    "end": 3,
+    "c_str": 1,
+    "size": 8,
+    "int_type": 3,
+    "overflow": 2,
+    "ostream": 12,
+    "value": 28,
+    "find": 10,
+    "string": 8,
+    "vector": 8,
+    "clear": 3,
+    "duration": 1,
+    "seconds": 1,
+    "count": 5,
+    "size_type": 11,
+    "DBL_EPSILON": 2,
+    "FALSE": 1,
+    "_isatty": 1,
+    "isatty": 1,
+    "DOCTEST_CONFIG_POSIX_SIGNALS": 1,
+    "DOCTEST_CONFIG_WINDOWS_SEH": 1,
+    "DOCTEST_EMPTY": 1,
+    "detail": 51,
+    "doctest": 71,
+    "Enum": 5,
+    "DOCTEST_PLATFORM_WINDOWS": 1,
+    "__cpp_lib_uncaught_exceptions": 1,
+    "g_cs": 4,
+    "DOCTEST_CONFIG_OPTIONS_PREFIX": 1,
+    "ContextState": 3,
+    "g_no_colors": 2
+  },
+  "rows": [
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "doctest_fwd.h",
+      "line": null,
+      "reach": 24,
+      "saved": 4068,
+      "amplified": 97632,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_ANONYMOUS",
+        "DOCTEST_COMPILER",
+        "DOCTEST_CONFIG_NO_MULTITHREADING",
+        "DOCTEST_CONFIG_POSIX_SIGNALS",
+        "DOCTEST_CONFIG_WINDOWS_SEH"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "AssertData",
+          "DOCTEST_MSVC",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "assertType"
+        ],
+        "provided_by": "data.h",
+        "freq": {
+          "AssertData": 4,
+          "DOCTEST_MSVC": 1,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "assertType": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "ids": [
+          "DOCTEST_MSVC",
+          "assertType"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "ctime",
+      "line": null,
+      "reach": 24,
+      "saved": 2789,
+      "amplified": 66936,
+      "owner": "unknown",
+      "owner_ids": [
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "cmath",
+      "line": null,
+      "reach": 24,
+      "saved": 32707,
+      "amplified": 784968,
+      "owner": "unknown",
+      "owner_ids": [
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\message.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "log"
+        ],
+        "provided_by": "cmath",
+        "freq": {
+          "log": 4
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\debug_output_window.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "type"
+        ],
+        "provided_by": null,
+        "freq": {
+          "type": 28
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "INT_MAX",
+          "UINT_MAX"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "climits",
+      "line": null,
+      "reach": 24,
+      "saved": 66,
+      "amplified": 1584,
+      "owner": "unknown",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": false,
+      "any_unknown": true,
+      "trigger": null,
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "unknown",
+        "ids": [],
+        "provided_by": null,
+        "freq": {}
+      },
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "new",
+      "line": null,
+      "reach": 24,
+      "saved": 442,
+      "amplified": 10608,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\exception_translator.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "exception"
+        ],
+        "provided_by": "exception.h",
+        "freq": {
+          "exception": 7
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "cstdio",
+      "line": null,
+      "reach": 24,
+      "saved": 2556,
+      "amplified": 61344,
+      "owner": "in_use",
+      "owner_ids": [
+        "STDOUT_FILENO",
+        "fileno",
+        "stdout"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "STDOUT_FILENO",
+          "_fileno",
+          "stdout"
+        ],
+        "provided_by": "stdio.h",
+        "freq": {
+          "STDOUT_FILENO": 2,
+          "_fileno": 1,
+          "stdout": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "ids": [
+          "_fileno"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "cstdlib",
+      "line": null,
+      "reach": 24,
+      "saved": 288,
+      "amplified": 6912,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "abort"
+        ],
+        "provided_by": "cstdlib",
+        "freq": {
+          "abort": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "cstring",
+      "line": null,
+      "reach": 24,
+      "saved": 549,
+      "amplified": 13176,
+      "owner": "in_use",
+      "owner_ids": [
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "strcmp",
+          "strlen",
+          "strstr"
+        ],
+        "provided_by": "cstring",
+        "freq": {
+          "strcmp": 2,
+          "strlen": 2,
+          "strstr": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "strcmp",
+          "strlen"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "utility",
+      "line": null,
+      "reach": 24,
+      "saved": 433,
+      "amplified": 10392,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "end"
+        ],
+        "provided_by": "initializer_list",
+        "freq": {
+          "begin": 3,
+          "end": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "fstream",
+      "line": null,
+      "reach": 24,
+      "saved": 41544,
+      "amplified": 997056,
+      "owner": "in_use",
+      "owner_ids": [
+        "WIN32_LEAN_AND_MEAN",
+        "stdout"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "c_str"
+        ],
+        "provided_by": "locale_classes.tcc",
+        "freq": {
+          "c_str": 1
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\result.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "size"
+        ],
+        "provided_by": null,
+        "freq": {
+          "size": 8
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "ids": [
+          "c_str"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "sstream",
+      "line": null,
+      "reach": 24,
+      "saved": 1738,
+      "amplified": 41712,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "int_type",
+          "overflow"
+        ],
+        "provided_by": "sstream.tcc",
+        "freq": {
+          "int_type": 3,
+          "overflow": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "iostream",
+      "line": null,
+      "reach": 24,
+      "saved": 90,
+      "amplified": 2160,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "ostream"
+        ],
+        "provided_by": "iostream",
+        "freq": {
+          "ostream": 12
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "cerr",
+          "cout"
+        ]
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "algorithm",
+      "line": null,
+      "reach": 24,
+      "saved": 9019,
+      "amplified": 216456,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "type",
+          "value"
+        ],
+        "provided_by": "execution_defs.h",
+        "freq": {
+          "type": 28,
+          "value": 28
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\exception_translator.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "find"
+        ],
+        "provided_by": null,
+        "freq": {
+          "find": 10
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "sort"
+        ]
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "iomanip",
+      "line": null,
+      "reach": 24,
+      "saved": 5618,
+      "amplified": 134832,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "string"
+        ],
+        "provided_by": "locale_facets_nonio.h",
+        "freq": {
+          "string": 8
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "pattern"
+        ]
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "vector",
+      "line": null,
+      "reach": 24,
+      "saved": 7254,
+      "amplified": 174096,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\result.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "size"
+        ],
+        "provided_by": "vector.tcc",
+        "freq": {
+          "size": 8
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\exception_translator.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "vector"
+        ],
+        "provided_by": null,
+        "freq": {
+          "vector": 8
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "emplace_back"
+        ]
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "atomic",
+      "line": null,
+      "reach": 24,
+      "saved": 5247,
+      "amplified": 125928,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "clear",
+          "type"
+        ],
+        "provided_by": "atomic",
+        "freq": {
+          "clear": 3,
+          "type": 28
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "mutex",
+      "line": null,
+      "reach": 24,
+      "saved": 11543,
+      "amplified": 277032,
+      "owner": "in_use",
+      "owner_ids": [
+        "lock_guard",
+        "mutex"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "duration",
+          "seconds"
+        ],
+        "provided_by": "chrono.h",
+        "freq": {
+          "duration": 1,
+          "seconds": 1
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\matchers\\is_nan.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "value"
+        ],
+        "provided_by": null,
+        "freq": {
+          "value": 28
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "duration",
+          "seconds"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "set",
+      "line": null,
+      "reach": 24,
+      "saved": 6337,
+      "amplified": 152088,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "begin",
+          "count",
+          "end"
+        ],
+        "provided_by": "stl_tree.h",
+        "freq": {
+          "begin": 3,
+          "count": 5,
+          "end": 3
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "map",
+      "line": null,
+      "reach": 24,
+      "saved": 3273,
+      "amplified": 78552,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\path.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "size_type"
+        ],
+        "provided_by": "map",
+        "freq": {
+          "size_type": 11
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "unordered_set",
+      "line": null,
+      "reach": 24,
+      "saved": 7376,
+      "amplified": 177024,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\result.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "size"
+        ],
+        "provided_by": "hashtable.h",
+        "freq": {
+          "size": 8
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\matchers\\approx.cpp",
+        "verdict": "unknown",
+        "ids": [
+          "value"
+        ],
+        "provided_by": null,
+        "freq": {
+          "value": 28
+        }
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporter.cpp",
+        "ids": [
+          "key_type"
+        ]
+      },
+      "was_broken": false,
+      "known_win": true
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "cfloat",
+      "line": null,
+      "reach": 24,
+      "saved": 626,
+      "amplified": 15024,
+      "owner": "in_use",
+      "owner_ids": [
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context_state.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DBL_EPSILON"
+        ],
+        "provided_by": "float.h",
+        "freq": {
+          "DBL_EPSILON": 2
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context_state.cpp",
+        "ids": [
+          "DBL_EPSILON"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "windows.h",
+      "line": null,
+      "reach": 24,
+      "saved": 122708,
+      "amplified": 2944992,
+      "owner": "in_use",
+      "owner_ids": [
+        "NOMINMAX",
+        "WINAPI_FAMILY",
+        "WINAPI_FAMILY_APP",
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\type.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "FALSE"
+        ],
+        "provided_by": "minwindef.h",
+        "freq": {
+          "FALSE": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\type.cpp",
+        "ids": [
+          "FALSE"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\prelude.h",
+      "site_name": "prelude.h",
+      "header": "io.h",
+      "line": null,
+      "reach": 24,
+      "saved": 482,
+      "amplified": 11568,
+      "owner": "in_use",
+      "owner_ids": [
+        "__cdecl"
+      ],
+      "consumers": 24,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "_isatty",
+          "isatty"
+        ],
+        "provided_by": "io.h",
+        "freq": {
+          "_isatty": 1,
+          "isatty": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "ids": [
+          "_isatty",
+          "isatty"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "version.h",
+      "line": null,
+      "reach": 24,
+      "saved": 28,
+      "amplified": 672,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": false,
+      "any_unknown": false,
+      "trigger": null,
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "compiler.h",
+      "line": null,
+      "reach": 24,
+      "saved": 49,
+      "amplified": 1176,
+      "owner": "unknown",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_MSVC"
+        ],
+        "provided_by": "compiler.h",
+        "freq": {
+          "DOCTEST_MSVC": 1
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\expression.cpp",
+        "verdict": "unknown",
+        "ids": [],
+        "provided_by": null,
+        "freq": {}
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "ids": [
+          "DOCTEST_MSVC"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "warnings.h",
+      "line": null,
+      "reach": 24,
+      "saved": 193,
+      "amplified": 4632,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH"
+        ],
+        "provided_by": "warnings.h",
+        "freq": {
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "config.h",
+      "line": null,
+      "reach": 24,
+      "saved": 5258,
+      "amplified": 126192,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_CONFIG_POSIX_SIGNALS",
+          "DOCTEST_CONFIG_WINDOWS_SEH",
+          "DOCTEST_EMPTY"
+        ],
+        "provided_by": "config.h",
+        "freq": {
+          "DOCTEST_CONFIG_POSIX_SIGNALS": 1,
+          "DOCTEST_CONFIG_WINDOWS_SEH": 1,
+          "DOCTEST_EMPTY": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "ids": [
+          "DOCTEST_CONFIG_POSIX_SIGNALS",
+          "DOCTEST_CONFIG_WINDOWS_SEH",
+          "DOCTEST_EMPTY"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "utility.h",
+      "line": null,
+      "reach": 24,
+      "saved": 56,
+      "amplified": 1344,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "utility.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+        "ids": [
+          "DOCTEST_ANONYMOUS"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "debugger.h",
+      "line": null,
+      "reach": 24,
+      "saved": 57,
+      "amplified": 1368,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "debugger.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": true,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "fwd.h",
+      "line": null,
+      "reach": 24,
+      "saved": 59,
+      "amplified": 1416,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "fwd.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "type_traits.h",
+      "line": null,
+      "reach": 24,
+      "saved": 109,
+      "amplified": 2616,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "type_traits.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "utility.h",
+      "line": null,
+      "reach": 24,
+      "saved": 34,
+      "amplified": 816,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "utility.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "string.h",
+      "line": null,
+      "reach": 24,
+      "saved": 454,
+      "amplified": 10896,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "string.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\message.cpp",
+        "ids": [
+          "tlssPop",
+          "tlssPush"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "contains.h",
+      "line": null,
+      "reach": 24,
+      "saved": 30,
+      "amplified": 720,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "contains.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "approx.h",
+      "line": null,
+      "reach": 24,
+      "saved": 93,
+      "amplified": 2232,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "approx.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "is_nan.h",
+      "line": null,
+      "reach": 24,
+      "saved": 38,
+      "amplified": 912,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "is_nan.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "options.h",
+      "line": null,
+      "reach": 24,
+      "saved": 67,
+      "amplified": 1608,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "options.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "type.h",
+      "line": null,
+      "reach": 24,
+      "saved": 106,
+      "amplified": 2544,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "Enum",
+          "assertType",
+          "doctest"
+        ],
+        "provided_by": "type.h",
+        "freq": {
+          "Enum": 5,
+          "assertType": 1,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "ids": [
+          "assertType"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "data.h",
+      "line": null,
+      "reach": 24,
+      "saved": 72,
+      "amplified": 1728,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "AssertData",
+          "doctest"
+        ],
+        "provided_by": "data.h",
+        "freq": {
+          "AssertData": 4,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "comparator.h",
+      "line": null,
+      "reach": 24,
+      "saved": 95,
+      "amplified": 2280,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "Enum",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "comparator.h",
+        "freq": {
+          "Enum": 5,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "result.h",
+      "line": null,
+      "reach": 24,
+      "saved": 118,
+      "amplified": 2832,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "AssertData",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "result.h",
+        "freq": {
+          "AssertData": 4,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "expression.h",
+      "line": null,
+      "reach": 24,
+      "saved": 175,
+      "amplified": 4200,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "expression.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "color.h",
+      "line": null,
+      "reach": 24,
+      "saved": 35,
+      "amplified": 840,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "Enum",
+          "doctest"
+        ],
+        "provided_by": "color.h",
+        "freq": {
+          "Enum": 5,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "subcase.h",
+      "line": null,
+      "reach": 24,
+      "saved": 44,
+      "amplified": 1056,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "subcase.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\console.cpp",
+        "ids": [
+          "SubcaseSignature"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "test_suite.h",
+      "line": null,
+      "reach": 24,
+      "saved": 57,
+      "amplified": 1368,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "test_suite.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "test_case.h",
+      "line": null,
+      "reach": 24,
+      "saved": 80,
+      "amplified": 1920,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "test_case.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "decorators.h",
+      "line": null,
+      "reach": 24,
+      "saved": 37,
+      "amplified": 888,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "decorators.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "exception_translator.h",
+      "line": null,
+      "reach": 24,
+      "saved": 71,
+      "amplified": 1704,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "exception_translator.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "context_scope.h",
+      "line": null,
+      "reach": 24,
+      "saved": 78,
+      "amplified": 1872,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "context_scope.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "message.h",
+      "line": null,
+      "reach": 24,
+      "saved": 70,
+      "amplified": 1680,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "message.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\console.cpp",
+        "ids": [
+          "MessageData"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "path.h",
+      "line": null,
+      "reach": 24,
+      "saved": 16,
+      "amplified": 384,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "doctest"
+        ],
+        "provided_by": "path.h",
+        "freq": {
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "exceptions.h",
+      "line": null,
+      "reach": 24,
+      "saved": 30,
+      "amplified": 720,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "exceptions.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "TestFailureException"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "context.h",
+      "line": null,
+      "reach": 24,
+      "saved": 55,
+      "amplified": 1320,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "context.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "assert_handler"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "handler.h",
+      "line": null,
+      "reach": 24,
+      "saved": 93,
+      "amplified": 2232,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "handler.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "ids": [
+          "DOCTEST_ASSERT_IN_TESTS",
+          "DOCTEST_ASSERT_OUT_OF_TESTS"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "reporter.h",
+      "line": null,
+      "reach": 24,
+      "saved": 131,
+      "amplified": 3144,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "Enum",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "reporter.h",
+        "freq": {
+          "Enum": 5,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "ids": [
+          "TestCaseFailureReason"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "generator.h",
+      "line": null,
+      "reach": 24,
+      "saved": 28,
+      "amplified": 672,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "generator.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\doctest_fwd.h",
+      "site_name": "doctest_fwd.h",
+      "header": "macros.h",
+      "line": null,
+      "reach": 24,
+      "saved": 1020,
+      "amplified": 24480,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PUBLIC_WARNINGS_PUSH"
+      ],
+      "consumers": 25,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "macros.h",
+        "freq": {
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\type.cpp",
+        "ids": [
+          "CHECK",
+          "REQUIRE",
+          "WARN"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\public\\config.h",
+      "site_name": "config.h",
+      "header": "platform.h",
+      "line": null,
+      "reach": 24,
+      "saved": 27,
+      "amplified": 648,
+      "owner": "unknown",
+      "owner_ids": [],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": true,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_PLATFORM_WINDOWS"
+        ],
+        "provided_by": "platform.h",
+        "freq": {
+          "DOCTEST_PLATFORM_WINDOWS": 1
+        }
+      },
+      "unknown_trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\doctest_fwd.h",
+        "verdict": "unknown",
+        "ids": [],
+        "provided_by": null,
+        "freq": {}
+      },
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\color.cpp",
+        "ids": [
+          "DOCTEST_PLATFORM_WINDOWS"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\public\\config.h",
+      "site_name": "config.h",
+      "header": "version",
+      "line": null,
+      "reach": 24,
+      "saved": 5025,
+      "amplified": 120600,
+      "owner": "plausibly_unused",
+      "owner_ids": [],
+      "consumers": 26,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context_scope.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "__cpp_lib_uncaught_exceptions"
+        ],
+        "provided_by": "version.h",
+        "freq": {
+          "__cpp_lib_uncaught_exceptions": 1
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context_scope.cpp",
+        "ids": [
+          "__cpp_lib_uncaught_exceptions"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\context_state.h",
+      "site_name": "context_state.h",
+      "header": "timer.h",
+      "line": null,
+      "reach": 13,
+      "saved": 42,
+      "amplified": 546,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+        "Timer",
+        "detail",
+        "doctest"
+      ],
+      "consumers": 15,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "timer.h",
+        "freq": {
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\context_state.h",
+      "site_name": "context_state.h",
+      "header": "atomic.h",
+      "line": null,
+      "reach": 13,
+      "saved": 120,
+      "amplified": 1560,
+      "owner": "in_use",
+      "owner_ids": [
+        "Atomic",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+        "MultiLaneAtomic",
+        "detail"
+      ],
+      "consumers": 15,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "atomic.h",
+        "freq": {
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\context_state.h",
+      "site_name": "context_state.h",
+      "header": "traversal.h",
+      "line": null,
+      "reach": 13,
+      "saved": 54,
+      "amplified": 702,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+        "TraversalState",
+        "detail",
+        "doctest"
+      ],
+      "consumers": 15,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\data.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "detail",
+          "doctest"
+        ],
+        "provided_by": "traversal.h",
+        "freq": {
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "detail": 51,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\reporter.h",
+      "site_name": "reporter.h",
+      "header": "context_state.h",
+      "line": null,
+      "reach": 6,
+      "saved": 270,
+      "amplified": 1620,
+      "owner": "in_use",
+      "owner_ids": [
+        "g_cs"
+      ],
+      "consumers": 6,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\assert\\handler.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "g_cs"
+        ],
+        "provided_by": "context_state.h",
+        "freq": {
+          "g_cs": 4
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\reporters\\debug_output_window.h",
+      "site_name": "debug_output_window.h",
+      "header": "console.h",
+      "line": null,
+      "reach": 2,
+      "saved": 129,
+      "amplified": 258,
+      "owner": "in_use",
+      "owner_ids": [
+        "ConsoleReporter",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+        "doctest"
+      ],
+      "consumers": 2,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_CONFIG_OPTIONS_PREFIX",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "doctest",
+          "ostream"
+        ],
+        "provided_by": "common.h",
+        "freq": {
+          "DOCTEST_CONFIG_OPTIONS_PREFIX": 1,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "doctest": 71,
+          "ostream": 12
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "DOCTEST_CONFIG_OPTIONS_PREFIX"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\reporters\\debug_output_window.h",
+      "site_name": "debug_output_window.h",
+      "header": "context_state.h",
+      "line": null,
+      "reach": 2,
+      "saved": 270,
+      "amplified": 540,
+      "owner": "in_use",
+      "owner_ids": [
+        "ContextOptions",
+        "CurrentTestCaseStats",
+        "DOCTEST_THREAD_LOCAL",
+        "TestRunStats"
+      ],
+      "consumers": 2,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "ContextState",
+          "g_cs",
+          "g_no_colors",
+          "type"
+        ],
+        "provided_by": "context_state.h",
+        "freq": {
+          "ContextState": 3,
+          "g_cs": 4,
+          "g_no_colors": 2,
+          "type": 28
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "plausibly_unused",
+        "file": null,
+        "ids": []
+      },
+      "was_broken": false,
+      "known_win": false
+    },
+    {
+      "site": "doctest\\parts\\private\\reporters\\console.h",
+      "site_name": "console.h",
+      "header": "common.h",
+      "line": null,
+      "reach": 3,
+      "saved": 24,
+      "amplified": 72,
+      "owner": "in_use",
+      "owner_ids": [
+        "DOCTEST_CONFIG_OPTIONS_PREFIX",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+        "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+        "doctest"
+      ],
+      "consumers": 4,
+      "any_in_use": true,
+      "any_unknown": false,
+      "trigger": {
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "verdict": "in_use",
+        "ids": [
+          "DOCTEST_CONFIG_OPTIONS_PREFIX",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP",
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH",
+          "doctest"
+        ],
+        "provided_by": "common.h",
+        "freq": {
+          "DOCTEST_CONFIG_OPTIONS_PREFIX": 1,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_POP": 44,
+          "DOCTEST_SUPPRESS_PRIVATE_WARNINGS_PUSH": 44,
+          "doctest": 71
+        }
+      },
+      "unknown_trigger": null,
+      "shadow": {
+        "verdict": "in_use",
+        "file": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp",
+        "ids": [
+          "DOCTEST_CONFIG_OPTIONS_PREFIX"
+        ]
+      },
+      "was_broken": false,
+      "known_win": false
+    }
+  ]
+}

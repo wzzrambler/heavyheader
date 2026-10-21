@@ -1,0 +1,225 @@
+{
+  "date": "2026-10-18",
+  "project": "doctest",
+  "tus": 24,
+  "gated": 17,
+  "compiled": 9,
+  "compile_error": 8,
+  "rows": [
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\algorithm",
+      "reach": 24,
+      "downstream": 7,
+      "downstream_names": [
+        "count",
+        "find",
+        "max",
+        "min"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\context.cpp:524:18: erro"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\unordered_set",
+      "reach": 24,
+      "downstream": 9,
+      "downstream_names": [
+        "clear",
+        "count",
+        "find",
+        "forward"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\vector",
+      "reach": 24,
+      "downstream": 11,
+      "downstream_names": [
+        "emplace_back",
+        "insert",
+        "size",
+        "size_type"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/traversal.h:18:10: error: n"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\set",
+      "reach": 24,
+      "downstream": 5,
+      "downstream_names": [
+        "begin",
+        "count",
+        "end",
+        "find"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/test_case.h:14:6: error:"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\iomanip",
+      "reach": 24,
+      "downstream": 11,
+      "downstream_names": [
+        "char_type",
+        "data",
+        "length",
+        "open"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：console.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\reporters\\console.cpp:19"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\doctest_fwd.h",
+      "header": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\config.h",
+      "reach": 24,
+      "downstream": 10,
+      "downstream_names": [
+        "DOCTEST_CONFIG_NO_EXCEPTIONS",
+        "DOCTEST_CONFIG_NO_MULTITHREADING",
+        "DOCTEST_CONFIG_POSIX_SIGNALS",
+        "DOCTEST_CONFIG_WINDOWS_SEH"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\atomic",
+      "reach": 24,
+      "downstream": 3,
+      "downstream_names": [
+        "clear",
+        "type"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/atomic.h:18:21: error: no t"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\config.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\version",
+      "reach": 24,
+      "downstream": 2,
+      "downstream_names": [
+        "NOMINMAX",
+        "__cpp_lib_uncaught_exceptions"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\map",
+      "reach": 24,
+      "downstream": 1,
+      "downstream_names": [
+        "size_type"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：handler.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/reporter.h:15:26: error:"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\sstream",
+      "reach": 24,
+      "downstream": 1,
+      "downstream_names": [
+        "int_type",
+        "overflow"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\new",
+      "reach": 24,
+      "downstream": 1,
+      "downstream_names": [
+        "exception"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\utility",
+      "reach": 24,
+      "downstream": 2,
+      "downstream_names": [
+        "begin",
+        "end"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\cstdlib",
+      "reach": 24,
+      "downstream": 2,
+      "downstream_names": [
+        "EXIT_FAILURE",
+        "EXIT_SUCCESS",
+        "abort",
+        "atoi"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\private\\prelude.h",
+      "header": "C:\\mingw64\\lib\\gcc\\x86_64-w64-mingw32\\16.2.0\\include\\c++\\iostream",
+      "reach": 24,
+      "downstream": 5,
+      "downstream_names": [
+        "cerr",
+        "cout",
+        "ostream"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：context.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/private/xml.h:59:44: error: no m"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\doctest_fwd.h",
+      "header": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\debugger.h",
+      "reach": 24,
+      "downstream": 25,
+      "downstream_names": [
+        "DOCTEST_GCC_SUPPRESS_WARNING_POP",
+        "DOCTEST_GCC_SUPPRESS_WARNING_WITH_PUSH",
+        "DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_BEGIN",
+        "DOCTEST_MAKE_STD_HEADERS_CLEAN_FROM_WARNINGS_ON_WALL_END"
+      ],
+      "status": "compile-error",
+      "message": "移除后编译失败（24 个单元之一）：data.cpp: C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest/parts/public/assert/handler.h:64:5: error"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\doctest_fwd.h",
+      "header": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\decorators.h",
+      "reach": 24,
+      "downstream": 24,
+      "downstream_names": [
+        "doctest"
+      ],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    },
+    {
+      "site": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\doctest_fwd.h",
+      "header": "C:\\Users\\31879\\WorkBuddy\\2026-10-16-23-21-59\\heavyheader\\experiments\\_work\\doctest\\doctest\\parts\\public\\version.h",
+      "reach": 24,
+      "downstream": 0,
+      "downstream_names": [],
+      "status": "compiles",
+      "message": "移除后 24 个编译单元全部通过（未做耗时测量）"
+    }
+  ]
+}

@@ -4,6 +4,21 @@
 
 ## [未发布]
 
+### 修正（外部状态复核，2026-10-22 凌晨）
+
+- **两条上游 PR 的状态措辞**：文档表格里写「已落地：doctest#1212、madler/zlib#1344」，
+  会被读成「已被上游合并」。API 核实**两条都是 open、未合并**（doctest#1212
+  「Remove unused `#include <unordered_set>` from prelude」、madler/zlib#1344
+  「zutil.h: remove unused `#include <stdlib.h>`」，均 2026-10-19 提交）。
+  改为「已提交：……（均 open，未合并）」，完整版与精简评审版各 1 处。
+- **CI 的 macOS 表述**：此前写「macOS 4 组被并发取消（cancelled）」，那是当时那次
+  运行的实况；最近一次运行（`3207873`）里 macOS 4 组是**排队等 runner**、尚未出结果。
+  两种都不是 failed，但「取消」对本次运行不成立。统一改为「未出结果（并发取消或
+  排队等 runner，非 failed）」，三份 PDF 共 5 处。
+- 复核结论（未改动）：PyPI `heavyheader` 唯一版本 `0.1.0`（2026-10-19 15:02 UTC 上传）
+  仍可安装；`3207873` 的 CI 三个工作流里 Coverage、MSVC 证据成功，
+  主矩阵 Windows/Linux 10 组成功、macOS 4 组排队中。
+
 ### 新增（补进主线：2026-10-18 的声明作用域与下游引用工作，2026-10-21 合入）
 
 2026-10-18 夜里有两个提交（`bdd8e25` 功能 + `f33fda9` 文档）只存在于另一个工作副本，

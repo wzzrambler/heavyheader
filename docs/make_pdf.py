@@ -418,7 +418,7 @@ def build(path: str) -> None:
             "Clang 17+ 与 MSVC 三种工具链；<b>665 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
             "MSVC 证据）；2026-10-21 核实最近一次 main 运行：Windows/Linux 8 组、代码检查、"
-            "自举扫描全过，macOS 4 组被并发取消（非测试失败）。运行时<b>零第三方依赖</b>，"
+            "自举扫描全过，macOS 4 组未出结果（并发取消或排队等 runner，非测试失败）。运行时<b>零第三方依赖</b>，"
             "且由测试守护"
             "（新增依赖会让 CI 直接失败）。<b>v0.1.0 已发布至 PyPI</b>（2026-10-19），"
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
@@ -487,7 +487,7 @@ def build(path: str) -> None:
                     "第九章（治理结构、CI 16 岗位、测试策略）、第十章（缺陷与路线图）",
                     "GOVERNANCE + 零依赖守护测试 + 语义化版本发布；"
                     "v0.1.0 已发布至 PyPI 并通过全新环境安装验证；CI 16 岗位（Win/Linux 全过，"
-                    "macOS 最近一次被并发取消）",
+                    "macOS 最近一次未出结果：并发取消或排队等 runner，非 failed）",
                 ],
                 [
                     "长期发展（20%）",
@@ -548,7 +548,7 @@ def build(path: str) -> None:
                     "<b>⑤ 生成可审查补丁</b>",
                     "<font face='%s'>pr-comment</font>" % _MONO,
                     "把结论、证据与具体改动的 diff 变成人可以评审的 PR 评论",
-                    "已落地：doctest#1212、zlib#1344 两条上游 PR",
+                    "已提交：doctest#1212、zlib#1344 两条上游 PR（均 open，未合并）",
                 ],
                 [
                     "<b>⑥ 成本回归进 CI</b>",
@@ -1865,8 +1865,8 @@ def build(path: str) -> None:
             "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。"
             "<b>状态按每次运行核实，不写「当前全部通过」</b>：2026-10-21 查最近一次 main "
             "运行（14 个岗位）——Windows 与 Linux 各 4 组、代码检查、自举扫描全部通过；"
-            "macOS 4 组被<b>并发取消</b>（cancelled，不是 failed），macOS 的绿灯来自 "
-            "2026-10-19 那一轮。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
+            "macOS 4 组在该次运行里未出结果（被并发取消或排队等 runner，"
+            "不是 failed），macOS 的绿灯来自 2026-10-19 那一轮。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
             "HeavyHeader 扫描它，断言归因行数非零、编译单元被发现——这一步同时也是集成测试，"
             "验证工具在非 Windows、非 MinGW 的工具链下也能正确解析编译器输出；MSVC 证据"
             "任务在 Windows runner 上真实运行 <font face='%s'>cl</font> 并跑门禁。"

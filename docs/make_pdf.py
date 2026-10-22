@@ -306,7 +306,7 @@ def build(path: str) -> None:
         P("项目负责人：王子周", "meta"),
         P("申报主体类型：开源社区（个人）", "meta"),
         P("完整版（含全部逐轮实验记录与复现入口）", "meta"),
-        P("数据冻结：2026 年 10 月 21 日", "meta"),
+        P("数据冻结：2026 年 10 月 22 日", "meta"),
         SP(6),
         P(
             "代码仓库：<font face='%s'>https://github.com/wzzrambler/heavyheader</font>"
@@ -417,8 +417,8 @@ def build(path: str) -> None:
             "<font face='%s'>verified</font>（只列编译器证据撑住的候选），支持 GCC 9+、"
             "Clang 17+ 与 MSVC 三种工具链；<b>665 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
-            "MSVC 证据）；2026-10-21 核实最近一次 main 运行：Windows/Linux 8 组、代码检查、"
-            "自举扫描全过，macOS 4 组未出结果（并发取消或排队等 runner，非测试失败）。运行时<b>零第三方依赖</b>，"
+            "MSVC 证据）；2026-10-22 核实最新提交 7d0176d 的 CI 运行：14 个岗位全绿——Windows/Linux 8 组、代码检查、"
+            "自举扫描与 macOS 4 组全部通过。运行时<b>零第三方依赖</b>，"
             "且由测试守护"
             "（新增依赖会让 CI 直接失败）。<b>v0.1.0 已发布至 PyPI</b>（2026-10-19），"
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
@@ -486,8 +486,8 @@ def build(path: str) -> None:
                     "开源治理（20%）",
                     "第九章（治理结构、CI 16 岗位、测试策略）、第十章（缺陷与路线图）",
                     "GOVERNANCE + 零依赖守护测试 + 语义化版本发布；"
-                    "v0.1.0 已发布至 PyPI 并通过全新环境安装验证；CI 16 岗位（Win/Linux 全过，"
-                    "macOS 最近一次未出结果：并发取消或排队等 runner，非 failed）",
+                    "v0.1.0 已发布至 PyPI 并通过全新环境安装验证；CI 16 岗位（2026-10-22 核实："
+                    "最新提交 14 个岗位全绿，含 macOS 4 组）",
                 ],
                 [
                     "长期发展（20%）",
@@ -1863,10 +1863,10 @@ def build(path: str) -> None:
             "CI 覆盖 Linux / Windows / macOS 三个操作系统 × Python 3.10–3.13 四个版本的"
             "测试矩阵（12 个岗位），外加 lint（ruff）、自举扫描、覆盖率与 MSVC 证据，"
             "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。"
-            "<b>状态按每次运行核实，不写「当前全部通过」</b>：2026-10-21 查最近一次 main "
-            "运行（14 个岗位）——Windows 与 Linux 各 4 组、代码检查、自举扫描全部通过；"
-            "macOS 4 组在该次运行里未出结果（被并发取消或排队等 runner，"
-            "不是 failed），macOS 的绿灯来自 2026-10-19 那一轮。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
+            "<b>状态按每次运行核实，不写「当前全部通过」</b>：2026-10-22 查最新提交 "
+            "7d0176d 的 CI 运行——14 个岗位全部通过，含 macOS 4 组；覆盖率工作流 "
+            "1 个岗位通过。MSVC 证据工作流只在 src/ 或演示语料变动时触发，该提交"
+            "是纯文档改动故未触发（不是失败）。在此之前 macOS 4 组曾多次因排队被取消——cancelled 不是 failed，逐组重跑后 4 组均实测通过。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
             "HeavyHeader 扫描它，断言归因行数非零、编译单元被发现——这一步同时也是集成测试，"
             "验证工具在非 Windows、非 MinGW 的工具链下也能正确解析编译器输出；MSVC 证据"
             "任务在 Windows runner 上真实运行 <font face='%s'>cl</font> 并跑门禁。"

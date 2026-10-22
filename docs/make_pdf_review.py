@@ -28,6 +28,7 @@ from make_pdf import (  # noqa: E402
     SP,
     TABLE,
     P,
+    CODE,
     _on_cover,
     _on_page,
 )
@@ -36,6 +37,7 @@ from reportlab.lib.units import mm  # noqa: E402
 from reportlab.platypus import (  # noqa: E402
     BaseDocTemplate,
     Frame,
+    KeepTogether,
     NextPageTemplate,
     PageBreak,
     PageTemplate,
@@ -95,8 +97,8 @@ def build(path: str) -> None:
             "meta",
         ),
         P(
-            "本版只保留评审决策需要的论证；配套完整版（30 页，数据冻结 "
-            "2026-10-21，含全部逐轮实验记录）见同目录《HeavyHeader-作品介绍文档.pdf》。"
+            "本版只保留评审决策需要的论证；配套完整版（含全部逐轮实验记录）见同目录"
+            "《HeavyHeader-作品介绍文档.pdf》。"
             "两版数字完全一致，章节对应关系见仓库 "
             "<font face='%s'>docs/restructure-map.md</font>。" % _MONO,
             "meta",
@@ -187,7 +189,7 @@ def build(path: str) -> None:
                     "注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截（G3）",
                 ],
             ],
-            widths=[58, 46, 152, 164],
+            widths=[50, 68, 150, 152],
         ),
         P(
             "链条读法：环节①②竞品也能做；③④⑤⑥是本项目的壁垒——尤其是<b>③的第三条"
@@ -195,7 +197,33 @@ def build(path: str) -> None:
             "一致」，后者把一次性分析变成工程纪律。",
             "quote"
         ),
-        P("1.3 五组硬证据", "h2"),
+        P("1.3 头条数字与五组硬证据", "h2"),
+        P(
+            "先看两个最容易记住、也最容易被混用的数字。<b>它们的口径完全不同</b>："
+            "一个是整工程的编译 CPU 时间，一个是单个编译单元的计时；前者是本项目的真实收益，"
+            "后者是一个被拦下的假收益。全文一共出现三类收益口径，定义见 3.1。"
+        ),
+        TABLE(
+            ["头条数字", "它是什么指标（引用时必须带口径）", "出处"],
+            [
+                [
+                    "<font size='17'><b>−11.4%</b></font>",
+                    "<b>完整构建的编译 CPU 降幅</b>：292 → 259 s，nlohmann/json 63 个编译单元。"
+                    "它<b>来自 PCH 结构性改动</b>，<b>不是</b>删一条 include 得到的；"
+                    "对应的墙上时间降幅是 −7.1%，两个百分比不是一回事",
+                    "3.2",
+                ],
+                [
+                    "<font size='17'><b>−77.8%</b></font>",
+                    "<b>单条 include 的计时变化</b>：spdlog cfg.cpp 566 → 125 ms。"
+                    "它是<b>假收益</b>——汇编从 10,329 行塌缩到 40 行，被第三条真值拦下。"
+                    "这个数字的价值在于被识破，不在于它大",
+                    "3.4",
+                ],
+            ],
+            widths=[78, 298, 44],
+        ),
+        SP(4),
         P(
             "五组证据分别对应：方法有必要、收益可量化、能识别看起来很成功的错误优化、"
             "已进入真实工程工作流、能持续治理。"
@@ -402,6 +430,31 @@ def build(path: str) -> None:
             "措辞的边界。人工评审默认不会做第三轴，所以它拦下来的东西往往正是人眼放过去的"
             "东西（§3.4）。"
         ),
+        P(
+            "<b>第三条真值：什么时候跑、代价多大。</b>它跑在<b>探针阶段、计时之前</b>——"
+            "先把「删掉这一行」的版本真编一遍，<b>只有编过的候选才配做比对</b>"
+            "（编不过的直接判 compile-error），再两侧各编到汇编、归一化后比指纹。"
+            "顺序不能反过来：反过来就是把被破坏的程序拿去计时、把计时数字当收益（§3.4）。"
+        ),
+        P(
+            "<b>不是所有候选都跑</b>：<font face='%s'>verify</font> 默认开（"
+            "<font face='%s'>--no-check-codegen</font> 可关），批量初筛 "
+            "<font face='%s'>scan --probe</font> 默认关"
+            "（<font face='%s'>--check-codegen</font> 可开）——初筛要的是排序，不是结论。"
+            "但<b>两类候选强制跑，开关说了不算</b>：疑似「被包含时执行」的副作用，"
+            "以及实现片段的一次实例化（删掉通常只是少一个函数定义，编译照样过）。"
+            % (_MONO, _MONO, _MONO, _MONO)
+        ),
+        P(
+            "<b>代价不承诺可忽略</b>：每个候选两侧各多一次编到汇编。实测——"
+            "<font face='%s'>verify --top 3 --runs 2</font>（demo 语料）12.2 → 13.6 s"
+            "（<b>+12%%</b>）；<font face='%s'>scan --probe-compile --probe-top 16</font>"
+            "（doctest 24 TU）16.2 → 21.1 s（<b>+30%%</b>，+0.31 s/条）——初筛每条本来只编"
+            "一次，多加两次占比更大，这就是它不在初筛默认开的原因。MSVC 无对应实现"
+            "（<font face='%s'>-S</font> / <font face='%s'>-g0</font>），"
+            "闸门直接不跑，报告也不许声称做过校验。"
+            % (_MONO, _MONO, _MONO, _MONO)
+        ),
         P("2.4 收益怎么算：独占闭包、交替测量与强制复测", "h2"),
         P(
             "<b>独占闭包</b>：删掉这条 include 后，只有它会停止被解析的头文件集合。"
@@ -416,37 +469,43 @@ def build(path: str) -> None:
             "表示「值得试」和「不值得评审」，三态用一个写明阈值的倾向把它们分开。"
         ),
         P("2.5 消融表：为什么这不是「堆叠现成工具」", "h2"),
-        P("拿掉任何一层，都有实测记录在案的错误结论在等着："),
-        TABLE(
+        KeepTogether(
+            [
+                P("拿掉任何一层，都有实测记录在案的错误结论在等着"
+                  "（复现脚本均在 <font face='%s'>experiments/</font> 下）：" % _MONO),
+                TABLE(
             ["拿掉哪一层", "会发生什么（实测）", "记录在哪"],
             [
                 [
                     "独占闭包计算",
-                    "候选排序被「所有单元共用的头」占据，排第一的候选删掉必然编译失败（同向实测：13 个已知失败候选被压到第 27 名以后）",
-                    "2.4；experiments/edge_closure_check.py",
+                    "候选排序被「所有单元共用的头」占据，排第一的删掉必然编译失败"
+                    "（13 个已知失败候选被压到第 27 名以后）",
+                    "2.4\nedge_closure_check.py",
                 ],
                 [
                     "交替测量（A/B interleave）",
                     "2.005% 的机器漂移被整块报成优化收益",
-                    "2.4；experiments/aa_noise.py",
+                    "2.4\naa_noise.py",
                 ],
                 [
                     "强制复测",
                     "第一轮 4 条 improved 复测 0/4 复现",
-                    "2.4；experiments/repeat_probe.py",
+                    "2.4\nrepeat_probe.py",
                 ],
                 [
                     "三态决策层",
                     "用户手里会剩下 187 条「疑似未使用」的假阳性",
-                    "2.4；experiments/failure_taxonomy.py",
+                    "2.4\nfailure_taxonomy.py",
                 ],
                 [
                     "第三条真值（汇编指纹）",
                     "spdlog −77.8% 的「优化」会被当成收益上报（§3.4）",
-                    "2.3；experiments/corpus_timing.py",
+                    "2.3\ncorpus_timing.py",
                 ],
             ],
-            widths=[110, 210, 100],
+            widths=[92, 228, 100],
+                ),
+            ]
         ),
     ]
 
@@ -473,7 +532,7 @@ def build(path: str) -> None:
                 [
                     "<b>单条 include 计时收益</b>",
                     "只删这一行、其余不变，编译耗时变化",
-                    "doctest −3.01%、zlib −2.125%、zstd −46.6%",
+                    "doctest −3.01%、zlib −2.125%、zstd −46.5%",
                     "不是准确率（见 3.5）",
                 ],
                 [
@@ -665,6 +724,76 @@ def build(path: str) -> None:
                 ],
             ],
             widths=[110, 118, 202],
+        ),
+        PageBreak(),
+        P("3.7 规模换算：一个仿真工程能省多少（假设推算，不是实测）", "h2"),
+        P(
+            "前六节的数字都来自这台机器上的真实语料。本节回答一个必然会被问到、而本项目"
+            "<b>没有实测数据</b>的问题：如果一个更大的工程复现同样的降幅，意味着什么。"
+            "<b>以下全部为假设推算，不是客户实测</b>——本项目没有企业客户数据，也不声称有。"
+        ),
+        TABLE(
+            ["输入 / 假设", "取值", "这个取值从哪来"],
+            [
+                [
+                    "仿真工程规模",
+                    "2,000 个编译单元",
+                    "假设输入（本文最大真实语料是 63 个编译单元）",
+                ],
+                [
+                    "一次全量构建的耗时",
+                    "编译 CPU 时间合计 60 分钟",
+                    "假设输入；<b>注意是 CPU 时间合计，不是墙上时间</b>",
+                ],
+                [
+                    "假设可复现的降幅",
+                    "<b>−11.4%</b>（编译 CPU）",
+                    "§3.2 的实测值：nlohmann/json 63 TU 的 <b>PCH 结构性改动</b>",
+                ],
+                [
+                    "全量构建频次",
+                    "30 次/天（CI 与开发者本地合计）",
+                    "假设输入",
+                ],
+            ],
+            widths=[96, 150, 234],
+        ),
+        SP(4),
+        TABLE(
+            ["按上述假设推出的结果", "换算"],
+            [
+                [
+                    "每次全量构建省下的<b>编译 CPU 时间</b>",
+                    "60 min × 11.4% ≈ <b>6.84 min</b>",
+                ],
+                [
+                    "折算成<b>墙上时间</b>（按 json 实测系数 7.1 / 11.4 ≈ 0.62）",
+                    "6.84 × 0.62 ≈ <b>4.2 min/次</b>",
+                ],
+                [
+                    "CI 机时（按 30 次/天、22 个工作日）",
+                    "≈ <b>3.4 h CPU/天</b>，≈ <b>75 h CPU/月</b>",
+                ],
+                [
+                    "开发者等待（按墙上时间，30 次/天）",
+                    "≈ <b>2.1 h/天</b>",
+                ],
+            ],
+            widths=[270, 210],
+        ),
+        SP(4),
+        P(
+            "<b>四条必须和上面这张表一起读的限定</b>：<br/>"
+            "① 全部是假设推算，不是客户实测；2,000 TU 与 60 分钟都是为换算而设的输入值，"
+            "本项目<b>没有任何企业客户数据</b>。<br/>"
+            "② −11.4% 来自 <b>PCH 结构性改动</b>（不是删一条 include），且来自 "
+            "<b>63 个编译单元</b>的单一工程；把它外推到 2,000 TU 未经验证——"
+            "头文件复用率、并行度、链接与代码生成的占比都会随规模改变。<br/>"
+            "③ <b>CPU 时间 ≠ 墙上时间</b>。json 的实测是 CPU −11.4% 对应墙上 −7.1%"
+            "（43.2 → 40.1 s），比值约 0.62；表中的 4.2 min 是按这个<b>实测系数</b>外推的，"
+            "不是用并行度模型算出来的，关键路径与串行阶段会让真实值更小。<br/>"
+            "④ 不换算成金额：CI 机时的单价随供应商、机型与并发数变化，给出金额需要来源，"
+            "本文没有，留给读者按自有单价换算。"
         ),
     ]
 
@@ -865,74 +994,99 @@ def build(path: str) -> None:
             % (_MONO, _MONO, _MONO)
         ),
         TABLE(
-            ["本文的数字", "原始记录", "环境与复现入口"],
+            ["本文的数字", "原始记录", "测量环境"],
             [
                 [
                     "完整构建 CPU <b>−11.4%</b>、4,264,414 条断言一致",
-                    "experiments/results/experiment-20261017.md + control-20261017.json",
-                    "nlohmann/json v3.11.3，63 TU；python experiments/control.py",
+                    "experiment-20261017.md（含 control-20261017.json）",
+                    "nlohmann/json v3.11.3，63 TU",
                 ],
                 [
                     "doctest <b>−3.01%</b>（20556 → 19937 ms）",
-                    "experiments/results/g2-sites-doctest-20261018.md（含 .json）",
-                    "doctest 24 TU，MinGW-w64 g++；python experiments/g2_sites.py",
+                    "g2-sites-doctest-20261018.md（含 .json）",
+                    "doctest 24 TU，g++（MinGW-w64）",
                 ],
                 [
                     "zlib <b>−2.125%</b>（3314 → 3244 ms）",
-                    "experiments/results/g2-confirm-picks-zlib-20261018.json",
-                    "zlib 15 TU，MinGW-w64 gcc；python experiments/g2_confirm_picks.py",
+                    "g2-confirm-picks-zlib-20261018.json",
+                    "zlib 15 TU，gcc（MinGW-w64）",
                 ],
                 [
-                    "zstd 单条 <b>−46.5%</b>（384 → 205 ms，解析 184 → 32）",
-                    "experiments/results/zstd-verify-20261020b.md",
+                    "zstd 单条 <b>−46.5%</b>（384 → 205 ms、解析 184 → 32）",
+                    "zstd-verify-20261020b.md",
                     "zstd 1.5.6 lib/，39 TU / 351 万行，clang；同命令第一遍 −44.5%",
                 ],
                 [
                     "spdlog <b>−77.8%</b> 假收益，汇编 10,329 → 40 行",
-                    "experiments/results/corpus-timing-spdlog-20261019.md",
-                    "spdlog cfg.cpp；python experiments/corpus_timing.py",
+                    "corpus-timing-spdlog-20261019.md",
+                    "spdlog cfg.cpp",
                 ],
                 [
                     "brotli 31 个实例化站点 <b>0 条可删</b>",
-                    "experiments/results/instantiation-sites-brotli-20261020.md",
-                    "brotli 1.1.0，32 TU；python experiments/instantiation_regression.py",
+                    "instantiation-sites-brotli-20261020.md",
+                    "brotli 1.1.0，32 TU",
                 ],
                 [
                     "门禁 3/3 检出、3/3 放行、3/3 拦截",
-                    "experiments/results/g3-gate-20261018.md（含 .json）",
-                    "python experiments/g3_gate.py；命令行入口 heavyheader gate",
+                    "g3-gate-20261018.md（含 .json）",
+                    "注入回归的 demo 语料",
                 ],
                 [
                     "池内采纳率 <b>25%</b>（5/20）与换协议后的 40%",
-                    "experiments/results/adopt-rate-timeseries-20261020.md",
-                    "Lua 5.4.7，34 TU；python experiments/repeat_probe.py",
+                    "adopt-rate-timeseries-20261020.md",
+                    "Lua 5.4.7，34 TU",
                 ],
                 [
                     "已验证层级两遍 <b>2 / 3 条</b>、成员零重合",
-                    "experiments/results/verified-layer-lua-20261020.md + .json",
-                    "Lua 5.4.7；heavyheader verified --top 20 --runs 3 --confirm 2",
+                    "verified-layer-lua-20261020.md（含 .json）",
+                    "Lua 5.4.7",
                 ],
                 [
                     "PCH 估算：闭包 139,180 行、净收益 3,201,140 行（65.8%）",
-                    "experiments/results/pch-estimate-json25-20261021.md（含 .json）",
-                    "nlohmann-json 25 TU；heavyheader scan <root> --pch --pch-top 5",
+                    "pch-estimate-json25-20261021.md（含 .json）",
+                    "nlohmann/json 25 TU，g++",
                 ],
                 [
-                    "模板实例化占构建时间 <b>23.3%–31.7%</b>（两次扫描）、"
-                    "15–20 个单元超过 25%",
-                    "benchmarks/results/nlohmann-json-baseline.json 的 "
-                    "<font face='Cascadia'>template_profile</font>；"
-                    "experiments/results/pch-estimate-json25-20261021.json",
-                    "GCC -ftime-report 阶段计时；两次独立扫描差异来自机器负载",
+                    "模板实例化占构建时间 <b>23.3%–31.7%</b>、15–20 个单元超 25%",
+                    "benchmarks/results/\nnlohmann-json-baseline.json",
+                    "GCC -ftime-report 阶段计时；两次独立扫描，差异来自机器负载",
                 ],
                 [
-                    "语料规模：zstd 351 万行 / Lua 109 万行（3.2 倍）、brotli 295 万行",
-                    "experiments/results/zstd-rescan-20261021.md、"
-                    "lua-rescan-20261021.md、brotli-rescan-20261021.md",
-                    "clang 20；各自 compile_commands.json",
+                    "语料规模：zstd 351 万行 / Lua 109 万行 / brotli 295 万行",
+                    "zstd-rescan-20261021.md、lua-rescan-20261021.md、"
+                    "brotli-rescan-20261021.md",
+                    "compile_commands.json（clang 20，三份归档各一份）",
+                ],
+                [
+                    "汇编闸门开销 <b>+12%</b>（verify）/ <b>+30%</b>（scan --probe）",
+                    "codegen-gate-cost-20261019.md"
+                    "<b>（在 experiments/ 根目录，不在 results/ 下）</b>",
+                    "demo 语料（verify）；doctest 24 TU（scan --probe-compile）",
                 ],
             ],
-            widths=[126, 126, 88],
+            widths=[148, 180, 152],
+        ),
+        SP(6),
+        P(
+            "复现命令：脚本按 <font face='%s'>python experiments/&lt;name&gt;.py</font> "
+            "重跑，<font face='%s'>&lt;root&gt;</font> 换成自己的工程根目录。"
+            "下面每行对应上表同一行的数字。" % (_MONO, _MONO)
+        ),
+        CODE(
+            "python experiments/control.py                 # −11.4%、断言逐套件一致\n"
+            "python experiments/g2_sites.py                # doctest −3.01%\n"
+            "python experiments/g2_confirm_picks.py        # zlib −2.125%\n"
+            "heavyheader verify <root> --runs 3            # zstd −46.5%\n"
+            "python experiments/corpus_timing.py           # spdlog −77.8%、汇编行数\n"
+            "python experiments/instantiation_regression.py  # brotli 0 条可删\n"
+            "python experiments/g3_gate.py                 # 门禁 3/3 × 3\n"
+            "python experiments/repeat_probe.py            # 采纳率 25% / 40%\n"
+            "heavyheader verified --top 20 --runs 3 --confirm 2   # 已验证层级\n"
+            "heavyheader scan <root> --pch --pch-top 5     # PCH 估算\n"
+            "heavyheader scan <root> --compiler g++        # 模板实例化占比\n"
+            "heavyheader scan <root>                       # 语料规模（三份归档）\n"
+            "heavyheader verify <root> --top 3 --runs 2    # 闸门开销：开\n"
+            "heavyheader verify <root> --top 3 --runs 2 --no-check-codegen  # 关"
         ),
     ]
 

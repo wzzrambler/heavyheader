@@ -1057,7 +1057,7 @@ def _cmd_configs(args) -> int:
     判定层本来就按每条编译命令里的 ``-D`` 求值 ``#ifdef``，所以这里不需要新的
     分析逻辑：把同一份 ``compile_commands.json`` 派生几份、各扫一遍、按
     ``(单元, 头, 行)`` 对齐即可。实测 zstd：`pool.c → allocations.h` 在单线程
-    配置里可删（−46.6%），加 ``-DZSTD_MULTITHREAD`` 后删了编不过。
+    配置里可删（−46.5%），加 ``-DZSTD_MULTITHREAD`` 后删了编不过。
     """
     from .configmatrix import (
         ConfigSpec,

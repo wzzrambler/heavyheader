@@ -92,7 +92,7 @@ python -m pytest -q                      # 期望 518 passed
 
 **念**：
 > 「最终它是一把尺子，不是一台挖掘机：能证明一个改动到底省不省，能拦住下一次回归，
-> 并且每次都告诉你它的判断有多可信。零第三方依赖，664 个测试，
+> 并且每次都告诉你它的判断有多可信。零第三方依赖，665 个测试，
 > GCC、Clang、MSVC 三个编译器都跑通了真实数据——MSVC 的证据来自 CI 的 Windows 机器。
 > 代码在 github.com/wzzrambler/heavyheader，Apache-2.0。」
 

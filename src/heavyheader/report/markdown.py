@@ -895,6 +895,23 @@ def render_markdown(scan: ProjectScan) -> str:
             f"（占全项目头文件解析量 {pch.percent_of_project:.1f}%）——{verdict}。**"
         )
         lines.append("")
+        if pch.rebuild_units:
+            share = pch.rebuild_share * 100.0
+            lines.append(
+                f"**维护税：**闭包里被最多单元包含的是 "
+                f"`{_rel(pch.rebuild_header, root)}`（{pch.rebuild_units}/"
+                f"{pch.total_tus} 个单元，{share:.0f}%）。改动它会让整份 .gch 作废、"
+                f"这些单元全部重编，按本次扫描的编译方式计约 **{pch.rebuild_seconds:.1f} s**"
+                "（扫描若用完整编译，这个数会更高）。"
+                + (
+                    "这个头几乎是全工程的公共依赖，改它本来也要全量重编——"
+                    "放进 PCH 不额外增加风险。"
+                    if share >= 90.0
+                    else "它只被一部分单元包含，改它本来只需重编那部分——"
+                    "放进 PCH 会把代价放大到这些单元全体。"
+                )
+            )
+            lines.append("")
         lines.append("> 这是估算，不是承诺。四条限制：")
         for caveat in pch.caveats:
             lines.append(f"> - {caveat}")

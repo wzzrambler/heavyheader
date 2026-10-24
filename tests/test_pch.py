@@ -15,6 +15,7 @@ from heavyheader.models import (
     HeaderKind,
     HeaderStats,
     IncludeEvent,
+    PhaseTiming,
     ProjectScan,
     TranslationUnit,
 )
@@ -263,3 +264,61 @@ def test_ranks_by_closure_not_own_size(tmp_path):
     assert rec.closure_lines == 100
     # 100 lines saved for the other two TUs: gross 300, net 200.
     assert rec.net_lines_saved == 200
+
+
+def test_maintenance_tax_counts_the_units_that_would_rebuild(tmp_path):
+    """PCH 的代价必须和收益一起报：改一次要重编多少单元、多少秒。
+
+    ``rebuild_header`` 取闭包里被最多单元包含的那个头——改动它，整份 .gch
+    作废，包含它的单元全部重编。这里 5 个单元里 3 个包含 common.h，各自
+    墙钟 1.0 / 2.0 / 3.0 s，另外两个不包含（0.5 / 0.5 s）不参与。
+    """
+    common = _write(tmp_path, "common.h", 100)
+    other = _write(tmp_path, "other.h", 10)
+    tus = []
+    for i in range(5):
+        events = []
+        if i < 3:
+            events.append(
+                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=common, depth=0)
+            )
+        wall = 1.0 * (i + 1) if i < 3 else 0.5
+        if i == 4:
+            events.append(
+                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=other, depth=0)
+            )
+        tus.append(
+            TranslationUnit(
+                source=tmp_path / f"t{i}.cpp", include_events=events, wall_seconds=wall
+            )
+        )
+
+    rec = estimate_pch(_scan(tmp_path, tus, [common, other]), top_k=5)
+
+    assert rec.rebuild_header == common
+    assert rec.rebuild_units == 3
+    assert rec.rebuild_seconds == 6.0
+    assert rec.rebuild_share == 3 / 5
+
+
+def test_maintenance_tax_falls_back_to_time_report_total(tmp_path):
+    """没有驱动墙钟时退化到 ``-ftime-report`` 的 TOTAL，而不是记成 0。
+
+    记成 0 会让维护税看起来是免费的——那正是这条建议最容易误导人的方向。
+    """
+    common = _write(tmp_path, "common.h", 100)
+    tus = [
+        TranslationUnit(
+            source=tmp_path / f"t{i}.cpp",
+            include_events=[
+                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=common, depth=0)
+            ],
+            timings=[PhaseTiming(name="TOTAL", wall_seconds=2.5)],
+        )
+        for i in range(2)
+    ]
+
+    rec = estimate_pch(_scan(tmp_path, tus, [common]), top_k=5)
+
+    assert rec.rebuild_units == 2
+    assert rec.rebuild_seconds == 5.0

@@ -62,6 +62,12 @@ class PCHRecommendation:
     net_lines_saved: int
     #: That saving as a percentage of the project's attributed lines.
     percent_of_project: float
+    #: 维护税：闭包里被最多单元包含的那个头——改动它会让整份 .gch 作废，
+    #: 这些单元必须全部重编。只报「省多少」不报这个税，建议就不完整。
+    rebuild_header: Path | None = None
+    rebuild_units: int = 0
+    #: 上述单元一次重编的耗时合计（逐单元实测墙钟之和）。
+    rebuild_seconds: float = 0.0
     caveats: list[str] = field(default_factory=list)
 
     @property
@@ -71,6 +77,13 @@ class PCHRecommendation:
         return self.eligible_tus / self.total_tus * 100.0
 
     @property
+    def rebuild_share(self) -> float:
+        """维护税覆盖了多少比例的编译单元。1.0 = 改一次等于全量重编。"""
+        if self.total_tus == 0:
+            return 0.0
+        return self.rebuild_units / self.total_tus
+
+    @property
     def is_worthwhile(self) -> bool:
         """Whether the estimate is big enough to be worth acting on.
 
@@ -78,6 +91,21 @@ class PCHRecommendation:
         constraints it imposes.  The threshold is deliberately high.
         """
         return self.percent_of_project >= 10.0 and self.eligible_tus >= 2
+
+
+def _tu_seconds(unit: object) -> float:
+    """一个单元的编译耗时：优先用驱动实测墙钟，退化到 ``-ftime-report`` 的 TOTAL。
+
+    两者不可混用（墙钟含进程启动，TOTAL 是编译器自报 CPU），但都是「这一单元
+    要花多久」的量级答案；维护税只需要量级。
+    """
+    wall = getattr(unit, "wall_seconds", 0.0) or 0.0
+    if wall:
+        return float(wall)
+    for timing in getattr(unit, "timings", ()) or ():
+        if getattr(timing, "is_total", False):
+            return float(timing.wall_seconds)
+    return 0.0
 
 
 def estimate_pch(
@@ -171,12 +199,37 @@ def estimate_pch(
     net = gross - closure_lines
     project_total = scan.total_included_lines() or 1
 
+    # 维护税：PCH 的代价不是零。改动闭包里任何一个头，整份 .gch 失效，
+    # 包含它的单元全部重编——最坏情况就是闭包里被最多单元包含的那个头。
+    # 这一项以前只写在 caveat 里（「未计入」），现在给出量化：
+    # 省多少是收益，税多少是风险，两者必须同时出现才是一个可采纳的建议。
+    rebuild_header: Path | None = None
+    rebuild_units = 0
+    rebuild_lines = -1
+    for path, stats in scan.header_stats.items():
+        if path not in closure:
+            continue
+        # 只算**项目**头：系统头（bits/stl_algo.h 之类）谁都改不了，
+        # 把它算成维护税只会把风险说大。项目头为空时才退回系统头。
+        if stats.kind is not HeaderKind.PROJECT:
+            continue
+        # 先比触达单元数，平局时比自身行数：63/63 全触达时，用户实际会改的
+        # 是那个大而常改的头（json.hpp），不是顺带被拉进来的小适配头。
+        key = (stats.tu_reach, stats.line_count)
+        if key > (rebuild_units, rebuild_lines):
+            rebuild_header, rebuild_units, rebuild_lines = path, *key
+    rebuild_seconds = 0.0
+    if rebuild_header is not None:
+        for tu in scan.ok_tus:
+            if rebuild_header in {event.included for event in tu.include_events}:
+                rebuild_seconds += _tu_seconds(tu)
+
     caveats = [
         "基于行数代理，不是秒数。模板重型头文件的实际成本会被低估。",
         "上限估计：真实 PCH 必须是每个使用它的 TU 的第一个 include，"
         "且各 TU 间字节一致。include 顺序不一致的项目实际收益会更低。",
-        "未计入 PCH 失效：改动 PCH 中任何一个头文件都会让所有 TU 的 PCH 作废，"
-        "因此 PCH 只应放稳定的头文件（第三方库、极少改动的内部基础库）。",
+        "维护税（rebuild_seconds）只计受影响单元的重编耗时，不含 .gch 自身的重建时间；"
+        "它衡量的是「改一次要付多少」，不是「每次构建都要付」。",
         "本工具不生成 PCH，只做估算。",
     ]
 
@@ -188,5 +241,8 @@ def estimate_pch(
         total_tus=len(scan.ok_tus),
         net_lines_saved=net,
         percent_of_project=net / project_total * 100.0,
+        rebuild_header=rebuild_header,
+        rebuild_units=rebuild_units,
+        rebuild_seconds=rebuild_seconds,
         caveats=caveats,
     )

@@ -62,12 +62,23 @@ class PCHRecommendation:
     net_lines_saved: int
     #: That saving as a percentage of the project's attributed lines.
     percent_of_project: float
-    #: 维护税：闭包里被最多单元包含的那个头——改动它会让整份 .gch 作废，
-    #: 这些单元必须全部重编。只报「省多少」不报这个税，建议就不完整。
+    #: 维护税：闭包里被最多单元包含的那个头——它是「最可能被改、且改一次
+    #: 代价最大」的代表。只报「省多少」不报这个税，建议就不完整。
     rebuild_header: Path | None = None
+    #: **有 PCH 时**，改动 ``rebuild_header`` 会导致多少个单元重编。
+    #: 不是这个头自己触达的单元数：.gch 作废后，每个使用它的单元都要重新
+    #: 生成 .gch 再编译自己，所以是所有「包含至少一个候选头」的单元。
     rebuild_units: int = 0
-    #: 上述单元一次重编的耗时合计（逐单元实测墙钟之和）。
+    #: **无 PCH 时**，改动 ``rebuild_header`` 只需重编多少个单元
+    #: （= 它自己的触达数）。与 ``rebuild_units`` 的差就是放进 PCH 的净增风险。
+    baseline_rebuild_units: int = 0
+    #: ``rebuild_units`` 个单元一次重编的耗时合计（逐单元实测墙钟之和）。
     rebuild_seconds: float = 0.0
+    #: 闭包里触达**小于**使用 PCH 的单元数的项目头，按放大倍数降序：
+    #: ``(头, 它自己的触达数, 放大倍数)``。这些头只被一部分单元使用，却因为
+    #: 被固化进 .gch 而让全体使用 PCH 的单元陪着重编。空列表表示这个 PCH
+    #: 没有这类风险（所有项目头都是全工程公共依赖）。
+    fragile_headers: list[tuple[Path, int, float]] = field(default_factory=list)
     caveats: list[str] = field(default_factory=list)
 
     @property
@@ -82,6 +93,18 @@ class PCHRecommendation:
         if self.total_tus == 0:
             return 0.0
         return self.rebuild_units / self.total_tus
+
+    @property
+    def rebuild_amplification(self) -> float:
+        """放进 PCH 让「改一次」的代价放大多少倍。
+
+        ``rebuild_units / baseline_rebuild_units``。1.0 表示放进 PCH 不增加
+        风险（这个头本来就被所有会用 PCH 的单元包含）；远大于 1 表示这个头
+        只被少数单元包含，但改它会让全体使用 PCH 的单元陪着重编。
+        """
+        if self.baseline_rebuild_units <= 0:
+            return 0.0
+        return self.rebuild_units / self.baseline_rebuild_units
 
     @property
     def is_worthwhile(self) -> bool:
@@ -120,6 +143,14 @@ def estimate_pch(
     ``top_k`` caps how many headers go into the PCH -- a bigger PCH is not
     automatically better, because every header added must then be included
     first by every TU that wants to use it.
+
+    The maintenance tax is reported alongside the saving (see
+    :attr:`PCHRecommendation.fragile_headers`).  It is deliberately *not*
+    folded into the ranking: an earlier version scored candidates by
+    ``reach - (reach - min reach in closure)``, which is identically zero
+    because ``tu_reach`` counts transitive includes, so every header in a
+    candidate's closure is included by at least as many TUs as the candidate
+    itself.  A ranking term that can never fire is worse than no term.
     """
     if line_counter is None:
         from .graph import HeaderSizes
@@ -167,6 +198,13 @@ def estimate_pch(
     # mid.h and deep.h, its closure is 100 lines, while deep.h alone is 70.
     # With equal reach, top.h is the strictly better PCH candidate, and a
     # size-based ranking picks the worse one.  A unit test pins this.
+    #
+    # Do NOT add a "maintenance tax" term here.  ``tu_reach`` counts
+    # transitive includes, so every header in a candidate's closure is
+    # pulled in by at least as many TUs as the candidate itself; any
+    # ``reach - min(reach in closure)`` term is identically zero.  The tax
+    # is a property of the *set* (see ``fragile_headers`` below), not of a
+    # single candidate, so it is reported after the set is chosen.
     ranked: list[tuple[Path, int, int]] = []
     for stats in project_headers:
         closure = closure_of(stats.path)
@@ -174,8 +212,54 @@ def estimate_pch(
         ranked.append((stats.path, stats.tu_reach, closure_lines))
     ranked.sort(key=lambda item: (item[1], item[2]), reverse=True)
 
-    chosen = ranked[: max(1, top_k)]
-    chosen_paths = [path for path, _, _ in chosen]
+    # Greedily add the header that increases the net saving the most, and
+    # stop as soon as no remaining header adds anything.  Taking a plain
+    # ``top_k`` slice is a real bug on partially-covered projects: a header
+    # included by half the units enlarges the closure (so the one-time PCH
+    # build grows) while cutting ``eligible`` in half, and the net saving
+    # *drops*.  A 10-unit demo corpus measures 13,527 lines for
+    # ``{common.h}`` versus 12,024 for ``{common.h, special.h}`` -- the
+    # top-2 slice picks the worse set.  A unit test pins this.
+    #
+    # The ranking above is only the tie-break/seed order; the objective is
+    # the net saving itself, which is what makes the maintenance tax show
+    # up here without any extra weight: a header that drags a rarely-used
+    # header into the closure is exactly the one that stops paying.
+    chosen: list[Path] = []
+    best_net = 0
+    remaining = list(ranked)
+    while remaining and len(chosen) < max(1, top_k):
+        best_index = None
+        best_candidate_net = best_net
+        for index, (path, _, _) in enumerate(remaining):
+            trial = chosen + [path]
+            trial_closure = set(trial)
+            stack = list(trial)
+            while stack:
+                current = stack.pop()
+                for child in adjacency.get(current, ()):
+                    if child not in trial_closure:
+                        trial_closure.add(child)
+                        stack.append(child)
+            trial_eligible = sum(
+                1
+                for tu in scan.ok_tus
+                if all(
+                    p in {event.included for event in tu.include_events}
+                    for p in trial
+                )
+            )
+            trial_lines = sum(line_counter(p) for p in trial_closure)
+            trial_net = trial_lines * trial_eligible - trial_lines
+            if trial_net > best_candidate_net:
+                best_candidate_net = trial_net
+                best_index = index
+        if best_index is None:
+            break
+        chosen.append(remaining.pop(best_index)[0])
+        best_net = best_candidate_net
+
+    chosen_paths = list(chosen)
 
     # Union of the chosen headers' transitive closures.
     closure: set[Path] = set(chosen_paths)
@@ -188,48 +272,77 @@ def estimate_pch(
                 stack.append(child)
 
     # A TU is eligible only if it already pulls in *every* chosen header.
-    eligible = 0
+    # That is the conservative *benefit*口径：only these TUs are certain to
+    # need everything the PCH would contain.
+    eligible_tus: list = []
     for tu in scan.ok_tus:
-        reached = {e.included for e in tu.include_events}
+        reached = {event.included for event in tu.include_events}
         if all(path in reached for path in chosen_paths):
-            eligible += 1
+            eligible_tus.append(tu)
+    eligible = len(eligible_tus)
+
+    # The maintenance tax has a different口径：.gch invalidation hits every TU
+    # that *uses* the PCH, which is any TU including at least one chosen
+    # header -- not just the eligible ones, and not just the TUs that
+    # included the header that changed.
+    pch_users: list = []
+    for tu in scan.ok_tus:
+        reached = {event.included for event in tu.include_events}
+        if any(path in reached for path in chosen_paths):
+            pch_users.append(tu)
 
     closure_lines = sum(line_counter(p) for p in closure)
     gross = closure_lines * eligible
     net = gross - closure_lines
     project_total = scan.total_included_lines() or 1
 
-    # 维护税：PCH 的代价不是零。改动闭包里任何一个头，整份 .gch 失效，
-    # 包含它的单元全部重编——最坏情况就是闭包里被最多单元包含的那个头。
-    # 这一项以前只写在 caveat 里（「未计入」），现在给出量化：
-    # 省多少是收益，税多少是风险，两者必须同时出现才是一个可采纳的建议。
+    # 维护税：PCH 的代价不是零。.gch 失效后，**每一个使用 PCH 的单元**都要
+    # 重新生成 .gch 再编译自己，与是哪个头触发失效无关。所以影响面按
+    # pch_users 计；无 PCH 时改同一个头只影响它自己触达的单元，两者的差
+    # 就是放进 PCH 的净增风险。
     rebuild_header: Path | None = None
-    rebuild_units = 0
+    rebuild_reach = 0
     rebuild_lines = -1
     for path, stats in scan.header_stats.items():
         if path not in closure:
             continue
         # 只算**项目**头：系统头（bits/stl_algo.h 之类）谁都改不了，
-        # 把它算成维护税只会把风险说大。项目头为空时才退回系统头。
+        # 把它算成维护税只会把风险说大。
         if stats.kind is not HeaderKind.PROJECT:
             continue
-        # 先比触达单元数，平局时比自身行数：63/63 全触达时，用户实际会改的
-        # 是那个大而常改的头（json.hpp），不是顺带被拉进来的小适配头。
+        # 先比触达单元数，平局时比自身行数：全触达时，用户实际会改的是
+        # 那个大而常改的头（json.hpp），不是顺带被拉进来的小适配头。
         key = (stats.tu_reach, stats.line_count)
-        if key > (rebuild_units, rebuild_lines):
-            rebuild_header, rebuild_units, rebuild_lines = path, *key
+        if key > (rebuild_reach, rebuild_lines):
+            rebuild_header, rebuild_reach, rebuild_lines = path, *key
+
+    # 脆弱头清单：闭包里触达**小于** pch_users 的项目头。这些头只被一部分
+    # 单元使用，却因为被固化进 .gch 而让全体使用 PCH 的单元陪着重编——
+    # 放大倍数就是 users / reach。这是集合层面的税，单个候选头身上量不到
+    # （tu_reach 含传递包含，闭包头触达必然不小于候选头自身）。
+    fragile: list[tuple[Path, int, float]] = []
+    for path, stats in scan.header_stats.items():
+        if path not in closure:
+            continue
+        if stats.kind is not HeaderKind.PROJECT or stats.tu_reach <= 0:
+            continue
+        if stats.tu_reach >= len(pch_users):
+            continue
+        fragile.append((path, stats.tu_reach, len(pch_users) / stats.tu_reach))
+    fragile.sort(key=lambda item: (-item[2], -item[1], str(item[0])))
+
+    rebuild_units = len(pch_users) if rebuild_header is not None else 0
     rebuild_seconds = 0.0
     if rebuild_header is not None:
-        for tu in scan.ok_tus:
-            if rebuild_header in {event.included for event in tu.include_events}:
-                rebuild_seconds += _tu_seconds(tu)
+        for tu in pch_users:
+            rebuild_seconds += _tu_seconds(tu)
 
     caveats = [
         "基于行数代理，不是秒数。模板重型头文件的实际成本会被低估。",
         "上限估计：真实 PCH 必须是每个使用它的 TU 的第一个 include，"
         "且各 TU 间字节一致。include 顺序不一致的项目实际收益会更低。",
-        "维护税（rebuild_seconds）只计受影响单元的重编耗时，不含 .gch 自身的重建时间；"
-        "它衡量的是「改一次要付多少」，不是「每次构建都要付」。",
+        "维护税（rebuild_seconds）按「所有使用 PCH 的单元都要重新生成 .gch」计，"
+        "不含 .gch 自身的构建时间；它衡量的是「改一次要付多少」，不是「每次构建都要付」。",
         "本工具不生成 PCH，只做估算。",
     ]
 
@@ -243,6 +356,8 @@ def estimate_pch(
         percent_of_project=net / project_total * 100.0,
         rebuild_header=rebuild_header,
         rebuild_units=rebuild_units,
+        baseline_rebuild_units=rebuild_reach,
         rebuild_seconds=rebuild_seconds,
+        fragile_headers=[(path, reach, amp) for path, reach, amp in fragile],
         caveats=caveats,
     )

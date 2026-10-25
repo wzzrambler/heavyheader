@@ -9,7 +9,7 @@
 |---|---|---|
 | 公开仓库可访问 | ✅ | https://github.com/wzzrambler/heavyheader |
 | 工作区干净 | ✅ `git status` 无输出 | 提交前再跑一次 |
-| 测试全绿 | ✅ 667 passed / 7 skipped | `pytest -q` |
+| 测试全绿 | ✅ 670 passed / 7 skipped | `pytest -q` |
 | 零第三方依赖 | ✅ 仅标准库 | `pyproject.toml` 的 `dependencies` |
 | 许可证与治理文件 | ✅ LICENSE / CONTRIBUTING / CoC / SECURITY / ROADMAP / CHANGELOG | 仓库根 |
 
@@ -17,7 +17,7 @@
 
 | 项 | 状态 | 备注 |
 |---|---|---|
-| 作品介绍文档 PDF | ✅ 完整版 33 页 / 精简评审版 18 页 | 两版数字一致，章节映射见 `docs/restructure-map.md` |
+| 作品介绍文档 PDF | ✅ 完整版 32 页 / 精简评审版 18 页 | 两版数字一致，章节映射见 `docs/restructure-map.md` |
 | 选题报告 PDF | ✅ 18 页 | 含同一节的门槛结论 |
 | 演示视频 | ✅ 10.7 MB，5 分 04 秒 | 2026-10-22 重渲，口径已与三份 PDF 统一 |
 | 竞品尽调 | ✅ `docs/competitor-matrix.md` | 逐格标证据等级 |
@@ -79,7 +79,7 @@ json 为 0/16。注入-召回 2/2 命中。
 ## 四、提交前最后一轮自检命令
 
 ```bash
-pytest -q                                  # 期望 667 passed / 7 skipped
+pytest -q                                  # 期望 670 passed / 7 skipped
 python -m compileall -q src                # 语法检查
 git status --porcelain                     # 期望空
 python docs/make_pdf.py "HeavyHeader-作品介绍文档.pdf"
@@ -87,7 +87,7 @@ python docs/make_pdf_review.py "HeavyHeader-作品介绍文档-精简评审版.p
 python docs/make_topic_report.py "HeavyHeader-选题报告.pdf"
 ```
 
-PDF 重建后确认：页数 32 / 17 / 18，且正文含「四道门槛」「成立但有限」「1/16」
+PDF 重建后确认：页数 32 / 18 / 18，且正文含「四道门槛」「成立但有限」「1/16」
 「2.125%」「假设输入」五个关键词——这几处是评审最容易验证我们诚实的入口。
 （2026-10-23 补：「假设输入」是规模换算那一节的口径，仿真之后 CPU 侧改按区间
 报，墙上 4.2 min 保留，别退回单值。）

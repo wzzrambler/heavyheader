@@ -899,20 +899,42 @@ def render_markdown(scan: ProjectScan) -> str:
             share = pch.rebuild_share * 100.0
             lines.append(
                 f"**维护税：**闭包里被最多单元包含的是 "
-                f"`{_rel(pch.rebuild_header, root)}`（{pch.rebuild_units}/"
-                f"{pch.total_tus} 个单元，{share:.0f}%）。改动它会让整份 .gch 作废、"
-                f"这些单元全部重编，按本次扫描的编译方式计约 **{pch.rebuild_seconds:.1f} s**"
+                f"`{_rel(pch.rebuild_header, root)}`。改动它会让整份 .gch 作废，"
+                f"按本次扫描的编译方式计约 **{pch.rebuild_seconds:.1f} s**"
                 "（扫描若用完整编译，这个数会更高）。"
-                + (
-                    "这个头几乎是全工程的公共依赖，改它本来也要全量重编——"
-                    "放进 PCH 不额外增加风险。"
-                    if share >= 90.0
-                    else "它只被一部分单元包含，改它本来只需重编那部分——"
-                    "放进 PCH 会把代价放大到这些单元全体。"
-                )
+                f"计的是**所有使用 PCH 的 {pch.rebuild_units} 个单元**——它们都要"
+                "重新生成 .gch 再编译自己。"
             )
             lines.append("")
-        lines.append("> 这是估算，不是承诺。四条限制：")
+            lines.append(
+                f"不放进 PCH 时，改这个头只需重编它自己触达的 "
+                f"{pch.baseline_rebuild_units} 个单元；放进去后是 "
+                f"{pch.rebuild_units} 个。"
+            )
+            lines.append("")
+        if pch.fragile_headers:
+            lines.append(
+                f"**把这个 PCH 变得危险的是下面 {len(pch.fragile_headers)} 个头**——"
+                "它们只被一部分单元使用，却因为被固化进 .gch，改一次就要全体"
+                "使用 PCH 的单元陪着重编："
+            )
+            lines.append("")
+            lines.append("| 头文件 | 本来只影响 | 改一次实际影响 | 放大 |")
+            lines.append("|---|---:|---:|---:|")
+            for path, reach, amp in pch.fragile_headers[:10]:
+                lines.append(
+                    f"| `{_rel(path, root)}` | {reach} 个单元 | "
+                    f"{pch.rebuild_units} 个单元 | {amp:.1f} 倍 |"
+                )
+            if len(pch.fragile_headers) > 10:
+                lines.append(f"| …另有 {len(pch.fragile_headers) - 10} 个 | | | |")
+            lines.append("")
+            lines.append(
+                "规避办法：让 PCH 只包含全工程公共依赖的头，把这些只服务部分单元的"
+                "头留在 PCH 之外（代价是那部分单元享受不到收益）。"
+            )
+            lines.append("")
+        lines.append("> 这是估算，不是承诺。五条限制：")
         for caveat in pch.caveats:
             lines.append(f"> - {caveat}")
         lines.append("")

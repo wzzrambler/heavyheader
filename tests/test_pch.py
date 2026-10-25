@@ -55,39 +55,78 @@ def _scan(root: Path, tus: list[TranslationUnit], headers: list[Path]) -> Projec
     return scan
 
 
-def test_recommends_the_most_included_headers(tmp_path):
-    """The PCH set is chosen by reach, not by size.
+def test_recommends_by_net_saving_not_by_header_size(tmp_path):
+    """排序目标是被测出来的净节省行数，不是头文件自身的行数。
 
-    A 5000-line header included by 2 TUs is a worse PCH candidate than a
-    50-line header included by 8.  Ranking by size alone is the classic
-    mistake this guards against.
+    防护的是一个经典错误：按 ``line_count`` 排。这里 big.h 有 5000 行但只被
+    2 个单元包含（净节省 5000 行），small.h 只有 100 行却被 100 个单元包含
+    （净节省 9900 行）——按自身大小会选中大的那个，按净节省选小的。
     """
-    small = _write(tmp_path, "small.h", 50)
+    small = _write(tmp_path, "small.h", 100)
     big = _write(tmp_path, "big.h", 5000)
-    source = tmp_path / "main.cpp"
-    source.write_text("int main() { return 0; }\n", encoding="utf-8")
 
     tus = []
-    for i in range(8):
+    for i in range(100):
         tus.append(
             TranslationUnit(
-                source=tmp_path / f"t{i}.cpp",
+                source=tmp_path / f"t{i:03d}.cpp",
                 include_events=[
-                    IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=small, depth=0)
+                    IncludeEvent(
+                        includer=tmp_path / f"t{i:03d}.cpp", included=small, depth=0
+                    )
                 ],
             )
         )
-    # big.h only reaches two TUs.
     for i in range(2):
         tus[i].include_events.append(
-            IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=big, depth=0)
+            IncludeEvent(includer=tus[i].source, included=big, depth=0)
         )
 
-    scan = _scan(tmp_path, tus, [small, big])
-    rec = estimate_pch(scan, top_k=5)
+    rec = estimate_pch(_scan(tmp_path, tus, [small, big]), top_k=5)
 
-    assert rec.headers[0] == small
-    assert big not in rec.headers[:1]
+    assert rec.headers == [small]
+    assert rec.eligible_tus == 100
+    assert rec.net_lines_saved == 100 * 99  # 100 行 × 99 个额外使用者
+
+
+def test_greedy_refuses_a_header_that_lowers_the_net_saving(tmp_path):
+    """贪心必须拒绝让净节省下降的头——这是 top-k 切片的真实缺陷。
+
+    10 个单元：5 个含 common.h，另 5 个含 special.h，两个头等大。
+    旧实现按 (reach, 闭包行数) 取前 2 个，把 special.h 也放进去，结果
+    eligible 从 10 掉到 5、闭包翻倍，净节省从 13,527 行降到 12,024 行。
+    新实现按净节省增量贪心，加 special.h 是净损失，于是只选 common.h。
+    """
+    common = _write(tmp_path, "common.h", 1503)
+    special = _write(tmp_path, "special.h", 1503)
+
+    # 10 个单元全都包含 common.h，其中 5 个额外包含 special.h——这正是
+    # ``experiments/_work/fragile-demo`` 的真实形状（那里实测 13,527 vs 12,024）。
+    tus = []
+    for i in range(10):
+        events = [
+            IncludeEvent(
+                includer=tmp_path / f"t{i:02d}.cpp", included=common, depth=0
+            )
+        ]
+        if i < 5:
+            events.append(
+                IncludeEvent(
+                    includer=tmp_path / f"t{i:02d}.cpp", included=special, depth=0
+                )
+            )
+        tus.append(
+            TranslationUnit(source=tmp_path / f"t{i:02d}.cpp", include_events=events)
+        )
+
+    rec = estimate_pch(_scan(tmp_path, tus, [common, special]), top_k=5)
+
+    assert rec.headers == [common]
+    assert rec.eligible_tus == 10
+    assert rec.net_lines_saved == 1503 * 9  # 13,527
+    # special.h 既没进闭包，也就不会成为脆弱头。
+    assert special not in rec.closure_headers
+    assert rec.fragile_headers == []
 
 
 def test_net_saving_arithmetic(tmp_path):
@@ -120,7 +159,7 @@ def test_net_saving_arithmetic(tmp_path):
 def test_eligibility_requires_every_chosen_header(tmp_path):
     """A TU that misses one PCH member cannot use the PCH at all."""
     a = _write(tmp_path, "a.h", 20)
-    b = _write(tmp_path, "b.h", 20)
+    b = _write(tmp_path, "b.h", 2000)  # 大得足以让「加它」成为净增益
     source = tmp_path / "main.cpp"
     source.write_text("int main() { return 0; }\n", encoding="utf-8")
 
@@ -266,39 +305,52 @@ def test_ranks_by_closure_not_own_size(tmp_path):
     assert rec.net_lines_saved == 200
 
 
-def test_maintenance_tax_counts_the_units_that_would_rebuild(tmp_path):
-    """PCH 的代价必须和收益一起报：改一次要重编多少单元、多少秒。
+def test_maintenance_tax_counts_every_unit_that_uses_the_pch(tmp_path):
+    """税的影响面是「使用 PCH 的单元」，不是被改头自己触达的单元。
 
-    ``rebuild_header`` 取闭包里被最多单元包含的那个头——改动它，整份 .gch
-    作废，包含它的单元全部重编。这里 5 个单元里 3 个包含 common.h，各自
-    墙钟 1.0 / 2.0 / 3.0 s，另外两个不包含（0.5 / 0.5 s）不参与。
+    .gch 作废后，每个用 ``-include`` 的单元都要重新生成 .gch 再编译自己，
+    与是哪个头触发失效无关。这里 5 个单元：u0-u3 含 A.h（它拉进 C.h），
+    u2-u4 含 B.h。贪心只选 A.h（加 B.h 会降低净节省），于是使用 PCH 的
+    就是含 A.h 的 4 个单元；A.h 自己触达的也是这 4 个，放大 1.0 倍。
     """
-    common = _write(tmp_path, "common.h", 100)
-    other = _write(tmp_path, "other.h", 10)
+    a = _write(tmp_path, "A.h", 100)
+    b = _write(tmp_path, "B.h", 10)
+    c = _write(tmp_path, "C.h", 5)
+    includes = [
+        [a, c],   # u0
+        [a, c],   # u1
+        [a, c, b],  # u2
+        [a, c, b],  # u3
+        [b],      # u4
+    ]
     tus = []
-    for i in range(5):
+    for i, hs in enumerate(includes):
         events = []
-        if i < 3:
+        for h in hs:
+            # C.h 是被 A.h 包含的，不是被单元直接包含的——includer 必须是 A.h，
+            # 否则闭包算不出来，C.h 会变成一个独立的候选头。
+            includer = a if h is c else tmp_path / f"t{i}.cpp"
             events.append(
-                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=common, depth=0)
-            )
-        wall = 1.0 * (i + 1) if i < 3 else 0.5
-        if i == 4:
-            events.append(
-                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=other, depth=0)
+                IncludeEvent(includer=includer, included=h, depth=1 if h is c else 0)
             )
         tus.append(
             TranslationUnit(
-                source=tmp_path / f"t{i}.cpp", include_events=events, wall_seconds=wall
+                source=tmp_path / f"t{i}.cpp",
+                include_events=events,
+                wall_seconds=1.0 * (i + 1),
             )
         )
 
-    rec = estimate_pch(_scan(tmp_path, tus, [common, other]), top_k=5)
+    rec = estimate_pch(_scan(tmp_path, tus, [a, b, c]), top_k=5)
 
-    assert rec.rebuild_header == common
-    assert rec.rebuild_units == 3
-    assert rec.rebuild_seconds == 6.0
-    assert rec.rebuild_share == 3 / 5
+    # 贪心只选 A.h：加入 B.h 会让 eligible 从 4 掉到 2、闭包变大，净节省下降。
+    assert rec.headers == [a]
+    assert rec.rebuild_header == a
+    assert rec.rebuild_units == 4            # 使用 PCH 的单元（含 A.h 的 4 个）
+    assert rec.baseline_rebuild_units == 4   # 无 PCH 时改 A.h 也只重编这 4 个
+    assert rec.rebuild_amplification == 1.0
+    assert rec.rebuild_seconds == 10.0       # 1+2+3+4
+    assert rec.fragile_headers == []
 
 
 def test_maintenance_tax_falls_back_to_time_report_total(tmp_path):
@@ -321,4 +373,75 @@ def test_maintenance_tax_falls_back_to_time_report_total(tmp_path):
     rec = estimate_pch(_scan(tmp_path, tus, [common]), top_k=5)
 
     assert rec.rebuild_units == 2
+    assert rec.baseline_rebuild_units == 2
+    assert rec.rebuild_amplification == 1.0
     assert rec.rebuild_seconds == 5.0
+    # 两个单元都包含 common.h：没有「只服务部分单元」的头，清单为空。
+    assert rec.fragile_headers == []
+
+
+def test_fragile_headers_lists_headers_below_the_pch_user_count(tmp_path):
+    """脆弱头清单按放大倍数降序，且只收触达小于 PCH 使用者的项目头。
+
+    构造故意让贪心**仍然选中**那个会制造脆弱头的组合：base.h 的闭包
+    （base + common = 5,000 行）远大于 mid.h（100 行），于是「加 base.h」
+    尽管把 eligible 从 6 压到 2，净节省仍从 500 行涨到 5,100 行——贪心选它。
+    此时使用 PCH 的是 6 个单元，而 base.h 与 common.h 只服务 2 个，
+    放大 3.0 倍。这正是「净收益口径下仍会出现的税」，也是清单存在的理由。
+    """
+    mid = _write(tmp_path, "mid.h", 100)
+    base = _write(tmp_path, "base.h", 1000)
+    common = _write(tmp_path, "common.h", 4000)
+
+    def unit(name, direct, via=None):
+        events = [IncludeEvent(includer=tmp_path / name, included=direct, depth=0)]
+        if via is not None:
+            events.append(IncludeEvent(includer=direct, included=via, depth=1))
+        return TranslationUnit(source=tmp_path / name, include_events=events)
+
+    # u0-u3 只用 mid.h；u4/u5 用 mid.h + base.h（它拉进 common.h）。
+    tus = [unit(f"t{i}.cpp", mid) for i in range(4)]
+    tus += [unit("t4.cpp", base, common), unit("t5.cpp", base, common)]
+    for tu in tus[4:]:
+        tu.include_events.insert(
+            0, IncludeEvent(includer=tu.source, included=mid, depth=0)
+        )
+    for tu in tus:
+        tu.wall_seconds = 1.0
+    scan = _scan(tmp_path, tus, [mid, base, common])
+
+    rec = estimate_pch(scan, top_k=5)
+
+    # 贪心按净增益的顺序选：base.h 先（5,000 行 > mid.h 的 500 行），
+    # 然后 mid.h 仍能再加 100 行净增益，于是两个都进。
+    assert rec.headers == [base, mid]
+    assert rec.eligible_tus == 2
+    assert rec.rebuild_units == 6              # 全体单元都使用 PCH
+    got = [(p.name, r, round(a, 2)) for p, r, a in rec.fragile_headers]
+    assert got == [("base.h", 2, 3.0), ("common.h", 2, 3.0)]
+
+
+def test_fragile_headers_is_empty_when_every_header_is_universal(tmp_path):
+    """所有项目头都被全体单元包含时，清单必须为空——不能为了有内容而编内容。
+
+    这正是 nlohmann/json 的真实形状（63/63 全触达），所以这条同时是
+    「json 语料上不报脆弱头」的回归保护。
+    """
+    common = _write(tmp_path, "common.h", 100)
+    tus = [
+        TranslationUnit(
+            source=tmp_path / f"t{i}.cpp",
+            include_events=[
+                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=common, depth=0)
+            ],
+            wall_seconds=1.0,
+        )
+        for i in range(4)
+    ]
+
+    rec = estimate_pch(_scan(tmp_path, tus, [common]), top_k=5)
+
+    assert rec.eligible_tus == 4
+    assert rec.rebuild_units == 4
+    assert rec.rebuild_amplification == 1.0
+    assert rec.fragile_headers == []

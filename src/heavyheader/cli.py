@@ -23,11 +23,14 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import datetime as _dt
+import shutil
 import sys
+import tempfile
 from pathlib import Path
 
 from . import __version__, codegen, evidence
 from .attrib.edgecost import aggregate_edge_costs
+from .attrib.pchbuild import run_pch_trial
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
     BaselineError,
@@ -44,7 +47,7 @@ from .models import ProjectScan
 from .report.edges import edges_to_dict, render_edges_markdown
 from .report.html import TrendPoint, render_html
 from .report.jsonio import scan_to_dict
-from .report.markdown import markdown_summary_line, render_markdown
+from .report.markdown import markdown_summary_line, render_markdown, render_pch_trial
 from .scanner import ScanError, ScanOptions, discover_translation_units, scan_project
 from .verify import VerifyOptions, verify_candidates
 
@@ -333,6 +336,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verified.add_argument("-o", "--output", type=Path, default=None, help="同时写出 JSON")
 
+    pchv = subparsers.add_parser(
+        "pch-verify",
+        help="实测：真的生成一份 PCH 并重编，量出它省了多少（而不是估算）",
+    )
+    add_common(pchv)
+    pchv.add_argument(
+        "--runs",
+        type=int,
+        default=2,
+        help="每侧重复编译次数，取最小值（默认 2）",
+    )
+    pchv.add_argument(
+        "--full",
+        action="store_true",
+        help="走完整编译（-c 产出目标文件）而不是 -fsyntax-only；更接近真实构建，也慢得多",
+    )
+    pchv.add_argument(
+        "--max-units",
+        type=int,
+        default=0,
+        help="最多测多少个编译单元（默认 0 = 该选项组内全部）",
+    )
+    pchv.add_argument(
+        "--workdir",
+        type=Path,
+        default=None,
+        help="PCH 与中间产物的存放目录（默认临时目录，跑完删除）。"
+        "想复核 .gch 本身时指定一个目录把它留下",
+    )
+    pchv.add_argument(
+        "--format", choices=["md", "json"], default="md", help="输出格式（默认 md）"
+    )
+    pchv.add_argument("-o", "--output", type=Path, default=None, help="输出文件")
+
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
     add_common(gate)
     gate.add_argument("--baseline", type=Path, required=True, help="基线 JSON 路径")
@@ -598,6 +635,56 @@ def _semantic_build_path(args):
 
     cc = getattr(args, "compile_commands", None)
     return Path(cc).parent if cc else None
+
+
+def _cmd_pch_verify(args) -> int:
+    """真的造一份 PCH，真的重编，把估算换成实测。
+
+    与 ``scan --pch`` 的关系：那条命令给的是**估算**（省多少行），这条给的是
+    **实测**（省多少秒，以及估算点名的单元里究竟有几个真的用上了 PCH）。
+    两条路刻意分开——合在一条命令里会让「估算」借「实测」的可信度。
+    """
+    # 实测要用估算给出的头集合，所以这一轮扫描必须算 PCH 建议。
+    args.pch = True
+    # 扫描阶段一律走语法检查；试验阶段的口径由 --full 单独决定。
+    args.full_compile = False
+    scan = _run_scan(args)
+    driver = detect_driver(args.compiler)
+
+    workdir: Path | None = args.workdir
+    temporary = workdir is None
+    if workdir is None:
+        workdir = Path(tempfile.mkdtemp(prefix="heavyheader-pch-"))
+    trial = run_pch_trial(
+        scan,
+        driver=driver,
+        workdir=workdir,
+        runs=args.runs,
+        full_compile=args.full,
+        max_units=args.max_units or None,
+        timeout=args.timeout,
+    )
+
+    if args.format == "json":
+        _emit(_json_pretty(trial.to_dict()), args.output)
+    else:
+        _emit(render_pch_trial(trial, root=scan.root), args.output)
+
+    if temporary:
+        shutil.rmtree(workdir, ignore_errors=True)
+    else:
+        print(f"PCH 与中间产物保留在：{workdir}", file=sys.stderr)
+
+    # 退出码：没测成要失败。0 收益是**结论**（值得知道），测不成是**没做**。
+    if not trial.pch_built:
+        print(f"错误：{trial.pch_error}", file=sys.stderr)
+        return 2
+    print(
+        f"实测 {trial.measured_units} 个单元，{trial.adopted_units} 个用上 PCH，"
+        f"节省 {trial.saved_percent:.1f}%。",
+        file=sys.stderr,
+    )
+    return 0
 
 
 def _run_scan(args) -> ProjectScan:
@@ -1444,6 +1531,7 @@ _COMMANDS = {
     "history": _cmd_history,
     "pr-comment": _cmd_pr_comment,
     "toolchains": _cmd_toolchains,
+    "pch-verify": _cmd_pch_verify,
 }
 
 

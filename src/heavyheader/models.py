@@ -125,6 +125,11 @@ class TranslationUnit:
     #: was "we asked the wrong question".  Carrying the options on the unit
     #: makes the real build reproducible from the scan result alone.
     compile_options: object | None = None
+    #: 编译这个单元时的**工作目录**（``compile_commands.json`` 的 directory 字段）。
+    #: 光有 ``compile_options`` 还不够复现一次编译：相对 ``-Iinclude`` 只在原来的
+    #: cwd 下成立，换目录重编会找不到头，而那看起来和「这个项目编不过」一模一样。
+    #: ``None`` = 未知（自动发现的源码、手工构造的 scan），此时调用方应用扫描根。
+    compile_cwd: object | None = None
 
     @property
     def ok(self) -> bool:

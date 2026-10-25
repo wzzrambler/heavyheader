@@ -99,6 +99,22 @@ class CompilerDriver(ABC):
     ) -> TranslationUnit:
         """Turn a finished invocation into a :class:`TranslationUnit`."""
 
+    def build_pch_command(
+        self, header: Path, options: DriverOptions, output: Path
+    ) -> list[str] | None:
+        """把 ``header`` 预编译成 ``output`` 的 argv；工具链不支持时返回 ``None``。
+
+        返回 ``None``（而不是抛异常）是刻意的：「这个工具链没有可用的 PCH 机制」
+        是一个**结论**，不是一次崩溃。MSVC 走的是 ``/Yc``+``/Yu`` 且要求被预编译的
+        头在每个单元里都是第一个 include，与本模块的 ``-include`` 注入方式不同，
+        硬套只会产出一个「编译过」但 PCH 从未生效的假实测。
+        """
+        return None
+
+    def pch_use_flags(self, header: Path) -> list[str] | None:
+        """让一次编译**使用** ``header`` 对应预编译头的额外参数。"""
+        return None
+
     # -- shared helpers ---------------------------------------------------
 
     def run(
@@ -108,7 +124,17 @@ class CompilerDriver(ABC):
         cwd: Path | None = None,
         timeout: float = 300.0,
     ) -> TranslationUnit:
-        """Compile ``source`` and return what we learned.
+        """Compile ``source`` and return what we learned."""
+        return self.run_verbose(source, options, cwd, timeout)[0]
+
+    def spawn(
+        self, argv: list[str], cwd: Path | None = None, timeout: float = 300.0
+    ) -> tuple[subprocess.CompletedProcess, float, int]:
+        """启动一次编译进程，把原始输出、实测墙钟与重试次数一并交出来。
+
+        抽出来是为了让「生成预编译头」这类**不是编译一个 TU** 的调用也能
+        共享同一套启动重试与环境处理——各写一份迟早会漏掉「启动失败」这
+        一类，而漏掉的表现是偶发的假失败，最难查。
 
         并行编译时，操作系统偶尔会**启动不了**编译器进程（Windows 上常见
         ``[WinError 1455] 页文件不足`` / ``[WinError 6] 句柄无效``，POSIX 上是
@@ -117,7 +143,7 @@ class CompilerDriver(ABC):
         scanner 的稳健性测试）。这种「启动失败」和「编译失败」是两回事：编译失败
         是 returncode != 0，走正常路径；这里只对**启动**的瞬时失败做有限次重试。
         """
-        argv = self.build_command(source, options)
+        describe = " ".join(argv[:1]) or "compiler"
         attempts = 0
         while attempts < _MAX_SPAWN_ATTEMPTS:
             attempts += 1
@@ -137,7 +163,7 @@ class CompilerDriver(ABC):
                 # 编译确实太慢，超出了预算。重试只会再等一个超时，没有意义，
                 # 直接记作编译失败（与「启动失败」区分）。
                 raise CompilationError(
-                    f"{source}: compiler timed out after {timeout:.0f}s"
+                    f"{describe}: compiler timed out after {timeout:.0f}s"
                 ) from exc
             except FileNotFoundError as exc:
                 # 编译器根本不在 PATH 上——必然失败，不重试。
@@ -152,7 +178,7 @@ class CompilerDriver(ABC):
                     _sleep(_SPAWN_BACKOFF * attempts)
                     continue
                 raise CompilationError(
-                    f"{source}: compiler failed to start "
+                    f"{describe}: compiler failed to start "
                     f"({type(exc).__name__}: {exc}); "
                     "this is usually transient OS contention under many parallel "
                     "compiles -- retrying did not help"
@@ -160,8 +186,25 @@ class CompilerDriver(ABC):
             else:
                 # 启动成功，跳出重试循环。
                 break
+        return completed, _perf_counter() - started, attempts
 
-        wall = _perf_counter() - started
+    def run_verbose(
+        self,
+        source: Path,
+        options: DriverOptions,
+        cwd: Path | None = None,
+        timeout: float = 300.0,
+    ) -> tuple[TranslationUnit, str]:
+        """Compile ``source`` and return the unit **plus the raw stderr**.
+
+        多交出一个 stderr 的理由是 PCH 实测：编译器在**没有**采用 .gch 时
+        通常只给一条警告并照常编译，退出码仍然是 0。只看 ``TranslationUnit``
+        的话，「PCH 没用上」和「PCH 生效了」长得一模一样——那会把一次无效
+        的实测当成有效证据。拿得到原始输出才分得开。
+        """
+        completed, wall, attempts = self.spawn(
+            self.build_command(source, options), cwd, timeout
+        )
         tu = self.interpret(
             source=source,
             returncode=completed.returncode,
@@ -189,7 +232,7 @@ class CompilerDriver(ABC):
                 )
                 for event in tu.include_events
             ]
-        return tu
+        return tu, completed.stderr or ""
 
     def _subprocess_env(self) -> dict | None:
         """传给 ``subprocess.run`` 的环境变量。
@@ -341,6 +384,47 @@ class GccLikeDriver(CompilerDriver):
             argv.append("-fsyntax-only")
         argv += extra
         return _append_source(argv, source, extra)
+
+    def build_pch_command(
+        self, header: Path, options: DriverOptions, output: Path
+    ) -> list[str] | None:
+        argv = [self.executable]
+        if options.standard:
+            argv.append(f"-std={options.standard}")
+        for directory in options.include_dirs:
+            argv += ["-I", str(directory)]
+        for define in options.defines:
+            argv.append(f"-D{define}")
+        # 来自 compile_commands.json 的 -c / -MD -MF 与「产出预编译头」冲突
+        # （-c 拒绝 -x c++-header 的输出形式，-MF 会往别处写依赖文件）。
+        extra = _strip_for_object(
+            list(options.extra_flags), _NO_OBJECT_FLAGS_GCC, _DEP_FILE_FLAGS_GCC
+        )
+        argv += extra
+        # -x 让编译器把输入当头文件处理；C 与 C++ 的预编译头不通用，
+        # 选错语言会让每个 C 单元都「PCH 不生效」。
+        argv += ["-x", self._pch_language(header, options), str(header)]
+        argv += ["-o", str(output)]
+        return argv
+
+    def pch_use_flags(self, header: Path) -> list[str] | None:
+        # 只给「注入」用的参数。``-Winvalid-pch`` 由调用方自己加——不是所有
+        # 编译器都认它，认不认决定得了「能不能判断 PCH 是否生效」，那是调用
+        # 方的事，不该混在「怎么用 PCH」里。
+        return ["-include", str(header)]
+
+    def _pch_language(self, header: Path, options: DriverOptions) -> str:
+        """``c++-header`` 还是 ``c-header``。
+
+        C 与 C++ 的预编译头互不通用：拿 C++ 的 .gch 去编译 C 单元，编译器
+        不报错，只是不用它——省下的时间测出来是 0，而报告会把它当成
+        「PCH 没用」。编译单元本身的后缀是唯一的依据。
+        """
+        if options.standard and options.standard.startswith(("c89", "c99", "c11", "c17")):
+            return "c-header"
+        if header.suffix.lower() == ".hpp" or "c++" in str(options.standard or ""):
+            return "c++-header"
+        return "c++-header"
 
     def interpret(
         self,

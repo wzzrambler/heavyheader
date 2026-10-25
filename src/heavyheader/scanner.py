@@ -529,6 +529,9 @@ def scan_project(
             # -I 都不一样，用共享的 ScanOptions 重建会丢参数，然后给出
             # 「移除后编译失败」的假结论。
             tu.compile_options = task.options
+            # 连同工作目录一起记下来：相对 -I 只在原 cwd 下成立，重编时
+            # 必须回到同一个目录，否则「找不到头」会被误读成「这个项目编不过」。
+            tu.compile_cwd = task.cwd
             tus.append(tu)
 
     scan = ProjectScan(

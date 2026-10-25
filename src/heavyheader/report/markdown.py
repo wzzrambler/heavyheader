@@ -18,7 +18,7 @@ from ..attrib.advice import (
 from ..attrib.diagnosis import BLOCK_REASONS
 from ..models import AdviceVerdict, HeaderKind, ProjectScan, candidate_rank_key
 
-__all__ = ["render_markdown", "markdown_summary_line"]
+__all__ = ["render_markdown", "markdown_summary_line", "render_pch_trial"]
 
 
 def _fmt_int(value: int) -> str:
@@ -998,6 +998,125 @@ def render_markdown(scan: ProjectScan) -> str:
     )
     lines.append("")
     return "\n".join(lines)
+
+
+def render_pch_trial(trial, root: Path | None = None) -> str:
+    """PCH 实测闭环的报告。
+
+    与上面「收益估算」那一段必须分开：估算说的是**行数**，实测说的是
+    **秒**，两者不能换算（预处理占比推算实测收益会高估约 1.6 倍）。合在
+    一张表里会诱导读者把它们当成同一件事的两个精度。
+    """
+    lines: list[str] = ["# 预编译头（PCH）实测", ""]
+
+    if not trial.pch_built:
+        lines.append("**没有测成。**")
+        lines.append("")
+        lines.append(trial.pch_error or "预编译头未能生成。")
+        lines.append("")
+        lines.append(
+            "这不是「PCH 没有收益」，是「这次没能量出收益」——两者在报告里"
+            "必须分开写，把失败写成 0 收益会让人以为试过了。"
+        )
+        return "\n".join(lines) + "\n"
+
+    rel_root = root or Path(".")
+    headers = "、".join(f"`{_rel(h, rel_root)}`" for h in trial.headers) or "（无）"
+    lines.append(f"把 {headers} 预编译成一份真实的 .gch，然后逐单元重编计时。")
+    lines.append("")
+    lines.append(
+        f"生成 .gch 耗时 **{trial.pch_build_seconds:.2f} s**；"
+        f"实测 **{trial.measured_units}** 个编译单元（每侧编译 {trial.runs} 次取最快）。"
+    )
+    lines.append("")
+
+    # 主数字取 adopted 口径：那是**预编译头本身**带来的节省。全组口径含那些
+    # PCH 从未生效的单元，那部分是噪声，不该出现在头条上。
+    headline = trial.adopted_saved_percent
+    verdict = (
+        f"**实测节省 {headline:.1f}%**"
+        f"（{_fmt_seconds(trial.adopted_baseline_seconds)} → "
+        f"{_fmt_seconds(trial.adopted_pch_seconds)}）"
+        if trial.adopted_saved_seconds > 0
+        else f"**实测没有节省**（{_fmt_seconds(trial.adopted_baseline_seconds)} → "
+        f"{_fmt_seconds(trial.adopted_pch_seconds)}，"
+        f"{headline:+.1f}%）"
+    )
+    lines.append(verdict)
+    lines.append("")
+    if trial.adopted_units != trial.measured_units:
+        gap = trial.measured_units - trial.adopted_units
+        broken = sum(1 for unit in trial.units if not unit.pch_ok)
+        why = (
+            f"，其中 {broken} 个加了 PCH 后编不过"
+            if broken
+            else f"，其中 {gap} 个编译器未采用 .gch"
+        )
+        lines.append(
+            f"全组口径（含 {gap} 个用不上 PCH 的单元{why}）"
+            f"是 {trial.saved_percent:+.1f}%——两组数字都列出，是因为只报前者会把"
+            "噪声算成收益，只报后者会让人以为整组单元都享受得到。"
+        )
+        lines.append("")
+
+    # -- 估算 vs 实测：只比覆盖率，不比数值 -----------------------------
+    lines.append("| 指标 | 估算（行数口径） | 实测（秒口径） |")
+    lines.append("|---|---:|---:|")
+    lines.append(
+        f"| 覆盖率 | {trial.estimated_coverage:.0f}%"
+        f"（{trial.candidate_units}/{trial.total_units} 个单元含这些头）"
+        f" | {trial.measured_coverage:.0f}%"
+        f"（{trial.adopted_units}/{trial.measured_units} 个真的用上 .gch）|"
+    )
+    lines.append(
+        f"| 全项目口径 | — "
+        f"| {trial.project_coverage:.0f}%"
+        f"（{trial.adopted_units} 个 / 全项目 {trial.total_units} 个单元）|"
+    )
+    lines.append("")
+    lines.append(
+        "两个覆盖率不是同一个分母：估算按「包含这些头的单元」算，是**上界**；"
+        "实测按「编译器真的采用了 .gch 的单元」算，且只测了编译选项完全一致的一组，"
+        f"是**下界**（这一组指纹 `{trial.group_signature}`，共 {trial.group_size} 个单元）。"
+        "行数与秒之间不做换算。"
+    )
+    lines.append("")
+
+    if trial.break_even_units is not None:
+        lines.append(
+            f"按实测的单单元收益摊，需要约 **{trial.break_even_units} 个单元**"
+            "才能把生成 .gch 的一次性开销赚回来。"
+        )
+        lines.append("")
+
+    # -- 逐单元 ----------------------------------------------------------
+    lines.append("| 编译单元 | 无 PCH | 有 PCH | 变化 | 采用 |")
+    lines.append("|---|---:|---:|---:|:--:|")
+    for unit in trial.units[:20]:
+        name = f"`{_rel(unit.source, rel_root)}`"
+        if not unit.pch_ok:
+            # 编译失败的那一次必然「更快」——它提前退出了。把那个数字写进
+            # 「变化」列，读者会读成「PCH 让它快了 500 ms」。
+            lines.append(
+                f"| {name} | {_fmt_seconds(unit.baseline_seconds)} "
+                f"| 编译失败 | — | 否 |"
+            )
+            continue
+        delta = unit.delta_seconds
+        mark = f"-{_fmt_seconds(delta)}" if delta > 0 else f"+{_fmt_seconds(-delta)}"
+        lines.append(
+            f"| {name} | {_fmt_seconds(unit.baseline_seconds)} "
+            f"| {_fmt_seconds(unit.pch_seconds)} | {mark} "
+            f"| {'是' if unit.pch_adopted else '否'} |"
+        )
+    if len(trial.units) > 20:
+        lines.append(f"| …另有 {len(trial.units) - 20} 个 | | | | |")
+    lines.append("")
+
+    for note in trial.notes:
+        lines.append(f"> - {note}")
+    lines.append("")
+    return "\n".join(lines) + "\n"
 
 
 def markdown_summary_line(scan: ProjectScan) -> str:

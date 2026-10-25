@@ -78,6 +78,7 @@ $ heavyheader scan ./src --format html -o report.html
 | `edge-cost` | 按 include **边**归因解析成本（clang-first，需真编译一次）；预测排序用，结论仍归 `verify` |
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 | `configs` | 同一棵源码树按多套构建配置各扫一遍，只报**判定变了**的候选 |
+| `pch-verify` | PCH **实测**：真的生成 `.gch` 并重编计时，报出估算覆盖率与实测采用率（不做行数↔秒换算） |
 
 `configs` 回答的是一个 `scan` 回答不了的问题：这条 include 该不该删，取决于**这批
 编译命令有没有打开某个宏**。实测 zstd：`pool.c → allocations.h` 在单线程配置里可删
@@ -331,6 +332,10 @@ heavyheader edge-cost ./my-project --compiler clang++ --top 20
 
 # 11. 多编译器对比：同一份代码在不同工具链下的成本与耗时差异
 heavyheader toolchains ./my-project --compilers g++,clang++
+
+# 12. PCH 实测：不估算，真的生成一份 .gch 并重编，量出它省了多少
+#     （只测编译选项完全一致的一组单元——选项不同的单元无法共享同一份 .gch）
+heavyheader pch-verify ./my-project --compiler g++ --std c++17 -I include
 ```
 
 ### 增量扫描

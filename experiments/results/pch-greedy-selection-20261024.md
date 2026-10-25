@@ -26,16 +26,17 @@
 ## 2. 缺陷 B：top-k 切片在部分覆盖的项目上选错
 
 用一个 10 单元的合成语料实测（`experiments/_work/fragile-demo`）：
-10 个单元全都包含 `common.h`（1,503 行），其中 5 个额外包含
-`special.h`（1,503 行）。
+10 个单元全都包含 `common.h`，其中 5 个额外包含 `special.h`，两个头等大
+（各 1,506 行，含 `#pragma once` 与 namespace 包裹行）。语料由
+`experiments/fragile_demo.py` 生成，勿手改。
 
 | 选法 | 闭包行数 | eligible | 净节省行数 | 覆盖率 |
 |---|---:|---:|---:|---:|
-| 只选 `common.h` | 1,503 | 10 | **13,527** | 100% |
-| 选 `common.h` + `special.h`（旧行为） | 3,006 | 5 | 12,024 | 50% |
+| 只选 `common.h` | 1,506 | 10 | **13,554** | 100% |
+| 选 `common.h` + `special.h`（旧行为） | 3,012 | 5 | 12,048 | 50% |
 
 旧实现按 `(reach, 闭包行数)` 取前 `top_k` 个，把 `special.h` 也放进去：
-闭包翻倍、eligible 腰斩，**净节省反而下降 1,503 行**，覆盖率从 100% 掉到 50%，
+闭包翻倍、eligible 腰斩，**净节省反而下降 1,506 行**，覆盖率从 100% 掉到 50%，
 同时还引入一个 2.0 倍的维护税（见下）。
 
 ## 3. 修正一：按净收益增量贪心
@@ -52,7 +53,7 @@
 | 语料 | 旧（top-k） | 新（贪心） |
 |---|---|---|
 | json 63 TU | 5 个头，净收益 9,919,690 行（91.2%） | 2 个头，净收益 10,362,556 行（**95.3%**） |
-| fragile-demo 10 TU | 2 个头，12,024 行，覆盖率 50% | 1 个头，13,527 行，覆盖率 **100%** |
+| fragile-demo 10 TU | 2 个头，12,048 行，覆盖率 50% | 1 个头，13,554 行，覆盖率 **100%** |
 
 json 上选中 `json.hpp` 与 `doctest_compatibility.h`（后者把 doctest 系列拉进
 闭包，eligible 仍为 63，净收益因此提高）。候选头从 5 个减到 2 个也意味着
@@ -84,15 +85,16 @@ PCH 更小、对 include 顺序的约束更少。
 ## 5. 复现
 
 ```bash
+# fragile-demo 10 TU（部分覆盖）——语料由脚本生成，勿手改
+python experiments/fragile_demo.py          # 默认写 experiments/_work/fragile-demo
+heavyheader scan experiments/_work/fragile-demo --pch --pch-top 5 --jobs 8 --output fragile.md
+
 # json 63 TU
 python -c "import sys; sys.path.insert(0,'experiments'); from build import write_compile_commands; \
 from pathlib import Path; r=Path('experiments/_work/json').resolve(); \
 write_compile_commands(r, r/'build'/'compile_commands.json')"
 heavyheader scan <json-abs> --compile-commands <json-abs>/build/compile_commands.json \
   --pch --pch-top 5 --jobs 8 --output pch.md
-
-# fragile-demo 10 TU（部分覆盖）
-heavyheader scan experiments/_work/fragile-demo --pch --pch-top 5 --jobs 8 --output fragile.md
 ```
 
 注意：`write_compile_commands` 必须传**绝对路径**，否则相对路径与 cwd 叠加、

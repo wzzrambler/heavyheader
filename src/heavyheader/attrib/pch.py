@@ -39,12 +39,84 @@ Honesty boundaries -- read before quoting these numbers
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..models import HeaderKind, ProjectScan
 
-__all__ = ["PCHRecommendation", "estimate_pch"]
+__all__ = ["PCHRecommendation", "estimate_pch", "macro_prefixed_units"]
+
+# ``#define`` / ``#undef``，允许 ``#  define`` 这种带空格的写法。
+_MACRO_DIRECTIVE = re.compile(r"^\s*#\s*(?:define|undef)\b")
+# ``#include <x.h>`` / ``#include "x.h"``，只取引号里的部分。
+_INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\s*[<"]([^>"]+)[>"]')
+
+
+def macro_prefixed_units(
+    scan: ProjectScan, headers: list[Path]
+) -> list[tuple[Path, int, str]]:
+    """找出「在包含某个候选头之前就已经改过宏」的编译单元。
+
+    为什么这件事值得单独报：``-include`` 把 PCH 的内容插到每个单元的最前面，
+    于是被预编译的头看到的是**它原本出现位置之前**那套宏状态。如果一个单元
+    先 ``#define JSON_TESTS_PRIVATE`` 再 ``#include <json.hpp>``，头文件在
+    这个单元里本该看到这个宏，但 PCH 已经用「宏没定义」的状态把它编译过一次了。
+    结果要么编译失败（宏改变了类定义），要么更糟——编过了但语义不同。
+
+    这是 2026-10-17 完整构建实验要靠「跑测试比对断言数」才能发现的坑，也是
+    ``pch-verify`` 在 json 上实测到 24 个单元里 9 个编不过的原因。这里把它
+    降级成一个**静态可算的预警**：不需要编译，只读源文件。
+
+    判据刻意简单，且**只报风险、不报结论**：
+    * 只看源文件里**直接**出现候选头的那一行之前；间接包含（经别的头拉进来）
+      不判——那要先展开包含链，而链上的宏状态本来就是编译器的事。
+    * 任何宏指令都算（``#define`` 和 ``#undef``），不区分它改的是配置宏还是
+      普通宏。区分不了：要知道某个宏会不会影响头文件的类定义，得读头文件。
+
+    实测精度（json 单元测试，24 个单元，见
+    ``experiments/results/pch-verify-json63-20261025.md``）：命中 10 个，其中 9 个
+    加 PCH 后编不过，**零漏报**——没被标记的 14 个全部编得过。所以它的正确用法是
+    「把需要警惕的单元缩到 1/2」，不是「预言哪几个会炸」。
+    """
+    if not headers:
+        return []
+    wanted = {header.name for header in headers}
+    out: list[tuple[Path, int, str]] = []
+    for tu in scan.ok_tus:
+        reached = {event.included for event in tu.include_events}
+        if not any(header in reached for header in headers):
+            continue
+        found = _first_macro_before_source_include(tu.source, wanted)
+        if found is not None:
+            out.append((tu.source, found[0], found[1]))
+    return out
+
+
+def _first_macro_before_source_include(
+    source: Path, wanted_names: set[str]
+) -> tuple[int, str] | None:
+    """读一个源文件，返回「任一候选头的 include 之前」的第一条宏指令。
+
+    **必须查完所有候选头，不能停在第一个。** PCH 里往往不止一个头（json 上贪心
+    选出了 ``doctest_compatibility.h`` 与 ``json.hpp`` 两个），而单元通常先
+    include 前者、再 ``#define``、再 include 后者。第一版在遇到第一个候选头时
+    就返回（那时前缀还是空的），于是 json 上一条预警都没报出来——而这个函数存在的
+    全部理由就是抓那 9 个单元。
+    """
+    try:
+        text = source.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        # 读不到源文件就不猜。少报一条预警远好于因为 IO 错误编一条出来。
+        return None
+    prefix: tuple[int, str] | None = None
+    for lineno, line in enumerate(text.splitlines(), 1):
+        include = _INCLUDE_DIRECTIVE.match(line)
+        if include and Path(include.group(1)).name in wanted_names and prefix is not None:
+            return prefix
+        if prefix is None and _MACRO_DIRECTIVE.match(line):
+            prefix = (lineno, line.strip())
+    return None
 
 
 @dataclass(slots=True)
@@ -79,7 +151,16 @@ class PCHRecommendation:
     #: 被固化进 .gch 而让全体使用 PCH 的单元陪着重编。空列表表示这个 PCH
     #: 没有这类风险（所有项目头都是全工程公共依赖）。
     fragile_headers: list[tuple[Path, int, float]] = field(default_factory=list)
+    #: 在包含某个候选头**之前**就改过宏的单元：``(源文件, 行号, 宏指令原文)``。
+    #: 这些单元一旦采用 PCH，被预编译的头看到的宏状态就与它原本该看到的不同——
+    #: 轻则编不过，重则编过但语义变了。静态可算，不需要编译。
+    #: 实测精度见 :func:`macro_prefixed_units`。
+    macro_prefixed_units: list[tuple[Path, int, str]] = field(default_factory=list)
     caveats: list[str] = field(default_factory=list)
+
+    @property
+    def macro_prefixed_count(self) -> int:
+        return len(self.macro_prefixed_units)
 
     @property
     def coverage(self) -> float:
@@ -337,6 +418,8 @@ def estimate_pch(
         for tu in pch_users:
             rebuild_seconds += _tu_seconds(tu)
 
+    prefixed = macro_prefixed_units(scan, chosen_paths)
+
     caveats = [
         "基于行数代理，不是秒数。模板重型头文件的实际成本会被低估。",
         "上限估计：真实 PCH 必须是每个使用它的 TU 的第一个 include，"
@@ -359,5 +442,6 @@ def estimate_pch(
         baseline_rebuild_units=rebuild_reach,
         rebuild_seconds=rebuild_seconds,
         fragile_headers=[(path, reach, amp) for path, reach, amp in fragile],
+        macro_prefixed_units=prefixed,
         caveats=caveats,
     )

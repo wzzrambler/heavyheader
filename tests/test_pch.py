@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from heavyheader.attrib.pch import estimate_pch
+from heavyheader.attrib.pch import estimate_pch, macro_prefixed_units
 from heavyheader.models import (
     CompilerFamily,
     HeaderKind,
@@ -445,3 +445,141 @@ def test_fragile_headers_is_empty_when_every_header_is_universal(tmp_path):
     assert rec.rebuild_units == 4
     assert rec.rebuild_amplification == 1.0
     assert rec.fragile_headers == []
+
+
+# -- 预置宏预警 -----------------------------------------------------------
+
+
+def test_macro_prefixed_units_flags_macro_before_the_header(tmp_path):
+    """在包含候选头**之前**改过宏的单元要被点出来。
+
+    这不是风格问题：``-include`` 把 PCH 插到每个单元最前面，头文件看到的是
+    「include 位置之前」那套宏状态。先 #define 再 include 的单元，看到的宏就
+    跟它本该看到的不一样了。
+    """
+    common = _write(tmp_path, "common.h", 50)
+    # 对照组：宏在 include **之后**。PCH 插到最前面时，头看到的宏状态与原本一致。
+    (tmp_path / "late.cpp").write_text(
+        '#include "common.h"\n#define LATE 1\nint a();\n', encoding="utf-8"
+    )
+    # 对照组：彻底没有宏。
+    (tmp_path / "clean.cpp").write_text(
+        '#include "common.h"\nint b();\n', encoding="utf-8"
+    )
+    # 被测：宏在 include **之前**——这正是 json 里 unit-class_lexer.cpp 的形状。
+    (tmp_path / "prefixed.cpp").write_text(
+        '#define JSON_TESTS_PRIVATE\n#include "common.h"\nint c();\n', encoding="utf-8"
+    )
+
+    def tu(name: str) -> TranslationUnit:
+        return TranslationUnit(
+            source=tmp_path / name,
+            include_events=[
+                IncludeEvent(includer=tmp_path / name, included=common, depth=0)
+            ],
+            wall_seconds=1.0,
+        )
+
+    tus = [tu("late.cpp"), tu("clean.cpp"), tu("prefixed.cpp")]
+    scan = _scan(tmp_path, tus, [common])
+
+    found = {
+        path.name: (lineno, text)
+        for path, lineno, text in macro_prefixed_units(scan, [common])
+    }
+
+    assert set(found) == {"prefixed.cpp"}
+    assert found["prefixed.cpp"] == (1, "#define JSON_TESTS_PRIVATE")
+
+
+def test_macro_prefixed_units_only_looks_before_the_candidate_include(tmp_path):
+    """每个候选头在自己的 include 位置之前各算一次。"""
+    common = _write(tmp_path, "common.h", 50)
+    other = _write(tmp_path, "other.h", 20)
+    src = tmp_path / "x.cpp"
+    src.write_text(
+        '#include "other.h"\n'
+        "#define AFTER_OTHER 1\n"
+        '#include "common.h"\n',
+        encoding="utf-8",
+    )
+    tu = TranslationUnit(
+        source=src,
+        include_events=[
+            IncludeEvent(includer=src, included=other, depth=0),
+            IncludeEvent(includer=src, included=common, depth=0),
+        ],
+        wall_seconds=1.0,
+    )
+    scan = _scan(tmp_path, [tu], [common, other])
+
+    # common.h 在第 3 行，它之前有宏 → 标记（行号是宏所在行 2）。
+    found = macro_prefixed_units(scan, [common])
+    assert len(found) == 1 and found[0][1] == 2
+
+    # 只把 other.h 当候选时，它在第 1 行、前面什么都没有 → 不标记。
+    assert macro_prefixed_units(scan, [other]) == []
+
+
+def test_macro_prefixed_units_is_empty_without_headers(tmp_path):
+    assert macro_prefixed_units(_scan(tmp_path, [], []), []) == []
+
+
+def test_recommendation_reports_prefixed_units_and_keeps_caveats(tmp_path):
+    """预警进推荐对象，且不改动既有的收益口径。"""
+    common = _write(tmp_path, "common.h", 100)
+    bad = tmp_path / "bad.cpp"
+    bad.write_text('#define CFG 1\n#include "common.h"\n', encoding="utf-8")
+    good = tmp_path / "good.cpp"
+    good.write_text('#include "common.h"\n', encoding="utf-8")
+    tus = [
+        TranslationUnit(
+            source=path,
+            include_events=[IncludeEvent(includer=path, included=common, depth=0)],
+            wall_seconds=1.0,
+        )
+        for path in (bad, good)
+    ]
+    rec = estimate_pch(_scan(tmp_path, tus, [common]))
+
+    assert rec.macro_prefixed_count == 1
+    assert rec.macro_prefixed_units[0][0] == bad
+    # 预警不改变收益：两个单元都仍然算 eligible。
+    assert rec.eligible_tus == 2
+
+
+def test_macro_prefixed_units_checks_every_candidate_header(tmp_path):
+    """候选头不止一个时，不能停在第一个。
+
+    真实形状（json 的每一个单元）：
+
+        #include "doctest_compatibility.h"   ← 第一个候选头，它前面没有宏
+        #define JSON_TESTS_PRIVATE          ← 真正的风险在这里
+        #include <nlohmann/json.hpp>        ← 第二个候选头
+
+    第一版在第一个候选头处就返回了（前缀为空 → 不标记），于是 json 上一条预警
+    都报不出来。这个函数存在的唯一理由就是抓这类单元。
+    """
+    compat = _write(tmp_path, "doctest_compatibility.h", 10)
+    main_h = _write(tmp_path, "common.h", 50)
+    src = tmp_path / "unit-like.cpp"
+    src.write_text(
+        '#include "doctest_compatibility.h"\n'
+        "#define JSON_TESTS_PRIVATE\n"
+        '#include "common.h"\n',
+        encoding="utf-8",
+    )
+    tu = TranslationUnit(
+        source=src,
+        include_events=[
+            IncludeEvent(includer=src, included=compat, depth=0),
+            IncludeEvent(includer=src, included=main_h, depth=0),
+        ],
+        wall_seconds=1.0,
+    )
+    scan = _scan(tmp_path, [tu], [compat, main_h])
+
+    found = macro_prefixed_units(scan, [compat, main_h])
+    assert len(found) == 1
+    assert found[0][1] == 2  # 宏在第 2 行
+    assert found[0][2] == "#define JSON_TESTS_PRIVATE"

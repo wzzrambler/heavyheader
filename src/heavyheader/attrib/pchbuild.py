@@ -57,7 +57,7 @@ from pathlib import Path
 
 from ..drivers.base import CompilationError, CompilerDriver, DriverOptions
 from ..models import ProjectScan, TranslationUnit, tu_compile_seconds
-from .pch import PCHRecommendation, estimate_pch
+from .pch import PCHRecommendation, estimate_pch, macro_prefixed_units
 
 __all__ = ["PCHUnitTrial", "PCHTrial", "run_pch_trial", "option_signature"]
 
@@ -108,6 +108,9 @@ class PCHUnitTrial:
     #: 编译器是不是真的用了 .gch。False 意味着这次编译**根本没有预编译**，
     #: 它的耗时不能算进 PCH 的收益里——否则等于给一个没发生的事记功。
     pch_adopted: bool = False
+    #: 静态预警：这个单元在包含候选头之前改过宏（见
+    #: :func:`heavyheader.attrib.pch.macro_prefixed_units`）。实测用来给预警打分。
+    macro_prefixed: bool = False
     note: str = ""
 
     @property
@@ -133,6 +136,7 @@ class PCHUnitTrial:
             "baseline_ok": self.baseline_ok,
             "pch_ok": self.pch_ok,
             "pch_adopted": self.pch_adopted,
+            "macro_prefixed": self.macro_prefixed,
             "faster": self.faster,
             "note": self.note,
         }
@@ -257,6 +261,50 @@ class PCHTrial:
             return 0.0
         return self.faster_units / len(self.units) * 100.0
 
+    # -- 静态预警 vs 实测的交叉表 -----------------------------------------
+    #
+    # 「预测」与「实测」分开报，是为了让读者能看见这个预警的边界：json 上是
+    # 命中 10 个、9 个真的编不过、零漏报。只报「工具能预警」不报这张表，
+    # 等于让人自己相信。
+
+    @property
+    def macro_prefixed_count(self) -> int:
+        return sum(1 for unit in self.units if unit.macro_prefixed)
+
+    @property
+    def prefixed_and_broken(self) -> int:
+        return sum(1 for unit in self.units if unit.macro_prefixed and not unit.pch_ok)
+
+    @property
+    def prefixed_and_ok(self) -> int:
+        return sum(1 for unit in self.units if unit.macro_prefixed and unit.pch_ok)
+
+    @property
+    def clean_and_broken(self) -> int:
+        return sum(1 for unit in self.units if not unit.macro_prefixed and not unit.pch_ok)
+
+    @property
+    def clean_and_ok(self) -> int:
+        return sum(
+            1 for unit in self.units if not unit.macro_prefixed and unit.pch_ok
+        )
+
+    @property
+    def warning_recall(self) -> float:
+        """所有编不过的单元里，被预警覆盖到的比例。1.0 = 零漏报。"""
+        broken = self.prefixed_and_broken + self.clean_and_broken
+        if not broken:
+            return 0.0
+        return self.prefixed_and_broken / broken * 100.0
+
+    @property
+    def warning_precision(self) -> float:
+        """预警命中的单元里，真的编不过的比例。"""
+        flagged = self.macro_prefixed_count
+        if not flagged:
+            return 0.0
+        return self.prefixed_and_broken / flagged * 100.0
+
     @property
     def break_even_units(self) -> int | None:
         """要多少个单元才能把生成 .gch 的一次性成本赚回来。
@@ -304,6 +352,15 @@ class PCHTrial:
             "adopted_saved_seconds": round(self.adopted_saved_seconds, 4),
             "adopted_saved_percent": round(self.adopted_saved_percent, 2),
             "break_even_units": self.break_even_units,
+            "macro_prefixed_units": self.macro_prefixed_count,
+            "warning_crosstab": {
+                "prefixed_and_broken": self.prefixed_and_broken,
+                "prefixed_and_ok": self.prefixed_and_ok,
+                "clean_and_broken": self.clean_and_broken,
+                "clean_and_ok": self.clean_and_ok,
+                "recall_percent": round(self.warning_recall, 2),
+                "precision_percent": round(self.warning_precision, 2),
+            },
             "conclusive": self.is_conclusive,
             "units": [unit.to_dict() for unit in self.units],
             "notes": list(self.notes),
@@ -444,6 +501,11 @@ def run_pch_trial(
         trial.pch_error = "没有任何编译单元包含这些头，PCH 无适用场景。"
         return trial
 
+    # 静态预警：这些单元在包含候选头之前改过宏，PCH 会把宏状态固化。
+    # 与实测结果交叉成 2x2（见 PCHTrial.warning_recall），没有编译也能算，
+    # 但准确率必须由实测给出——所以两边都算、都报。
+    prefixed_sources = {path for path, _, _ in macro_prefixed_units(scan, headers)}
+
     # -- 按编译选项分组：只有指纹相同的单元才能共享一份 .gch --------------
     groups: dict[str, list[TranslationUnit]] = {}
     signatures: dict[str, DriverOptions] = {}
@@ -582,6 +644,7 @@ def run_pch_trial(
                 baseline_ok=baseline_tu.ok,
                 pch_ok=pch_tu.ok,
                 pch_adopted=adopted,
+                macro_prefixed=tu.source in prefixed_sources,
                 note=note.strip(),
             )
         )

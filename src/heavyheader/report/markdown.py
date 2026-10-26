@@ -934,6 +934,31 @@ def render_markdown(scan: ProjectScan) -> str:
                 "头留在 PCH 之外（代价是那部分单元享受不到收益）。"
             )
             lines.append("")
+        if pch.macro_prefixed_count:
+            lines.append(
+                f"**{pch.macro_prefixed_count} 个单元在包含这些头之前就改过宏**——"
+                "PCH 会把宏状态固化在这些单元原本的 include 位置之前，"
+                "被预编译的头看到的宏就与它本该看到的不同。这类单元一旦采用 PCH，"
+                "可能直接编不过，也可能编过但语义变了（那个更危险）。"
+            )
+            lines.append("")
+            lines.append("| 编译单元 | 行号 | 宏指令 |")
+            lines.append("|---|---:|---|")
+            for source, lineno, text in pch.macro_prefixed_units[:10]:
+                shown = text if len(text) <= 60 else text[:57] + "..."
+                lines.append(
+                    f"| `{_rel(source, root)}` | {lineno} | `{shown}` |"
+                )
+            if pch.macro_prefixed_count > 10:
+                lines.append(f"| …另有 {pch.macro_prefixed_count - 10} 个 | | |")
+            lines.append("")
+            lines.append(
+                "这是**风险清单，不是失败预言**：json 单元测试上实测的 10 个"
+                "预警里有 9 个加了 PCH 后编不过、1 个编得过，而没被预警的 14 个"
+                "全部编得过——零漏报。想知道这批单元里到底哪几个会炸，"
+                "跑 `heavyheader pch-verify`。"
+            )
+            lines.append("")
         lines.append("> 这是估算，不是承诺。五条限制：")
         for caveat in pch.caveats:
             lines.append(f"> - {caveat}")
@@ -1112,6 +1137,42 @@ def render_pch_trial(trial, root: Path | None = None) -> str:
     if len(trial.units) > 20:
         lines.append(f"| …另有 {len(trial.units) - 20} 个 | | | | |")
     lines.append("")
+
+    # -- 静态预警 vs 实测 ------------------------------------------------
+    if trial.macro_prefixed_count:
+        lines.append("### 静态预警与实测的对照")
+        lines.append("")
+        lines.append(
+            "「预置宏」是编译前就能算出来的：这个单元在包含候选头之前就 "
+            "`#define`/`#undef` 过，PCH 会把宏状态固化在头本该看到的位置之前。"
+            "下面这张表是它的实际表现——预警的价值由实测打分，不由我们声明。"
+        )
+        lines.append("")
+        lines.append("| | 加 PCH 后编不过 | 加 PCH 后编得过 |")
+        lines.append("|---|---:|---:|")
+        lines.append(
+            f"| **有预置宏**（预警） | {trial.prefixed_and_broken} "
+            f"| {trial.prefixed_and_ok} |"
+        )
+        lines.append(
+            f"| 无预置宏 | {trial.clean_and_broken} | {trial.clean_and_ok} |"
+        )
+        lines.append("")
+        if trial.prefixed_and_broken + trial.clean_and_broken == 0:
+            lines.append("本轮没有单元编不过，预警的准确率无从检验。")
+        else:
+            lines.append(
+                f"**召回 {trial.warning_recall:.0f}%、精确 {trial.warning_precision:.0f}%**："
+                f"所有编不过的 {trial.prefixed_and_broken + trial.clean_and_broken} 个单元里，"
+                f"{trial.prefixed_and_broken} 个被预警覆盖；被预警的 "
+                f"{trial.macro_prefixed_count} 个里 {trial.prefixed_and_broken} 个真的编不过。"
+            )
+            lines.append("")
+            lines.append(
+                "召回比精确更重要：漏报会让一个单元在「看起来成功了」的情况下改变语义，"
+                "虚报只是让人多检查一个单元。"
+            )
+        lines.append("")
 
     for note in trial.notes:
         lines.append(f"> - {note}")

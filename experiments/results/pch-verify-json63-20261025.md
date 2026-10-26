@@ -94,3 +94,49 @@ tests/src/unit-class_lexer.cpp:18:1: error: 'using json::lexer = class ...'
 - `experiments/_work/pch-verify-json/report.md`（报告）
 - `experiments/_work/pch-verify-json/report.json`（逐单元明细，`--json` 时产出）
 - `experiments/_work/pch-verify-json/pch/`（umbrella 头与 `.gch`）
+
+---
+
+## 追加：把「9 个编不过」变成静态可算的预警（2026-10-26）
+
+上一节量出 24 个单元里 9 个加 PCH 后编不过。这 9 个长什么样？看源文件第一屏就
+看出来了——它们都在 `#include <nlohmann/json.hpp>` **之前**写了
+`#define JSON_TESTS_PRIVATE`：
+
+```cpp
+#include "doctest_compatibility.h"   // 第一个候选头，它前面没有宏
+#define JSON_TESTS_PRIVATE          // ← 风险在这里
+#include <nlohmann/json.hpp>        // 第二个候选头
+```
+
+机制：`-include` 把 PCH 插到每个单元最前面，头文件看到的是「它原本的 include
+位置之前」那套宏状态。`JSON_TESTS_PRIVATE` 打开私有成员访问、改变类定义，而 PCH
+已经用「宏没定义」的状态把它编译过一次了——于是类型对不上。
+
+于是把这条做成静态预警（`attrib/pch.py: macro_prefixed_units`）：读源文件，找
+「任一候选头的 include 之前」的第一条 `#define`/`#undef`。不需要编译。
+
+**它的准确率由实测打分，不由我们声明**（同一批 24 个单元）：
+
+| | 加 PCH 后编不过 | 加 PCH 后编得过 |
+|---|---:|---:|
+| **有预置宏**（预警） | 9 | 1 |
+| 无预置宏 | 0 | 14 |
+
+- **召回 100%**：所有编不过的 9 个都在预警名单里。
+- **精确 90%**：预警的 10 个里 9 个真的编不过，虚报 1 个。
+
+虚报的那个是 `unit-assert_macro.cpp`，它 `#define JSON_ASSERT(x) {...}`——改的是
+断言宏，不改变类定义，所以编得过（行为仍然可能不同，那要靠运行期校验，本工具不做）。
+这正好划出这个预警的边界：**它能判断「宏状态会被固化」，不能判断「固化后会不会炸」**。
+所以报告的措辞是「风险清单，不是失败预言」。
+
+召回比精确重要的理由：漏报会让一个单元在「看起来成功了」的情况下改变语义，虚报
+只是让人多检查一个单元。
+
+顺带修了一个只有多候选头时才暴露的 bug：第一版在遇到**第一个**候选头（
+`doctest_compatibility.h`）时就返回，那时前缀还是空的，于是 json 上一条预警都
+报不出来。PCH 里往往不止一个头，必须查完所有候选头的 include 位置。
+
+复现：`python experiments/pch_verify_json.py --units 24 --runs 2`，报告末尾的
+「静态预警与实测的对照」一节由工具自己生成。

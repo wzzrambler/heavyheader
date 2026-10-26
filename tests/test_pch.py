@@ -9,7 +9,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from heavyheader.attrib.pch import estimate_pch, macro_prefixed_units
+from heavyheader.attrib.pch import (
+    PCHRecommendation,
+    estimate_pch,
+    macro_prefixed_units,
+)
 from heavyheader.models import (
     CompilerFamily,
     HeaderKind,
@@ -583,3 +587,107 @@ def test_macro_prefixed_units_checks_every_candidate_header(tmp_path):
     assert len(found) == 1
     assert found[0][1] == 2  # 宏在第 2 行
     assert found[0][2] == "#define JSON_TESTS_PRIVATE"
+
+
+def test_empty_header_set_has_zero_coverage():
+    """没有候选头时覆盖率是 0，不是 100%。
+
+    空集合上的「所有 TU 都包含它」在集合论上成立，写进报告却会被读成
+    「全项目都能用这个 PCH」。真实事故：相对 ``-I`` 让路径解析失败，估算
+    选不出任何头，报告却显示「覆盖率 100%、净收益 0」——一个看起来完全
+    正常的空结论。这一条守住 ``coverage`` 这个属性本身。
+    """
+    empty = PCHRecommendation(
+        headers=[],
+        closure_headers=[],
+        closure_lines=0,
+        eligible_tus=5,
+        total_tus=5,
+        net_lines_saved=0,
+        percent_of_project=0.0,
+    )
+    assert empty.coverage == 0.0
+
+
+def test_unreadable_header_lines_are_reported_not_silently_empty(tmp_path):
+    """行数全读成 0 时要说「读不到」，不能让读者以为是「没有收益」。"""
+    header = tmp_path / "ghost.h"
+    header.write_text("int x;\n", encoding="utf-8")
+    tus = [
+        TranslationUnit(
+            source=tmp_path / f"t{i}.cpp",
+            include_events=[
+                IncludeEvent(includer=tmp_path / f"t{i}.cpp", included=header, depth=0)
+            ],
+            wall_seconds=1.0,
+        )
+        for i in range(3)
+    ]
+    scan = _scan(tmp_path, tus, [header])
+    rec = estimate_pch(scan, line_counter=lambda _p: 0)
+
+    assert rec.headers == []
+    assert rec.coverage == 0.0
+    assert any("读成 0" in c for c in rec.caveats)
+
+
+def test_gross_saving_counts_each_unit_s_own_closure(tmp_path):
+    """条件编译下单靠乘法会高估：每个单元只解析闭包的一部分。
+
+    真实形状（nlohmann/json）：``json.hpp`` 里几十个 ``#if`` 分支，没有任何
+    单元解析了全部闭包。用 ``closure_lines × eligible`` 等于假设每个单元都
+    解析整个闭包，实测得到「净收益 = 全项目解析量的 192%」——省下的行数
+    不可能超过总解析量。
+    """
+    top = _write(tmp_path, "top.h", 100)
+    side = _write(tmp_path, "side.h", 100)
+    # TU1 解析 top + side；TU2 只因条件编译解析 top（side 没被展开）。
+    tu1 = TranslationUnit(
+        source=tmp_path / "a.cpp",
+        include_events=[
+            IncludeEvent(includer=tmp_path / "a.cpp", included=top, depth=0),
+            IncludeEvent(includer=top, included=side, depth=1),
+        ],
+        wall_seconds=1.0,
+    )
+    tu2 = TranslationUnit(
+        source=tmp_path / "b.cpp",
+        include_events=[
+            IncludeEvent(includer=tmp_path / "b.cpp", included=top, depth=0),
+        ],
+        wall_seconds=1.0,
+    )
+    scan = _scan(tmp_path, [tu1, tu2], [top, side])
+
+    rec = estimate_pch(scan)
+
+    assert rec.headers == [top]
+    assert rec.closure_lines == 200
+    # 精确：TU1 解析 200 行，TU2 解析 100 行 → 毛收益 300，减一次性 200 = 100。
+    # 乘法会给出 200×2 − 200 = 200，高估一倍。
+    assert rec.net_lines_saved == 100
+
+
+def test_net_saving_never_exceeds_total_parsed_lines(tmp_path):
+    """不变量：省下的行数不可能超过全项目总解析量。"""
+    top = _write(tmp_path, "top.h", 100)
+    side = _write(tmp_path, "side.h", 100)
+    tus = []
+    for index in range(4):
+        events = [
+            IncludeEvent(includer=tmp_path / f"t{index}.cpp", included=top, depth=0)
+        ]
+        if index % 2 == 0:  # 一半单元因条件编译展开 side
+            events.append(IncludeEvent(includer=top, included=side, depth=1))
+        tus.append(
+            TranslationUnit(
+                source=tmp_path / f"t{index}.cpp",
+                include_events=events,
+                wall_seconds=1.0,
+            )
+        )
+    scan = _scan(tmp_path, tus, [top, side])
+    rec = estimate_pch(scan)
+
+    assert rec.net_lines_saved <= scan.total_included_lines()
+    assert 0.0 <= rec.percent_of_project <= 100.0

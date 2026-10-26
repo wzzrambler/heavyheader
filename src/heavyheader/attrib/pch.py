@@ -47,6 +47,11 @@ from ..models import HeaderKind, ProjectScan
 
 __all__ = ["PCHRecommendation", "estimate_pch", "macro_prefixed_units"]
 
+#: 贪心的候选池大小：先按上界排序取前 N 个，再对它们做精确评估。
+#: 精确评估要按单元求闭包交集，是乘法口径的百倍开销；而这个排序上界在实测里
+#: 足以把真正值得考虑的头放进前 20（json 上最优的 5 个头都在前 5 名）。
+_CANDIDATE_POOL = 20
+
 # ``#define`` / ``#undef``，允许 ``#  define`` 这种带空格的写法。
 _MACRO_DIRECTIVE = re.compile(r"^\s*#\s*(?:define|undef)\b")
 # ``#include <x.h>`` / ``#include "x.h"``，只取引号里的部分。
@@ -164,7 +169,9 @@ class PCHRecommendation:
 
     @property
     def coverage(self) -> float:
-        if self.total_tus == 0:
+        # 没有候选头时覆盖率是 0，不是 100%：空集合上「所有 TU 都包含它」在
+        # 集合论上成立，在报告里却会被读成「全项目都能用这个 PCH」。
+        if self.total_tus == 0 or not self.headers:
             return 0.0
         return self.eligible_tus / self.total_tus * 100.0
 
@@ -306,41 +313,90 @@ def estimate_pch(
     # the net saving itself, which is what makes the maintenance tax show
     # up here without any extra weight: a header that drags a rarely-used
     # header into the closure is exactly the one that stops paying.
+    # 贪心必须优化**它最后要报告的那个量**。
+    #
+    # 之前这里用的是 ``closure_lines × eligible − closure_lines``，而报告用精确
+    # 口径（按每个单元实际解析到的闭包头累加）。两个口径在无条件编译的项目上
+    # 相等，在条件编译密集的项目上差很远——nlohmann/json 的 57 个单元里没有
+    # 一个解析了完整闭包。于是出现「贪心选出 2 个头、净收益 82.2%，而按排序
+    # 取前 5 个反而有 88.4%」：优化的目标不是报告的量，贪心就白贪了。
+    #
+    # 代价是每次评估要按单元求交集，比乘法贵两个数量级。所以先用上界
+    # （乘法那套）排序，只对前 ``_CANDIDATE_POOL`` 个做精确贪心——排序只决定
+    # 「谁值得精确算」，最终取舍由精确净收益决定。
+    reached_by_unit = [
+        {event.included for event in tu.include_events} for tu in scan.ok_tus
+    ]
+    header_sizes: dict[Path, int] = {}
+
+    def size_of(header: Path) -> int:
+        cached = header_sizes.get(header)
+        if cached is None:
+            cached = line_counter(header)
+            header_sizes[header] = cached
+        return cached
+
+    single_closure = {path: closure_of(path) for path, _, _ in ranked}
+
+    def evaluate(selection: list[Path]) -> tuple[int, int]:
+        """(净收益行数, eligible 单元数)，口径与最终报告完全一致。"""
+        closure: set[Path] = set()
+        for path in selection:
+            closure |= single_closure[path]
+        eligible = 0
+        gross = 0
+        for reached in reached_by_unit:
+            if not all(path in reached for path in selection):
+                continue
+            eligible += 1
+            gross += sum(size_of(header) for header in closure & reached)
+        return gross - sum(size_of(header) for header in closure), eligible
+
+    pool = [path for path, _, _ in ranked[:_CANDIDATE_POOL]]
     chosen: list[Path] = []
     best_net = 0
-    remaining = list(ranked)
+    remaining = list(pool)
     while remaining and len(chosen) < max(1, top_k):
         best_index = None
         best_candidate_net = best_net
-        for index, (path, _, _) in enumerate(remaining):
-            trial = chosen + [path]
-            trial_closure = set(trial)
-            stack = list(trial)
-            while stack:
-                current = stack.pop()
-                for child in adjacency.get(current, ()):
-                    if child not in trial_closure:
-                        trial_closure.add(child)
-                        stack.append(child)
-            trial_eligible = sum(
-                1
-                for tu in scan.ok_tus
-                if all(
-                    p in {event.included for event in tu.include_events}
-                    for p in trial
-                )
-            )
-            trial_lines = sum(line_counter(p) for p in trial_closure)
-            trial_net = trial_lines * trial_eligible - trial_lines
+        for index, path in enumerate(remaining):
+            trial_net, _ = evaluate(chosen + [path])
             if trial_net > best_candidate_net:
                 best_candidate_net = trial_net
                 best_index = index
         if best_index is None:
             break
-        chosen.append(remaining.pop(best_index)[0])
+        chosen.append(remaining.pop(best_index))
         best_net = best_candidate_net
 
     chosen_paths = list(chosen)
+
+    if not chosen_paths:
+        # 一个都选不出来时必须**明说**，不能顺着算下去：空集合上的 ``all()``
+        # 恒为真，于是每个 TU 都算 eligible、coverage 报成 100%——一个「覆盖率
+        # 100% 但净收益 0」的结论，读者会读成「PCH 已经做到头了」。
+        # 真实原因通常是两种之一，都要分开说。
+        if all(lines <= 0 for _, _, lines in ranked):
+            why = (
+                "所有候选头的行数都读成 0——多半是头文件内容读不到（路径解析失败或"
+                "权限问题），而不是「PCH 没有收益」。"
+            )
+        else:
+            why = (
+                f"{len(project_headers)} 个候选头逐个试过，没有一个能带来正的净收益"
+                "（闭包变大的代价超过了减少的重复解析）。这本身是一个结论："
+                "这些头不适合放进同一个 PCH。"
+            )
+        return PCHRecommendation(
+            headers=[],
+            closure_headers=[],
+            closure_lines=0,
+            eligible_tus=0,
+            total_tus=len(scan.ok_tus),
+            net_lines_saved=0,
+            percent_of_project=0.0,
+            caveats=[why],
+        )
 
     # Union of the chosen headers' transitive closures.
     closure: set[Path] = set(chosen_paths)
@@ -372,8 +428,21 @@ def estimate_pch(
         if any(path in reached for path in chosen_paths):
             pch_users.append(tu)
 
-    closure_lines = sum(line_counter(p) for p in closure)
-    gross = closure_lines * eligible
+    closure_sizes = {header: line_counter(header) for header in closure}
+    closure_lines = sum(closure_sizes.values())
+
+    # 精确的总收益：对每个 eligible 单元，累加它**实际解析到**的闭包头。
+    #
+    # 不能用 ``closure_lines × eligible``。闭包是全局合并的（所有单元的
+    # include 边并起来），而条件编译让同一个头在不同配置下包含不同子集：
+    # ``json.hpp`` 里几十个 ``#if`` 分支，63 个单元里没有一个解析了全部闭包。
+    # 用乘法等于假设「每个单元都解析整个闭包」，实测在 nlohmann/json 上得到
+    # 「净收益 = 全项目解析量的 192%」——一个自相矛盾的数字（省下的行数不可能
+    # 超过总解析量）。按单元求交集后，这个比值必然 ≤ 100%。
+    gross = 0
+    for tu in eligible_tus:
+        reached = {event.included for event in tu.include_events}
+        gross += sum(closure_sizes[header] for header in closure & reached)
     net = gross - closure_lines
     project_total = scan.total_included_lines() or 1
 

@@ -415,7 +415,14 @@ def scan_project(
         driver = detect_driver(options.compiler)
 
     root = options.root.resolve()
-    include_dirs = list(options.include_dirs) or default_include_dirs(root)
+    # 显式 ``-I`` 一律落地成绝对路径。不这么做的话，编译器会按**进程 cwd**
+    # 打印 ``-H`` 里的相对路径，而 ``_normalise_header_key`` 按 **scan root**
+    # 把它接回去——当 root 不是 cwd（``heavyheader scan ./proj -I ./proj/include``）
+    # 时，同一个头会变成 ``./proj/proj/include/x.h`` 这种不存在的路径：
+    # 行数读成 0、项目头判成外部头，PCH 估算静默选不出任何候选并报出
+    # 「覆盖率 100%、净收益 0」。这不是崩溃，是一个看起来正常的空结论，
+    # 所以必须从源头消掉，而不是在下游补救。
+    include_dirs = [Path(d).resolve() for d in options.include_dirs] or default_include_dirs(root)
 
     tasks = discover_translation_units(
         options.root,

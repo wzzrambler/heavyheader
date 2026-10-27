@@ -360,7 +360,7 @@ def build(path: str) -> None:
                 [
                     "<b>③ 这不是一次性分析工具</b>",
                     "而是一条<b>可复现、可审查、可接入 CI 的治理链路</b>："
-                    "上游 PR、门禁、成本考古、语义化发布与 735 个测试"
+                    "上游 PR、门禁、成本考古、语义化发布与 756 个测试"
                     "（<b>后两项的第三方使用证据为零，见 1.3 与第九章</b>）",
                     "第四章（上游 PR）；G3 门禁；6.4（成本考古）；第九章（治理）",
                 ],
@@ -406,7 +406,7 @@ def build(path: str) -> None:
             "<font face='%s'>docs/innovation.md</font>。" % _MONO
         ),
         P(
-            "项目已实现十三个命令：<font face='%s'>scan</font>（成本归因与报告）、"
+            "项目已实现十四个命令：<font face='%s'>scan</font>（成本归因与报告）、"
             "<font face='%s'>verify</font>（实测验证）、<font face='%s'>gate</font>"
             "（CI 门禁）、<font face='%s'>compare</font>（前后对比）、"
             "<font face='%s'>blame</font>（成本考古：把回归归因到具体 commit 与 include 行）、"
@@ -417,9 +417,11 @@ def build(path: str) -> None:
             "<font face='%s'>configs</font>（多套构建配置各扫一遍，只报判定变化）、"
             "<font face='%s'>verified</font>（只列编译器证据撑住的候选）、"
             "<font face='%s'>pch-verify</font>（真的生成 .gch 并重编，报实测采用率）、"
-            "<font face='%s'>forward-verify</font>（真的把 include 换成前向声明再重编），"
+            "<font face='%s'>forward-verify</font>（真的把 include 换成前向声明再重编）、"
+            "<font face='%s'>iwyu</font>（与 include-what-you-use 对位：它判正确性、"
+            "我们判成本），"
             "支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链；<b>735 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
+            "Clang 17+ 与 MSVC 三种工具链；<b>756 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
             "MSVC 证据）；2026-10-27 核实最新提交 239f85b 的 CI 运行：14 个岗位全绿——Windows/Linux 8 组、代码检查、"
             "自举扫描与 macOS 4 组全部通过。运行时<b>零第三方依赖</b>，"
@@ -428,7 +430,7 @@ def build(path: str) -> None:
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
             "（2026-10-21 复验仍可用）。"
             % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO,
-               _MONO, _MONO, _MONO, _MONO, _MONO)
+               _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
         ),
         P(
             "除成本归因外，项目还做了四件现有工具不做的事：<b>模板实例化成本归因</b>"
@@ -515,7 +517,7 @@ def build(path: str) -> None:
     story += [
         P("0. 一条主线：从成本热点到 CI 门禁", "h1"),
         P(
-            "十三个命令不是十三个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
+            "十四个命令不是十四个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
             "运行把主线走完——每一步都对应仓库里可复现的实验数据，细节在后续章节展开。"
         ),
         TABLE(
@@ -1829,7 +1831,7 @@ def build(path: str) -> None:
     story += [
         P("六、平台能力：从工具到流水线的一环", "h1"),
         P(
-            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十三个命令覆盖"
+            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十四个命令覆盖"
             "「发现 → 验证 → 门禁 → 对比 → 破案 → 看趋势 → 进 PR」的完整闭环："
         ),
         TABLE(
@@ -1839,6 +1841,7 @@ def build(path: str) -> None:
                 ["<font face='%s'>verify</font>" % _MONO, "注释掉候选 include、重编译、实测耗时/内存/体积差异", "采纳建议前的确认"],
                 ["<font face='%s'>pch-verify</font>" % _MONO, "真的生成 .gch 并重编，报估算覆盖率与实测采用率", "引入预编译头前的评估"],
                 ["<font face='%s'>forward-verify</font>" % _MONO, "把 include 换成前向声明再重编，报等价性与实测收益", "前向声明建议的裁决"],
+                ["<font face='%s'>iwyu</font>" % _MONO, "与 include-what-you-use 对位：它判正确性、我们判成本", "跨工具结论合并"],
                 ["<font face='%s'>gate</font>" % _MONO, "成本相对基线回归超阈值则非零退出", "PR 门禁"],
                 ["<font face='%s'>compare</font>" % _MONO, "对比两份扫描，定位成本上升的具体头文件", "版本间对比"],
                 ["<font face='%s'>blame</font>" % _MONO, "把成本回归归因到 commit、文件与具体的 include 行", "门禁报警后的破案"],
@@ -2159,7 +2162,7 @@ def build(path: str) -> None:
         ),
         P("9.3 测试策略", "h2"),
         P(
-            "<b>735 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
+            "<b>756 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
             "样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"

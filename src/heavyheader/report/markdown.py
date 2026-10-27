@@ -1036,6 +1036,97 @@ def render_markdown(scan: ProjectScan) -> str:
     return "\n".join(lines)
 
 
+def render_iwyu_comparison(comparison, scan: ProjectScan | None = None) -> str:
+    """IWYU 建议与本工具候选的对位结果。
+
+    这张表回答的是「哪几条既站得住、又能省」，不是「谁更准」。所以
+    **不做准确率、不做谁对谁错**——IWYU 判正确性，本工具判成本，两者
+    答的不是同一个问题，把它们排成一场比赛是误导。
+    """
+    lines: list[str] = []
+    lines.append("# IWYU 合并报告")
+    lines.append("")
+    lines.append(
+        "include-what-you-use 判**正确性**（这条 include 该不该出现），"
+        "本工具判**成本**（它让你多等几秒、删了会不会出事）。"
+        "两边都指向「删」的，才是最该动手的那几条。"
+    )
+    lines.append("")
+    lines.append(
+        "> **边界**：本项目的 IWYU 解析验证于按官方格式构造的样本，"
+        "**未经端到端实测**（构建 IWYU 需按 LLVM 版本源码编译，本机未做）。"
+        "在真的跑通一次之前，下面的对位只可作为线索，不能作为结论。"
+    )
+    lines.append("")
+
+    total_lines = comparison.ignored_lines + sum(
+        len(r.add) + len(r.remove) + len(r.full_include_list) + 2 for r in comparison.records
+    )
+    if comparison.records and comparison.ignored_lines > total_lines / 2:
+        lines.append(
+            f"> **这份日志有一半以上的行（{comparison.ignored_lines} 行）没被识别成 "
+            "IWYU 输出。** 拿错文件时这里不会报错，只会给出一张空表——"
+            "所以宁可多说一句：请确认它是 `CXX=include-what-you-use ... 2> iwyu.out` 的产物。"
+        )
+        lines.append("")
+    if comparison.incomplete_records:
+        lines.append(
+            f"> **{comparison.incomplete_records} 条记录不完整**（缺 `total` 段，"
+            "日志可能被截断）。它们的「IWYU 没建议删」是**假**的——它只是没说到那里，"
+            "不能当成「IWYU 认为没问题」。"
+        )
+        lines.append("")
+
+    lines.append("## 总览")
+    lines.append("")
+    lines.append("| 口径 | 条数 |")
+    lines.append("|---|---:|")
+    lines.append(f"| IWYU 的删除建议 | {_fmt_int(comparison.iwyu_removals)} |")
+    lines.append(f"| 其中本工具也判「删」 | {_fmt_int(comparison.agreement)} |")
+    lines.append(f"| 本工具判 KEEP、IWYU 说删（分歧） | {_fmt_int(comparison.conflicts)} |")
+    lines.append(
+        f"| 本工具独有、IWYU 未提及的候选 | {_fmt_int(comparison.our_unmatched)} |"
+    )
+    lines.append("")
+
+    if not comparison.pairs:
+        lines.append(
+            "IWYU 没有给出任何删除建议，或这份日志里没有可识别的 `#include` 删除行。"
+        )
+        lines.append("")
+        return "\n".join(lines)
+
+    lines.append("## 逐条对位")
+    lines.append("")
+    lines.append(
+        "「对位方式」说明两边是靠什么认出是同一条的：**行号**最可靠；"
+        "**文件名**是退回的模糊口径（同名不同目录会串），读者有权知道自己被哪种给的结论。"
+    )
+    lines.append("")
+    lines.append("| 源文件 | include | 对位方式 | 本工具结论 | 预计省行数 | 两边一致 |")
+    lines.append("|---|---|---|---|---:|:--:|")
+    for pair in comparison.pairs:
+        # 三种状态必须分开，不能都塞进「无」：没有候选 / 有候选但没跑
+        # --probe / 有结论。「未实测」与主报告候选表的措辞一致。
+        if not pair.has_candidate:
+            verdict = "我们无此候选"
+        elif pair.our_verdict is None:
+            verdict = "未实测"
+        else:
+            verdict = pair.our_verdict
+        saved = (
+            _fmt_int(pair.estimated_lines_saved)
+            if pair.estimated_lines_saved is not None
+            else "—"
+        )
+        lines.append(
+            f"| `{pair.source}` | `{pair.include}` | {pair.matched_by} "
+            f"| {verdict} | {saved} | {'是' if pair.we_agree else '否'} |"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def render_pch_trial(trial, root: Path | None = None) -> str:
     """PCH 实测闭环的报告。
 

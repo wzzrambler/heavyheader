@@ -31,6 +31,7 @@ from pathlib import Path
 from . import __version__, codegen, evidence
 from .attrib.edgecost import aggregate_edge_costs
 from .attrib.fwdverify import run_forward_trial
+from .attrib.iwyu import compare_with_scan, parse_iwyu_log
 from .attrib.pchbuild import run_pch_trial
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
@@ -52,6 +53,7 @@ from .report.markdown import (
     compile_health_note,
     markdown_summary_line,
     render_forward_trial,
+    render_iwyu_comparison,
     render_markdown,
     render_pch_trial,
 )
@@ -379,6 +381,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pchv.add_argument("-o", "--output", type=Path, default=None, help="输出文件")
 
+    iw = subparsers.add_parser(
+        "iwyu",
+        help="把 include-what-you-use 的输出与本工具的结果对上（互补：它判正确性，我们判成本）",
+    )
+    iw.add_argument(
+        "log",
+        type=Path,
+        help="IWYU 输出文件（`CXX=include-what-you-use ... 2> iwyu.out`）",
+    )
+    iw.add_argument(
+        "--scan",
+        type=Path,
+        required=True,
+        help="本工具的扫描 JSON（`scan --format json -o scan.json`）",
+    )
+    iw.add_argument(
+        "-o", "--output", type=Path, default=None, help="写入文件（默认标准输出）"
+    )
+    iw.add_argument("--format", choices=["md", "json"], default="md")
+    # iwyu 不扫源码树、也不调编译器：它只读两份已经产出的文件。
+    add_common(iw, with_path=False, with_compiler=False)
+
     fwdv = subparsers.add_parser(
         "forward-verify",
         help="实测：真的把 include 换成前向声明再重编，看它编不编得过、省多少",
@@ -670,6 +694,38 @@ def _semantic_build_path(args):
 
     cc = getattr(args, "compile_commands", None)
     return Path(cc).parent if cc else None
+
+
+def _cmd_iwyu(args) -> int:
+    try:
+        scan = load_baseline(args.scan)
+    except BaselineError as exc:
+        print(f"错误：读不了扫描结果 {args.scan}：{exc}", file=sys.stderr)
+        return 2
+    try:
+        text = args.log.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        print(f"错误：读不了 IWYU 日志 {args.log}：{exc}", file=sys.stderr)
+        return 2
+
+    records, ignored = parse_iwyu_log(text)
+    if not records:
+        # 拿错文件时这里最危险：不报错，只给一张空表，看起来像
+        # 「IWYU 一条建议都没有」。空记录必须当成错误报出来。
+        print(
+            f"错误：{args.log} 里没有识别到任何 IWYU 记录"
+            f"（{ignored} 行未识别）。请确认它是 "
+            "`CXX=include-what-you-use ... 2> iwyu.out` 的产物。",
+            file=sys.stderr,
+        )
+        return 2
+
+    comparison = compare_with_scan(records, scan, ignored_lines=ignored)
+    if args.format == "json":
+        _emit(_json_pretty(comparison.to_dict()), args.output)
+    else:
+        _emit(render_iwyu_comparison(comparison, scan), args.output)
+    return 0
 
 
 def _cmd_pch_verify(args) -> int:
@@ -1606,6 +1662,7 @@ _COMMANDS = {
     "toolchains": _cmd_toolchains,
     "pch-verify": _cmd_pch_verify,
     "forward-verify": _cmd_forward_verify,
+    "iwyu": _cmd_iwyu,
 }
 
 

@@ -436,7 +436,7 @@ def build(path: str) -> None:
     story.append(WorkflowDiagram())
     story.append(
         P("图 1  HeavyHeader 工作链。工具不自己解析 C++，而是向真实编译器提问并读取它的回答，"
-          "把编译器的真实计时数据与依赖图交叉归因，再交给命令消费（当前共十三个命令）。图中各环节均已实现并有测试覆盖。",
+          "把编译器的真实计时数据与依赖图交叉归因，再交给命令消费（当前共十四个命令）。图中各环节均已实现并有测试覆盖。",
           "caption")
     )
     story.append(NextPageTemplate("body"))
@@ -482,7 +482,7 @@ def build(path: str) -> None:
     )
     story.append(
         P(
-            "十三个命令构成完整治理闭环：<font face='%s'>scan</font> 产出 Markdown / HTML / JSON 报告并可存为"
+            "十四个命令构成完整治理闭环：<font face='%s'>scan</font> 产出 Markdown / HTML / JSON 报告并可存为"
             "基线；<font face='%s'>verify</font> 把候选 include 真的注释掉、重新编译、实测耗时/内存/体积差异——成本模型再"
             "严谨也仍是模型，权威结论来自实测；<font face='%s'>gate</font> 在 CI 中对基线做回归判定，失败时"
             "指名道姓报出是哪些头文件、哪些 include 行引入的；<font face='%s'>compare</font> 对比两份扫描，"
@@ -498,7 +498,7 @@ def build(path: str) -> None:
     )
     story.append(
         P(
-            "项目已完成 v0.1–v0.4 全部路线图条目，通过 <b>735 个单元测试</b>，CI 覆盖三大操作系统 × 四个 "
+            "项目已完成 v0.1–v0.4 全部路线图条目，通过 <b>756 个单元测试</b>，CI 覆盖三大操作系统 × 四个 "
             "Python 版本的测试矩阵、lint、自举扫描、覆盖率与 MSVC 证据共 16 个岗位（2026-10-27 核实最新提交 239f85b：CI 14 个岗位全绿，含 macOS 4 组）；"
             "运行时零第三方依赖并由测试守护，<b>v0.1.0 已发布至 PyPI</b>（2026-10-19，全新虚拟环境 "
             "安装验证通过）。四个真实开源项目（fmt、nlohmann-json、spdlog、cpp-httplib）的基准显示：54 个"
@@ -1151,7 +1151,7 @@ def build(path: str) -> None:
     story.append(P("测试策略", "h2"))
     story.append(
         P(
-            "735 个单元测试覆盖解析、归因、门禁、verify、增量缓存、多编译器对比与并行编译健壮性各子系统。测试样本优先用真实编译器输出"
+            "756 个单元测试覆盖解析、归因、门禁、verify、增量缓存、多编译器对比与并行编译健壮性各子系统。测试样本优先用真实编译器输出"
             "逐字复制而不是手写构造——解析器的输入是编译器方言的文本，手写样本会悄悄偏离真实格式。"
             "上一节提到的独占闭包 bug 正是因为「症状与正常输出无法区分」，才以回归测试的方式永久防守。"
             + D(5)
@@ -1235,7 +1235,7 @@ def build(path: str) -> None:
             ["已有基础", "已经核对的内容", "接下来的开发工作"],
             [
                 ["十一命令 CLI（scan / verify / verified / gate / compare / history / pr-comment / toolchains / blame / edge-cost / configs）",
-                 "终端输出样例与 735 个单元测试",
+                 "终端输出样例与 756 个单元测试",
                  "pr-comment 的 GitLab 后端仍待做（需另一套 API）"],
                 ["三编译器驱动（GCC / Clang / MSVC）",
                  "四真实项目基准，54 个编译单元的采集记录",
@@ -1404,7 +1404,7 @@ def build(path: str) -> None:
         ("D2", "docs/architecture.md：《架构》——分层结构、数据流与六个刻意的设计选择。"),
         ("D3", "benchmarks/：run_all.py 基准脚本与 results/summary.md 汇总——四个真实项目的实测数据。"),
         ("D4", "ROADMAP.md：《路线图》——v0.1 / v0.2 / v0.3 排序即优先级。"),
-        ("D5", "tests/：735 个单元测试，样本优先采用真实编译器输出逐字复制；按平台中性编写。"),
+        ("D5", "tests/：756 个单元测试，样本优先采用真实编译器输出逐字复制；按平台中性编写。"),
         ("D6", "experiments/results/decision-20261018.md：《删除建议决策层实测》——222 个候选全部真实编译后的结论分布、三维度数据与竞品交叉核对。"),
         ("D7", "SUBMISSION.md：《提交清单》——比赛材料、节点与剩余步骤。"),
         ("D8", "README.md：项目主页——能力总览、诚实的边界与快速开始。"),

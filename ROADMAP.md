@@ -162,7 +162,14 @@
 - [ ] CMake 集成（`heavyheader` 作为一个 build step）
 - [ ] Bazel / Meson 适配
 - [ ] VSCode 插件：在编辑器里直接看到「这个 include 让你多等几秒」
-- [ ] 与 include-what-you-use 的输出互转（互补而非竞争：IWYU 管正确性，我们管成本）
+- [x] **与 include-what-you-use 的输出互转**（2026-10-28，`iwyu` 子命令）：
+  解析 IWYU 的诊断输出（格式口径取自它自己的 `fix_includes.py`），与本工具的
+  候选对位，报「两边都指向删」的那几条。互补而非竞争——**它管正确性，我们管成本**。
+  对位优先用行号、退回文件名，并在报告里写明用的哪一种。
+  **未做端到端实测**：本机构建不出 IWYU 二进制（需按 LLVM 版本源码编译），
+  解析验证于按官方格式构造的样本；这一点由报告正文自己声明。
+- [ ] 与 clang-include-cleaner 的互转（同一类能力、第二个后端；本机
+  `C:\Program Files\LLVM\bin` 有该二进制，可做端到端）
 - [ ] 发布到 PyPI（发布纪律见 [GOVERNANCE.md](GOVERNANCE.md) §3；零运行时依赖是
       [tests/test_no_deps.py](../tests/test_no_deps.py) 守护的架构约束，上架后
       `pip install heavyheader` 一句话可装）

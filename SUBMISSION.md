@@ -31,7 +31,7 @@
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
-| 作品介绍文档（完整版） | ✅ 33 页 PDF（含全部逐轮实验记录、复现入口、规模换算仿真与证据分级说明） | `HeavyHeader-作品介绍文档.pdf` |
+| 作品介绍文档（完整版） | ✅ 34 页 PDF（含全部逐轮实验记录、复现入口、规模换算仿真与证据分级说明） | `HeavyHeader-作品介绍文档.pdf` |
 | 作品介绍文档（精简评审版） | ✅ **18 页 PDF**：概览→方法→实验（含规模换算与仿真实测）→工程化→治理；章节映射在 `docs/restructure-map.md` | `HeavyHeader-作品介绍文档-精简评审版.pdf` |
 | 选题报告（补充） | ✅ 18 页 PDF（2026-10-21 第十轮刷新：同步 PR 实时状态） | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 5 分 04 秒 MP4（10.7 MB，2026-10-22 重渲：模板实例化一处由无出处单点值改为有归档的 23.3%–31.7% 区间） | `HeavyHeader-演示视频.mp4` |

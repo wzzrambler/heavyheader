@@ -78,8 +78,14 @@ $ heavyheader scan ./src --format html -o report.html
 | `edge-cost` | 按 include **边**归因解析成本（clang-first，需真编译一次）；预测排序用，结论仍归 `verify` |
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 | `configs` | 同一棵源码树按多套构建配置各扫一遍，只报**判定变了**的候选 |
+| `history` | 多次扫描聚合成时间序列，暴露**本地**看板（`--serve`）；判定口径与 `gate` 一致 |
+| `pr-comment` | 把两次扫描的对比渲染成 PR 评论，可选经 `gh` 发布（幂等，不堆评论） |
 | `pch-verify` | PCH **实测**：真的生成 `.gch` 并重编计时，报出估算覆盖率与实测采用率（不做行数↔秒换算） |
 | `forward-verify` | 前向声明**实测**：真的把 `#include` 换成前向声明再重编，报「编不编得过、代码是否等价、省多少」 |
+
+这张表由 `tests/test_readme_commands.py` 盯着：每新增一个子命令却没写进这里，
+测试就会失败。此前 `pch-verify` 漏了数周、`history` 与 `pr-comment` 漏到
+2026-10-27 才补上——靠人工核对抓不住这一类。
 
 `configs` 回答的是一个 `scan` 回答不了的问题：这条 include 该不该删，取决于**这批
 编译命令有没有打开某个宏**。实测 zstd：`pool.c → allocations.h` 在单线程配置里可删

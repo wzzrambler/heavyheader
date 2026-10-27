@@ -355,6 +355,31 @@ heavyheader pch-verify ./my-project --compiler g++ --std c++17 -I include
 heavyheader forward-verify ./my-project --compiler g++ --std c++17 -I include --max-trials 10
 ```
 
+### CMake 集成
+
+把 HeavyHeader 做成构建的一个步骤，而不是一条需要人记得敲的命令：
+
+```cmake
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)              # 必需
+list(APPEND CMAKE_MODULE_PATH "<heavyheader 仓库>/cmake")
+include(HeavyHeader)
+
+heavyheader_scan(myapp)                            # cmake --build . --target heavyheader-scan-myapp
+heavyheader_gate(myapp BASELINE baseline.json)     # 成本回归超阈值则构建失败
+```
+
+`compile_commands.json` 是这套集成的前提：扫描靠它拿到**每个单元真实的编译命令**，
+没有它只能靠命令行猜——猜错时不会报错，只会让大量单元以「找不到头文件」失败，
+报告每个数字都看着正常，但描述的不是你的项目。所以模块在
+`CMAKE_EXPORT_COMPILE_COMMANDS` 没打开时会明确告警（不是静默）。
+
+两个目标**默认不挂进 `ALL`**：扫描会把每个编译单元重新编译一遍，挂进默认构建
+等于让每个开发者的每次编译翻一倍——代价所有人承担，收益只给关心构建成本的人。
+要挂进去显式传 `ALL`。
+
+`tests/test_cmake_integration.py` 在有 cmake 的环境里真跑一遍（配置 + 扫描 +
+门禁两种状态）；没有 cmake 或 C++ 编译器时**跳过，不假装通过**。
+
 ### 增量扫描
 
 全量扫描要真编译每一个编译单元，改一行代码也要全跑一遍。加 `--cache` 之后，

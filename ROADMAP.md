@@ -159,7 +159,15 @@
 
 ## v0.5 — 生态集成
 
-- [ ] CMake 集成（`heavyheader` 作为一个 build step）
+- [x] **CMake 集成**（2026-10-28，`cmake/HeavyHeader.cmake`）：提供
+  `heavyheader_scan()` / `heavyheader_gate()` 两个函数，生成
+  `heavyheader-scan-<target>` / `heavyheader-gate-<target>` 构建目标。
+  扫描走 `CMAKE_EXPORT_COMPILE_COMMANDS` 的 `compile_commands.json`；该开关没
+  打开时明确告警（靠命令行猜 -I 的失败是静默的：单元成片失败，报告看着正常）。
+  两个目标**默认不挂进 `ALL`**——扫描会把每个单元重编一遍，代价不该所有人承担。
+  本机用 pip 装的 cmake（仅验证用，非运行时依赖）实测：配置通过、扫描产出
+  2 TU / 229,031 行、门禁两种状态都验证过（通过 +0.0% / 拦住 +47.7%）。
+  **未做**：Bazel / Meson 适配、把扫描挂进 `ALL` 的推荐配置。
 - [ ] Bazel / Meson 适配
 - [ ] VSCode 插件：在编辑器里直接看到「这个 include 让你多等几秒」
 - [x] **与 include-what-you-use 的输出互转**（2026-10-28，`iwyu` 子命令）：

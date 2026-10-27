@@ -422,7 +422,27 @@ def scan_project(
     # 行数读成 0、项目头判成外部头，PCH 估算静默选不出任何候选并报出
     # 「覆盖率 100%、净收益 0」。这不是崩溃，是一个看起来正常的空结论，
     # 所以必须从源头消掉，而不是在下游补救。
-    include_dirs = [Path(d).resolve() for d in options.include_dirs] or default_include_dirs(root)
+    explicit_includes = [Path(d).resolve() for d in options.include_dirs]
+    include_dirs = explicit_includes or default_include_dirs(root)
+
+    # 显式 ``-I`` 指向一个不存在的目录时，编译器的表现是**整棵树都找不到头**，
+    # 于是绝大多数单元以「找不到头文件」失败、候选只剩个位数——报告读起来像
+    # 「这个项目很干净」。这是最坏的一种错：不报错、不崩、结论看起来正常。
+    # 2026-10-27 实测踩到：在仓库根用 ``-I include``（相对的是进程 cwd，不是
+    # 扫描根）跑 json 语料，72 个单元里 71 个失败、候选从 127 掉到 2。
+    #
+    # 只在没有 compile_commands.json 时检查：那份数据库自带每个单元的 ``-I``，
+    # 命令行上的 ``-I`` 根本不会被用到，此时报警就是噪音。
+    include_warnings: list[str] = []
+    if options.compile_commands is None:
+        for directory in explicit_includes:
+            if not directory.is_dir():
+                include_warnings.append(
+                    f"显式 -I 目录不存在：{directory}。编译器会因此找不到头，"
+                    "大量单元将以「找不到头文件」失败——而报告看起来像"
+                    "「这个项目没什么可删」。注意 -I 相对的是**当前目录**，"
+                    "不是扫描根。"
+                )
 
     tasks = discover_translation_units(
         options.root,
@@ -548,7 +568,7 @@ def scan_project(
         standard=options.standard,
         tus=sorted(tus, key=lambda t: str(t.source)),
         baseline_seconds=0.0,
-        warnings=failures,
+        warnings=[*include_warnings, *failures],
     )
 
     # 增量：把这次真正编译过的结果写回缓存，并让统计可见。

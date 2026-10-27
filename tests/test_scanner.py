@@ -329,3 +329,48 @@ def test_cli_flags_are_appended_to_compile_commands_tasks(tmp_path):
     flags = seen[0]
     assert "-DFROM_DB=1" in flags  # 数据库自带参数保留
     assert "--target=x86_64-w64-windows-gnu" in flags  # CLI 参数被追加
+
+
+def test_missing_explicit_include_dir_is_reported(tmp_path):
+    """``-I`` 指向不存在的目录必须报警。
+
+    这是本项目遇到过的最坏一类错：不崩、不报错，只是让绝大多数单元
+    「找不到头文件」而失败，最后候选只剩个位数——报告读起来像
+    「这个项目没什么可删」。2026-10-27 在 json 语料上真实踩到：
+    72 个单元里 71 个失败、候选从 127 掉到 2。
+    """
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.cpp").write_text("int a() { return 1; }\n", encoding="utf-8")
+    (tmp_path / "include").mkdir()
+
+    scan = scan_project(
+        ScanOptions(
+            root=tmp_path,
+            compiler="g++",
+            include_dirs=[tmp_path / "include", tmp_path / "nope"],
+            jobs=1,
+        ),
+        driver=_StubDriver(),
+    )
+
+    assert any("nope" in w and "不存在" in w for w in scan.warnings)
+    # 存在的那个不该被误报。
+    assert not any(str(tmp_path / "include") in w for w in scan.warnings)
+
+
+def test_existing_include_dirs_produce_no_warning(tmp_path):
+    (tmp_path / "src").mkdir()
+    (tmp_path / "src" / "a.cpp").write_text("int a() { return 1; }\n", encoding="utf-8")
+    (tmp_path / "include").mkdir()
+
+    scan = scan_project(
+        ScanOptions(
+            root=tmp_path,
+            compiler="g++",
+            include_dirs=[tmp_path / "include"],
+            jobs=1,
+        ),
+        driver=_StubDriver(),
+    )
+
+    assert not any("不存在" in w for w in scan.warnings)

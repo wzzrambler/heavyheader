@@ -674,6 +674,12 @@ def render_markdown(scan: ProjectScan) -> str:
     if scan.standard:
         lines.append(f"- 语言标准：`{scan.standard}`")
     lines.append(f"- 编译单元：{len(ok)} 成功 / {len(scan.failed_tus)} 失败")
+    health = compile_health_note(scan)
+    if health:
+        # 紧跟在单元计数后面，而不是丢进文末的「扫描警告」：这是决定
+        # 「下面这些数字能不能用」的前提，读者不该先读完报告才发现。
+        # 只加粗引导词——整行加粗会与 note 里已有的反引号/行内强调打架。
+        lines.append(f"- **报告可信度**：{health}")
     lines.append(f"- 头文件依赖边：{_fmt_int(scan.total_dependency_edges())}")
     lines.append(f"- 全项目头文件解析量：**{_fmt_int(scan.total_included_lines())} 行**")
     lines.append(f"- 唯一文件行数：{_fmt_int(scan.total_project_lines)} 行")
@@ -1338,6 +1344,54 @@ def render_forward_trial(trial, root: Path | None = None) -> str:
         lines.append(f"> - {note}")
     lines.append("")
     return "\n".join(lines) + "\n"
+
+
+#: 失败占比超过这个值就不能再说「数字可能偏低」了——那句话暗示数字大体可用、
+#: 只是少算了一点；而实际情况是报告只描述了项目的一小部分。
+_PARTIAL_COVERAGE_RATIO = 0.2
+#: 失败占比超过这个值时，报告不足以支撑任何结论。
+_UNUSABLE_RATIO = 0.5
+
+#: 三种最常见的原因，都是本项目真实踩到过的，不是凭空列的检查清单。
+#: 保持纯文本（不带 Markdown 强调）：同一段话既要进 Markdown 报告又要进
+#: stderr，强调由调用方加，否则一处加粗会破坏另一处的渲染。
+_COMMON_CAUSES = (
+    "最常见的原因：`-I` 相对的是进程当前目录而不是扫描根、缺 `-D` 宏、缺第三方头"
+)
+
+
+def compile_health_note(scan: ProjectScan) -> str | None:
+    """失败单元占比高时，把报告的可信度说清楚。全部成功则返回 ``None``。
+
+    分档不是修辞。2026-10-27 在 json 语料上真实发生过一次：72 个单元里 71 个
+    因 `-I` 参照系错误而失败，而当时的提示是「数字可能偏低」——71/72 不是偏低，
+    是这份报告根本不能拿来做决策。措辞必须跟着占比走：
+
+    - 少量失败（≤ 20%）：数字可能偏低。
+    - 部分失败（20%–50%）：只描述成功那部分，别当全项目结论。
+    - 多数失败（> 50%）：不足以支撑任何结论，先修好编译。
+
+    后两档附上常见原因，因为「71 个找不到头文件」和「我的搜索路径参照系错了」
+    之间还差一步推理，而这一步此前是被留给读者的。
+    """
+    total = len(scan.tus)
+    failed = len(scan.failed_tus)
+    if not failed or not total:
+        return None
+
+    ratio = failed / total
+    percent = f"{ratio * 100:.0f}%"
+    if ratio > _UNUSABLE_RATIO:
+        return (
+            f"{failed}/{total} 个编译单元失败（{percent}）——超过一半，"
+            f"这份报告不足以支撑任何结论，请先修好编译。{_COMMON_CAUSES}。"
+        )
+    if ratio > _PARTIAL_COVERAGE_RATIO:
+        return (
+            f"{failed}/{total} 个编译单元失败（{percent}）。"
+            f"报告只描述成功编译的那部分，不要当作整个项目的结论。{_COMMON_CAUSES}。"
+        )
+    return f"{failed}/{total} 个编译单元失败，报告中的数字可能偏低。"
 
 
 def markdown_summary_line(scan: ProjectScan) -> str:

@@ -49,6 +49,7 @@ from .report.edges import edges_to_dict, render_edges_markdown
 from .report.html import TrendPoint, render_html
 from .report.jsonio import scan_to_dict
 from .report.markdown import (
+    compile_health_note,
     markdown_summary_line,
     render_forward_trial,
     render_markdown,
@@ -923,11 +924,9 @@ def _cmd_scan(args) -> int:
     else:
         _emit(render_markdown(scan), args.output)
 
-    if scan.failed_tus:
-        print(
-            f"警告：{len(scan.failed_tus)} 个编译单元失败，报告中的数字可能偏低。",
-            file=sys.stderr,
-        )
+    health = compile_health_note(scan)
+    if health:
+        print(f"警告：{health}", file=sys.stderr)
     print(markdown_summary_line(scan), file=sys.stderr)
     return 0
 

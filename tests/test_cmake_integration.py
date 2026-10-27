@@ -107,6 +107,12 @@ def _project(root: Path) -> Path:
     return root
 
 
+#: 构建工具回显里可能有中文（模块的 COMMENT 就是），按平台默认编码去解码
+#: 会在 Windows 的 cp1252 上炸掉——连 stdout 都变成 None，真正的失败原因
+#: 反而看不见。所以显式给编码，并容忍替换。
+_ENCODING = {"encoding": "utf-8", "errors": "replace"}
+
+
 def _configure(project: Path, build: Path) -> None:
     cmake, env, generator = _SETUP  # type: ignore[misc]
     subprocess.run(
@@ -115,6 +121,7 @@ def _configure(project: Path, build: Path) -> None:
         capture_output=True,
         timeout=900,
         env=env,
+        **_ENCODING,
     )
 
 
@@ -123,9 +130,9 @@ def _build(build: Path, target: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         [*cmake, "--build", str(build), "--target", target],
         capture_output=True,
-        text=True,
         timeout=900,
         env=env,
+        **_ENCODING,
     )
 
 

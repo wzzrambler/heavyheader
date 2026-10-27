@@ -20,19 +20,42 @@
 include_guard(GLOBAL)
 
 if(NOT HEAVYHEADER_COMMAND)
-  find_package(Python3 COMPONENTS Interpreter QUIET)
-  if(Python3_Interpreter_FOUND)
-    set(HEAVYHEADER_COMMAND "${Python3_EXECUTABLE}" -m heavyheader)
+  # 1) console script：``pip install heavyheader`` 后它就落在 PATH 上，
+  #    天然和「装了这个包的环境」绑定。
+  find_program(HEAVYHEADER_EXECUTABLE NAMES heavyheader heavyheader.exe)
+  if(HEAVYHEADER_EXECUTABLE)
+    set(_hh_command "${HEAVYHEADER_EXECUTABLE}")
   else()
-    # 作为命令行工具装在系统上时（pip install heavyheader）直接用可执行文件名。
-    set(HEAVYHEADER_COMMAND heavyheader)
+    # 2) 退到某个 Python 解释器。这里必须**真的试一次 import**：CMake 找到的
+    #    解释器常常是系统 Python，而不是装了本工具的那一个——CI 上就撞过
+    #    /usr/bin/python3.12 对 venv 的错配，构建时才炸成
+    #    「No module named heavyheader」，看起来像 CMake 模块坏了。
+    set(_hh_command "")
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if(Python3_Interpreter_FOUND)
+      execute_process(
+        COMMAND "${Python3_EXECUTABLE}" -c "import heavyheader"
+        RESULT_VARIABLE _hh_import_result
+        OUTPUT_QUIET
+        ERROR_QUIET
+      )
+      if(_hh_import_result EQUAL 0)
+        set(_hh_command "${Python3_EXECUTABLE}" -m heavyheader)
+      endif()
+    endif()
   endif()
-endif()
 
-set(HEAVYHEADER_COMMAND
-    "${HEAVYHEADER_COMMAND}"
-    CACHE STRING "调用 heavyheader 的命令"
-)
+  if(NOT _hh_command)
+    message(
+      FATAL_ERROR
+      "HeavyHeader：找不到 heavyheader。请先 pip install（会提供 console script），"
+      "或用 -DHEAVYHEADER_COMMAND=\"<python解释器>;-m;heavyheader\" 显式指定。"
+      "这里不静默退化——猜错会生成一个每次构建都失败的目标，"
+      "而错误要等到那时才炸，比配置时报错难查得多。"
+    )
+  endif()
+  set(HEAVYHEADER_COMMAND "${_hh_command}" CACHE STRING "调用 heavyheader 的命令")
+endif()
 
 function(_heavyheader_compile_commands out_var)
   if(NOT CMAKE_EXPORT_COMPILE_COMMANDS)

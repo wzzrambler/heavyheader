@@ -17,6 +17,8 @@ import pytest
 
 from heavyheader.attrib.pch import PCHRecommendation
 from heavyheader.attrib.pchbuild import (
+    PCHTrial,
+    PCHUnitTrial,
     _adopt_verdict,
     _write_umbrella,
     option_signature,
@@ -431,3 +433,61 @@ def test_no_headers_is_reported_not_measured(tmp_path):
     assert trial.pch_built is False
     assert "没有给出任何候选头" in trial.pch_error
     assert trial.to_dict()["conclusive"] is False
+
+
+# --------------------------------------------------------------------------
+# 预警与实测的交叉表（2x2）
+#
+# 这组统计是整个「预置宏预警」能力的成绩单，公式错了不会崩、只会给出一个看起来
+# 合理的百分比。所以它必须被单独盯住，而不是靠归档里的数字背书。
+# --------------------------------------------------------------------------
+
+
+def _trials(*rows: tuple[bool, bool]) -> PCHTrial:
+    """按 ``(macro_prefixed, pch_ok)`` 造一批单元。"""
+    trial = PCHTrial(compiler="fake-g++", family="gcc", headers=[Path("pch.h")])
+    for index, (prefixed, ok) in enumerate(rows):
+        trial.units.append(
+            PCHUnitTrial(
+                source=Path(f"u{index}.cpp"),
+                baseline_seconds=1.0,
+                pch_seconds=0.9 if ok else 0.0,
+                baseline_ok=True,
+                pch_ok=ok,
+                pch_adopted=ok,
+                macro_prefixed=prefixed,
+            )
+        )
+    return trial
+
+
+def test_cross_table_reproduces_the_json_measurement():
+    """json 那次实测的形状：9 命中且编不过、1 命中但编过、0 漏报、14 干净。"""
+    trial = _trials(*([(True, False)] * 9), (True, True), *([(False, True)] * 14))
+    assert trial.macro_prefixed_count == 10
+    assert (trial.prefixed_and_broken, trial.prefixed_and_ok) == (9, 1)
+    assert (trial.clean_and_broken, trial.clean_and_ok) == (0, 14)
+    assert trial.warning_recall == pytest.approx(100.0)
+    assert trial.warning_precision == pytest.approx(90.0)
+
+
+def test_cross_table_counts_a_miss_against_recall():
+    """漏报必须拉低召回——召回是这张表存在的主要理由。"""
+    trial = _trials((True, False), (False, False), (False, True))
+    # 编不过的 2 个里有 1 个被预警覆盖。
+    assert trial.warning_recall == pytest.approx(50.0)
+    assert trial.clean_and_broken == 1
+
+
+def test_cross_table_does_not_call_an_empty_prediction_perfect():
+    """一条都没预警时精确率是 0，不是 100——「空集合上恒真」是这个项目栽过的坑。"""
+    trial = _trials((False, False), (False, True))
+    assert trial.macro_prefixed_count == 0
+    assert trial.warning_precision == pytest.approx(0.0)
+
+
+def test_cross_table_does_not_call_nothing_broken_full_recall():
+    """没有任何单元编不过时召回率是 0，不是 100：分母为空等于「没测到」。"""
+    trial = _trials((True, True), (False, True))
+    assert trial.clean_and_broken + trial.prefixed_and_broken == 0
+    assert trial.warning_recall == pytest.approx(0.0)

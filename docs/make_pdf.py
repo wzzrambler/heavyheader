@@ -360,7 +360,7 @@ def build(path: str) -> None:
                 [
                     "<b>③ 这不是一次性分析工具</b>",
                     "而是一条<b>可复现、可审查、可接入 CI 的治理链路</b>："
-                    "上游 PR、门禁、成本考古、语义化发布与 699 个测试"
+                    "上游 PR、门禁、成本考古、语义化发布与 725 个测试"
                     "（<b>后两项的第三方使用证据为零，见 1.3 与第九章</b>）",
                     "第四章（上游 PR）；G3 门禁；6.4（成本考古）；第九章（治理）",
                 ],
@@ -406,7 +406,7 @@ def build(path: str) -> None:
             "<font face='%s'>docs/innovation.md</font>。" % _MONO
         ),
         P(
-            "项目已实现十一个命令：<font face='%s'>scan</font>（成本归因与报告）、"
+            "项目已实现十三个命令：<font face='%s'>scan</font>（成本归因与报告）、"
             "<font face='%s'>verify</font>（实测验证）、<font face='%s'>gate</font>"
             "（CI 门禁）、<font face='%s'>compare</font>（前后对比）、"
             "<font face='%s'>blame</font>（成本考古：把回归归因到具体 commit 与 include 行）、"
@@ -415,25 +415,31 @@ def build(path: str) -> None:
             "<font face='%s'>history</font>（成本趋势看板）、"
             "<font face='%s'>pr-comment</font>（PR 评论机器人）、"
             "<font face='%s'>configs</font>（多套构建配置各扫一遍，只报判定变化）、"
-            "<font face='%s'>verified</font>（只列编译器证据撑住的候选），支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链；<b>699 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
+            "<font face='%s'>verified</font>（只列编译器证据撑住的候选）、"
+            "<font face='%s'>pch-verify</font>（真的生成 .gch 并重编，报实测采用率）、"
+            "<font face='%s'>forward-verify</font>（真的把 include 换成前向声明再重编），"
+            "支持 GCC 9+、"
+            "Clang 17+ 与 MSVC 三种工具链；<b>725 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
-            "MSVC 证据）；2026-10-22 核实最新提交 7d0176d 的 CI 运行：14 个岗位全绿——Windows/Linux 8 组、代码检查、"
+            "MSVC 证据）；2026-10-27 核实最新提交 239f85b 的 CI 运行：14 个岗位全绿——Windows/Linux 8 组、代码检查、"
             "自举扫描与 macOS 4 组全部通过。运行时<b>零第三方依赖</b>，"
             "且由测试守护"
             "（新增依赖会让 CI 直接失败）。<b>v0.1.0 已发布至 PyPI</b>（2026-10-19），"
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
             "（2026-10-21 复验仍可用）。"
             % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO,
-               _MONO, _MONO, _MONO)
+               _MONO, _MONO, _MONO, _MONO, _MONO)
         ),
         P(
             "除成本归因外，项目还做了四件现有工具不做的事：<b>模板实例化成本归因</b>"
-            "（实测全项目模板实例化占构建时间 23%–32%，见 5.1）、"
-            "<b>预编译头收益估算</b>、<b>前向声明建议</b>，以及<b>成本考古</b>——"
+            "（实测全项目模板实例化占构建时间 23%%–32%%，见 5.1）、"
+            "<b>预编译头收益估算与实测</b>（<font face='%s'>pch-verify</font>）、"
+            "<b>前向声明建议与实测</b>（<font face='%s'>forward-verify</font>），"
+            "以及<b>成本考古</b>——"
             "把成本增量归因到具体 commit 与 include 行；截至 2026-10-19、基于 GitHub 仓库"
             "检索 / 项目官网 / 学术检索的核读未见同能力实现——这是<b>截至该日期的检索"
             "结论</b>，不是「全球首创」的绝对声明。"
+            % (_MONO, _MONO)
         ),
         P(
             "还有一句必须自己先说清楚，否则本文任何数字都会被高估：在 Lua 5.4.7"
@@ -509,7 +515,7 @@ def build(path: str) -> None:
     story += [
         P("0. 一条主线：从成本热点到 CI 门禁", "h1"),
         P(
-            "十一个命令不是十一个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
+            "十三个命令不是十三个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
             "运行把主线走完——每一步都对应仓库里可复现的实验数据，细节在后续章节展开。"
         ),
         TABLE(
@@ -1785,6 +1791,36 @@ def build(path: str) -> None:
             "但 <font face='%s'>v-&gt;n</font> 需要完整类型。补上「跟踪指针变量是否被"
             "解引用」后正确判为阻断。" % (_MONO, _MONO, _MONO)
         ),
+        P("5.3.1 从建议到实测：<font face='%s'>forward-verify</font>" % _MONO, "h3"),
+        P(
+            "和 PCH 那条路一样，估算之后还差一步：正则说「只当指针用」，可它会被宏、"
+            "typedef、模板参数骗。所以又加了一条命令，真的把改动做一遍——注释掉那条 "
+            "<font face='%s'>#include</font>，按头文件自己的写法拼出前向声明（"
+            "class/struct 关键字要照抄，MSVC 对关键字不一致有告警；模板参数表不能省；"
+            "嵌套命名空间要还原，<font face='%s'>namespace a::b</font> 展开成嵌套形式以兼容 "
+            "C++11/14），插回 include 原来的位置——写在"
+            "<font face='%s'>#ifdef</font> 里的 include，换出来的声明也该受同一个 "
+            "<font face='%s'>#ifdef</font> 管辖。改动落在临时目录的副本上，真源码一个字节不动。"
+            % (_MONO, _MONO, _MONO, _MONO)
+        ),
+        P(
+            "结果分六档，不允许合并成一句「失败」：<b>已证等价</b>（编过 + 汇编指纹一致 + "
+            "收益过 20 ms 噪声地板）、<b>等价·噪声内</b>、<b>仅编译通过</b>（这套工具链给不出 "
+            "<font face='%s'>-S</font> 汇编，等价性没有证据）、<b>代码生成改变</b>（编过但指纹"
+            "不同，不可采纳）、<b>编不过</b>、<b>需先拆头</b>。最后一档必须单列：「同一个头里"
+            "还有需要完整定义的类型，整条 include 换掉必然编不过」不是这条建议错了，是粒度"
+            "错了——先把那个类型拆到单独的头再来测。" % _MONO
+        ),
+        P(
+            "这里有一个不好看但必须写下来的结论：三个真实语料（nlohmann/json 57 个编译单元、"
+            "spdlog 整棵树、benchmarks 示例工程）上，文本判据给出的候选数都是 <b>0</b>。"
+            "判据要求「头里的类只以指针/引用出现」，而 <font face='%s'>shared_ptr&lt;Widget&gt;</font> "
+            "这类模板实参不匹配，现代 C++ 里更常见的写法是 "
+            "<font face='%s'>auto</font>——类型名根本不出现。所以这条能力当前的价值是"
+            "<b>把建议钉死在证据上</b>，不是「能挖出多少收益」。机制本身在合成语料上闭环成立"
+            "（301.7 ms → 41.9 ms，省 86.1%%，指纹一致），但那是照病灶造的语料，不能当效能证据。"
+            % (_MONO, _MONO)
+        ),
     ]
 
     # ======================================================================
@@ -1793,7 +1829,7 @@ def build(path: str) -> None:
     story += [
         P("六、平台能力：从工具到流水线的一环", "h1"),
         P(
-            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十一个命令覆盖"
+            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十三个命令覆盖"
             "「发现 → 验证 → 门禁 → 对比 → 破案 → 看趋势 → 进 PR」的完整闭环："
         ),
         TABLE(
@@ -1801,6 +1837,8 @@ def build(path: str) -> None:
             [
                 ["<font face='%s'>scan</font>" % _MONO, "成本归因，产出 Markdown / HTML / JSON 报告，可存基线", "本地分析、CI 报告"],
                 ["<font face='%s'>verify</font>" % _MONO, "注释掉候选 include、重编译、实测耗时/内存/体积差异", "采纳建议前的确认"],
+                ["<font face='%s'>pch-verify</font>" % _MONO, "真的生成 .gch 并重编，报估算覆盖率与实测采用率", "引入预编译头前的评估"],
+                ["<font face='%s'>forward-verify</font>" % _MONO, "把 include 换成前向声明再重编，报等价性与实测收益", "前向声明建议的裁决"],
                 ["<font face='%s'>gate</font>" % _MONO, "成本相对基线回归超阈值则非零退出", "PR 门禁"],
                 ["<font face='%s'>compare</font>" % _MONO, "对比两份扫描，定位成本上升的具体头文件", "版本间对比"],
                 ["<font face='%s'>blame</font>" % _MONO, "把成本回归归因到 commit、文件与具体的 include 行", "门禁报警后的破案"],
@@ -2099,7 +2137,7 @@ def build(path: str) -> None:
             "测试矩阵（12 个岗位），外加 lint（ruff）、自举扫描、覆盖率与 MSVC 证据，"
             "共 16 个岗位（3 个工作流：CI 14、覆盖率 1、MSVC 证据 1）。"
             "<b>状态按每次运行核实，不写「当前全部通过」</b>：2026-10-22 查最新提交 "
-            "7d0176d 的 CI 运行——14 个岗位全部通过，含 macOS 4 组；覆盖率工作流 "
+            "239f85b 的 CI 运行——14 个岗位全部通过，含 macOS 4 组；覆盖率工作流 "
             "1 个岗位通过。MSVC 证据工作流只在 src/ 或演示语料变动时触发，该提交"
             "是纯文档改动故未触发（不是失败）。在此之前 macOS 4 组曾多次因排队被取消——cancelled 不是 failed，逐组重跑后 4 组均实测通过。<b>self-scan</b> 任务在 CI 里构造一个真实 C++ 工程并用 "
             "HeavyHeader 扫描它，断言归因行数非零、编译单元被发现——这一步同时也是集成测试，"
@@ -2121,7 +2159,7 @@ def build(path: str) -> None:
         ),
         P("9.3 测试策略", "h2"),
         P(
-            "<b>699 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
+            "<b>725 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
             "样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"
@@ -2213,7 +2251,8 @@ def build(path: str) -> None:
                 ["v0.1", "可用的核心：三种工具链解析、成本归因、四个命令", "已交付"],
                 ["v0.2", "从工具到平台：趋势看板、增量扫描、PR 评论机器人、多编译器横评", "已交付"],
                 ["v0.3", "精确模式：独占闭包判定、可选 AST 交叉检查、前向声明建议、PCH 收益评估", "已交付"],
-                ["v0.4", "精度引擎：成本考古（blame）、边级归因（edge-cost）", "已交付"],
+                ["v0.4", "精度引擎：成本考古（blame）、边级归因（edge-cost）、"
+                          "两个实测闭环（pch-verify / forward-verify）", "已交付"],
                 [
                     "v0.5",
                     "生态集成：CMake、Bazel/Meson、VSCode 插件、IWYU 输出互转",

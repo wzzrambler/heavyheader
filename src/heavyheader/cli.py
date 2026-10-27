@@ -30,6 +30,7 @@ from pathlib import Path
 
 from . import __version__, codegen, evidence
 from .attrib.edgecost import aggregate_edge_costs
+from .attrib.fwdverify import run_forward_trial
 from .attrib.pchbuild import run_pch_trial
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
@@ -47,7 +48,12 @@ from .models import ProjectScan
 from .report.edges import edges_to_dict, render_edges_markdown
 from .report.html import TrendPoint, render_html
 from .report.jsonio import scan_to_dict
-from .report.markdown import markdown_summary_line, render_markdown, render_pch_trial
+from .report.markdown import (
+    markdown_summary_line,
+    render_forward_trial,
+    render_markdown,
+    render_pch_trial,
+)
 from .scanner import ScanError, ScanOptions, discover_translation_units, scan_project
 from .verify import VerifyOptions, verify_candidates
 
@@ -79,6 +85,8 @@ def build_parser() -> argparse.ArgumentParser:
         "  %(prog)s history cost.jsonl --serve\n"
         "  %(prog)s pr-comment --before baseline.json --after pr.json --post\n"
         "  %(prog)s toolchains ./src --compilers g++,clang++\n"
+        "  %(prog)s pch-verify ./src --runs 2\n"
+        "  %(prog)s forward-verify ./src --max-trials 10\n"
         ),
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -369,6 +377,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--format", choices=["md", "json"], default="md", help="输出格式（默认 md）"
     )
     pchv.add_argument("-o", "--output", type=Path, default=None, help="输出文件")
+
+    fwdv = subparsers.add_parser(
+        "forward-verify",
+        help="实测：真的把 include 换成前向声明再重编，看它编不编得过、省多少",
+    )
+    add_common(fwdv)
+    fwdv.add_argument(
+        "--runs", type=int, default=2, help="每侧重复编译次数，取最小值（默认 2）"
+    )
+    fwdv.add_argument(
+        "--max-trials",
+        type=int,
+        default=10,
+        help="最多真的测多少条候选（默认 10）。每条要编两次以上，"
+        "大工程上全测会很慢",
+    )
+    fwdv.add_argument(
+        "--no-codegen-check",
+        action="store_true",
+        help="跳过汇编指纹比对。默认比对：编译通过不等于程序没变，"
+        "少了这一步最高只能报「仅编译通过」",
+    )
+    fwdv.add_argument(
+        "--format", choices=["md", "json"], default="md", help="输出格式（默认 md）"
+    )
+    fwdv.add_argument("-o", "--output", type=Path, default=None, help="输出文件")
 
     gate = subparsers.add_parser("gate", help="CI 门禁：头文件成本相对基线回归则失败")
     add_common(gate)
@@ -682,6 +716,46 @@ def _cmd_pch_verify(args) -> int:
     print(
         f"实测 {trial.measured_units} 个单元，{trial.adopted_units} 个用上 PCH，"
         f"节省 {trial.saved_percent:.1f}%。",
+        file=sys.stderr,
+    )
+    return 0
+
+
+def _cmd_forward_verify(args) -> int:
+    """真的把 ``#include`` 换成前向声明，重编、计时、比汇编指纹。
+
+    与 ``scan --forward-decl`` 的关系：那条给的是**文本候选**（正则认为
+    「这个类型只当指针/引用用」），这条给的是**编译器和汇编指纹的裁决**。
+    两条路刻意分开——合在一条命令里会让文本判据借实测的可信度。
+    """
+    # 实测要吃文本候选，所以这一轮扫描必须算前向声明建议。
+    args.forward_decl = True
+    args.full_compile = False
+    scan = _run_scan(args)
+    driver = detect_driver(args.compiler)
+
+    trial = run_forward_trial(
+        scan,
+        driver=driver,
+        max_trials=args.max_trials,
+        runs=args.runs,
+        check_codegen=not args.no_codegen_check,
+        timeout=args.timeout,
+        jobs=args.jobs,
+    )
+
+    if args.format == "json":
+        _emit(_json_pretty(trial.to_dict()), args.output)
+    else:
+        _emit(render_forward_trial(trial, root=scan.root), args.output)
+
+    if trial.measured_units == 0 and trial.compile_error_units == 0:
+        print("错误：没有一条候选被真的测过，见报告里的原因。", file=sys.stderr)
+        return 2
+    print(
+        f"实测 {trial.measured_units} 条，已证等价 {trial.equivalent_units} 条，"
+        f"省 {trial.equivalent_saved_seconds:.2f} s"
+        f"（{trial.equivalent_saved_percent:.1f}%）。",
         file=sys.stderr,
     )
     return 0
@@ -1532,6 +1606,7 @@ _COMMANDS = {
     "pr-comment": _cmd_pr_comment,
     "toolchains": _cmd_toolchains,
     "pch-verify": _cmd_pch_verify,
+    "forward-verify": _cmd_forward_verify,
 }
 
 

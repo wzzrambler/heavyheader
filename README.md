@@ -79,6 +79,7 @@ $ heavyheader scan ./src --format html -o report.html
 | `toolchains` | 同一份代码在多个编译器下的成本对比，支撑工具链迁移决策 |
 | `configs` | 同一棵源码树按多套构建配置各扫一遍，只报**判定变了**的候选 |
 | `pch-verify` | PCH **实测**：真的生成 `.gch` 并重编计时，报出估算覆盖率与实测采用率（不做行数↔秒换算） |
+| `forward-verify` | 前向声明**实测**：真的把 `#include` 换成前向声明再重编，报「编不编得过、代码是否等价、省多少」 |
 
 `configs` 回答的是一个 `scan` 回答不了的问题：这条 include 该不该删，取决于**这批
 编译命令有没有打开某个宏**。实测 zstd：`pool.c → allocations.h` 在单线程配置里可删
@@ -142,6 +143,11 @@ include guard 拉住的头不计入（口径与实测见
   每个编译单元的秒数与占比是精确的；按头文件的「模板表面」是启发式，报告里明确标注。
 - **可改为前向声明的 include**（`--forward-decl`）：编译时间优化里收益最高的一类。
   保守规则 + 给出具体类型名、使用行号和阻断类型，供人在数秒内确认或否决。
+  这条只给**文本候选**；`forward-verify` 才给结论——它真的把 include 换成前向声明
+  （按头里的命名空间与模板参数原样拼出来）再重编，并比对汇编指纹。三个真实语料
+  （json 57 TU / spdlog / benchmarks demo）上候选数都是 **0**：正则「只当指针用」
+  这个前置条件在现代 C++ 里很少成立，所以这条能力目前的价值是**把建议钉死在证据上**，
+  不是声称能挖出多少收益（见 `experiments/results/fwd-verify-20261027.md`）。
 
 **候选为 0 时不会只给一张空表。** 打开 `--header-sites` 后，头文件里的 `#include`
 也进入候选空间（一条公共头里的冗余 include，会被每个解析它的单元反复付费），同时
@@ -336,6 +342,10 @@ heavyheader toolchains ./my-project --compilers g++,clang++
 # 12. PCH 实测：不估算，真的生成一份 .gch 并重编，量出它省了多少
 #     （只测编译选项完全一致的一组单元——选项不同的单元无法共享同一份 .gch）
 heavyheader pch-verify ./my-project --compiler g++ --std c++17 -I include
+
+# 13. 前向声明实测：把 include 换成前向声明再重编，报「等价 / 仅编译通过 / 编不过」
+#     （每条要编两侧各 N 次，用 --max-trials 控制成本）
+heavyheader forward-verify ./my-project --compiler g++ --std c++17 -I include --max-trials 10
 ```
 
 ### 增量扫描

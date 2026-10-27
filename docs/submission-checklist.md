@@ -9,7 +9,7 @@
 |---|---|---|
 | 公开仓库可访问 | ✅ | https://github.com/wzzrambler/heavyheader |
 | 工作区干净 | ✅ `git status` 无输出 | 提交前再跑一次 |
-| 测试全绿 | ✅ 699 passed / 7 skipped | `pytest -q` |
+| 测试全绿 | ✅ 721 passed / 7 skipped | `pytest -q` |
 | 零第三方依赖 | ✅ 仅标准库 | `pyproject.toml` 的 `dependencies` |
 | 许可证与治理文件 | ✅ LICENSE / CONTRIBUTING / CoC / SECURITY / ROADMAP / CHANGELOG | 仓库根 |
 
@@ -79,7 +79,7 @@ json 为 0/16。注入-召回 2/2 命中。
 ## 四、提交前最后一轮自检命令
 
 ```bash
-pytest -q                                  # 期望 699 passed / 7 skipped
+pytest -q                                  # 期望 721 passed / 7 skipped
 python -m compileall -q src                # 语法检查
 git status --porcelain                     # 期望空
 python docs/make_pdf.py "HeavyHeader-作品介绍文档.pdf"

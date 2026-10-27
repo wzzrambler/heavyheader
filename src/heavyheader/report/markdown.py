@@ -999,6 +999,11 @@ def render_markdown(scan: ProjectScan) -> str:
             "**不能整个 include 换掉**，只能把可前向声明的类型拆出去。"
         )
         lines.append("")
+        lines.append(
+            "这张表只是**文本候选**。要结论就用 `forward-verify`：它真的把 include "
+            "换成前向声明再重编，并用汇编指纹判定代码是否等价。"
+        )
+        lines.append("")
 
     # -- failures ---------------------------------------------------------
     if scan.failed_tus:
@@ -1172,6 +1177,161 @@ def render_pch_trial(trial, root: Path | None = None) -> str:
                 "召回比精确更重要：漏报会让一个单元在「看起来成功了」的情况下改变语义，"
                 "虚报只是让人多检查一个单元。"
             )
+        lines.append("")
+
+    for note in trial.notes:
+        lines.append(f"> - {note}")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+_FORWARD_STATUS_TEXT = {
+    "verified": "已证等价",
+    "equivalent": "等价·噪声内",
+    "compiles-only": "仅编译通过",
+    "codegen-differs": "代码生成改变",
+    "compile-error": "编不过",
+    "ambiguous": "无法定位 include",
+    "skipped": "未测",
+    "needs-split": "需先拆头",
+}
+
+
+def render_forward_trial(trial, root: Path | None = None) -> str:
+    """前向声明实测闭环的报告。
+
+    与 ``scan --forward-decl`` 的分工必须写清楚：那条命令给的是**文本候选**
+    （正则认为「只当指针用」），这条给的是**把 include 换成前向声明之后编译器
+    说的话**。前者的判断可以是错的，后者不能。
+    """
+    rel_root = root or Path(".")
+    lines: list[str] = ["# 前向声明实测", ""]
+    lines.append(
+        f"对 **{trial.considered}** 条文本候选中的 "
+        f"**{trial.measured_units + trial.compile_error_units}** 条真的做了替换"
+        f"（注释掉 `#include`、在原位置写入前向声明，每侧编译 {trial.runs} 次取最快）。"
+    )
+    lines.append("")
+
+    if trial.measured_units == 0 and trial.compile_error_units == 0:
+        lines.append("**没有一条候选被真的测过。**")
+        lines.append("")
+        for note in trial.notes:
+            lines.append(f"- {note}")
+        if trial.needs_split_units:
+            lines.append(
+                f"- {trial.needs_split_units} 条候选所在的头里还有需要完整定义的"
+                "类型，整条 `#include` 换掉必然编不过；先把那些类型拆到单独的头"
+            )
+        if trial.skipped_units:
+            lines.append(f"- {trial.skipped_units} 条候选定位不到唯一的 include 行")
+        lines.append("")
+        lines.append(
+            "这不是「前向声明没有收益」，是「这次没能量出来」——两者在报告里"
+            "必须分开写。"
+        )
+        return "\n".join(lines) + "\n"
+
+    if trial.equivalent_units:
+        verdict = (
+            f"**已证等价 {trial.equivalent_units} 条，合计 "
+            f"{_fmt_seconds(trial.equivalent_baseline_seconds)} → "
+            f"{_fmt_seconds(trial.equivalent_baseline_seconds - trial.equivalent_saved_seconds)}"
+            f"（省 {trial.equivalent_saved_percent:.1f}%）**"
+        )
+    else:
+        verdict = "**没有一条候选做到「已证等价」，因此没有可报收益。**"
+    lines.append(verdict)
+    lines.append("")
+    if trial.codegen_checked:
+        codegen_note = "本轮做了汇编指纹比对。"
+    elif getattr(trial, "codegen_requested", True):
+        codegen_note = (
+            "**本轮没有做汇编指纹比对**（这套工具链给不出 `-S` 汇编），"
+            "所以下面最多只到「仅编译通过」，不判定代码是否等价。"
+        )
+    else:
+        codegen_note = (
+            "本轮按 `--no-codegen-check` 关掉了汇编指纹比对，"
+            "所以下面最多只到「仅编译通过」——那是开关的选择，不是工具的能力上限。"
+        )
+    lines.append(
+        "「已证等价」= 编译通过 **且** 汇编指纹一致 **且** 收益超过噪声地板。"
+        + codegen_note
+    )
+    lines.append("")
+
+    lines.append("| 编译单元 | 头 | 类型 | 原 | 换后 | 变化 | 结论 |")
+    lines.append("|---|---|---|---:|---:|---:|---|")
+    for unit in trial.trials[:20]:
+        name = f"`{_rel(unit.tu, rel_root)}`"
+        header = f"`{_rel(unit.header, rel_root)}`"
+        types = "、".join(unit.types) or "—"
+        status = _FORWARD_STATUS_TEXT.get(unit.status, unit.status)
+        if not unit.measured:
+            # 编不过的那一侧「更快」——它提前退出了。把那个数字写进「变化」列，
+            # 读者会读成「前向声明让它快了 500 ms」。
+            lines.append(
+                f"| {name} | {header} | {types} | "
+                f"{_fmt_seconds(unit.baseline_seconds) if unit.baseline_seconds else '—'} "
+                f"| — | — | {status} |"
+            )
+            continue
+        saved = unit.saved_seconds or 0.0
+        mark = f"-{_fmt_seconds(saved)}" if saved > 0 else f"+{_fmt_seconds(-saved)}"
+        lines.append(
+            f"| {name} | {header} | {types} "
+            f"| {_fmt_seconds(unit.baseline_seconds or 0.0)} "
+            f"| {_fmt_seconds(unit.patched_seconds or 0.0)} | {mark} | {status} |"
+        )
+    if len(trial.trials) > 20:
+        lines.append(f"| …另有 {len(trial.trials) - 20} 条 | | | | | | |")
+    lines.append("")
+
+    # -- 写进源码的那几行，原样给出 --------------------------------------
+    written = [u for u in trial.trials if u.declarations][:3]
+    if written:
+        lines.append("写进源码的前向声明（原位置，受同一个 `#ifdef` 管辖）：")
+        lines.append("")
+        lines.append("```cpp")
+        for unit in written:
+            lines.append(f"// {_rel(unit.tu, rel_root)}")
+            lines.append(unit.declarations)
+        lines.append("```")
+        lines.append("")
+
+    # -- 没测成的，把原因摆出来 ------------------------------------------
+    failed = [
+        u
+        for u in trial.trials
+        if u.status in ("compile-error", "codegen-differs", "needs-split", "skipped", "ambiguous")
+    ]
+    if failed:
+        lines.append("### 没能采纳的候选")
+        lines.append("")
+        for unit in failed[:10]:
+            status = _FORWARD_STATUS_TEXT.get(unit.status, unit.status)
+            detail = unit.error or unit.note or "（无更多信息）"
+            lines.append(
+                f"- `{_rel(unit.header, rel_root)}` → "
+                f"`{_rel(unit.tu, rel_root)}`：**{status}**，{detail}"
+            )
+        if len(failed) > 10:
+            lines.append(f"- …另有 {len(failed) - 10} 条")
+        lines.append("")
+        if trial.compile_error_units:
+            lines.append(
+                "「编不过」是**结论**，不是工具出错：前向声明换上去之后这个单元"
+                "确实用到了完整类型，文本判据看不到这一点。"
+            )
+            lines.append("")
+
+    if trial.slower_units:
+        lines.append(
+            f"有 {trial.slower_units} 条替换后反而更慢——已列在表里，未从合计中"
+            "倒扣：这份报告回答的是「采纳这些建议能省多少」，一条让编译变慢的"
+            "建议本来就不该被采纳。"
+        )
         lines.append("")
 
     for note in trial.notes:

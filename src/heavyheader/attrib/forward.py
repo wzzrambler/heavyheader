@@ -32,7 +32,13 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-__all__ = ["ForwardCandidate", "find_forward_declaration_candidates"]
+__all__ = [
+    "ForwardCandidate",
+    "TypeDeclaration",
+    "declared_types",
+    "find_forward_declaration_candidates",
+    "type_declarations",
+]
 
 
 # class/struct/enum declarations, capturing the name.
@@ -45,6 +51,58 @@ _DECL_RE = re.compile(
 # ``__attribute__((...))`` can nest parentheses, so strip it before matching
 # rather than trying to write a regex for arbitrary nesting.
 _ATTRIBUTE_RE = re.compile(r"__attribute__\s*\(+[^;]*?\)+\s*")
+
+# The same declaration, but keeping the pieces needed to write a *forward*
+# declaration back out: the class-key (``class``/``struct``/``union`` must be
+# repeated verbatim, MSVC warns on a mismatch), the template parameter list
+# (a template cannot be forward-declared without it), and the name.
+_NAMED_DECL_RE = re.compile(
+    r"^\s*(?:template\s*<(?P<tmpl>[^>]*)>\s*)?"
+    r"(?P<kind>class|struct|union)\s+"
+    r"(?P<name>[A-Za-z_][A-Za-z0-9_]*)",
+)
+
+# Matched against the text *before* the opening brace, i.e. ``namespace a``
+# (no ``{`` in the haystack) -- the scanner below consumes braces itself.
+# ``namespace a `` / ``namespace a::b `` / ``inline namespace a ``.
+_NAMESPACE_RE = re.compile(
+    r"^\s*(?:inline\s+)?namespace\s+(?P<name>[A-Za-z_][A-Za-z0-9_:]*)\s*$"
+)
+# ``namespace {`` -- an unnamed namespace.  Its members have internal linkage
+# and **cannot** be named from outside, so a forward declaration is impossible;
+# callers must report that rather than emit something that only looks right.
+_ANON_NAMESPACE_RE = re.compile(r"^\s*(?:inline\s+)?namespace\s*$")
+
+
+@dataclass(slots=True)
+class TypeDeclaration:
+    """One class/struct/union declaration, with what a forward decl needs.
+
+    The forward-declaration *suggestion* and the forward-declaration *trial*
+    must agree on what counts as a declaration, or the trial will be run on a
+    spelling the suggestion never saw.  Both read this one function.
+    """
+
+    name: str
+    #: ``class`` / ``struct`` / ``union``, as spelled in the header.
+    kind: str
+    #: Text between ``template<`` and ``>``, or ``""``.  ``template<` vs
+    #: ``template <`` spacing is normalised to ``template <...>``.
+    template_params: str = ""
+    #: Enclosing namespaces, outermost first.  Empty for the global namespace.
+    #: ``("",)`` never occurs -- an unnamed namespace is reported separately
+    #: because it cannot be forward-declared at all.
+    namespaces: tuple[str, ...] = ()
+    #: 1-based line number in the header.
+    line: int = 0
+    #: True when the declaration sits inside an unnamed namespace.
+    internal_linkage: bool = False
+
+    @property
+    def template_prefix(self) -> str:
+        """``template <typename T> `` or ``""``."""
+        return f"template <{self.template_params}> " if self.template_params else ""
+
 
 # Usages that need the complete type.  Built per type name so the patterns
 # stay readable; ``{n}`` is replaced with the escaped name.
@@ -116,20 +174,95 @@ def _read(path: Path) -> str | None:
         return None
 
 
-def declared_types(header: Path) -> list[str]:
-    """Names of classes/structs/unions declared in a header."""
+def type_declarations(header: Path) -> list[TypeDeclaration]:
+    """Every class/struct/union the header declares, with its context.
+
+    Namespace context is tracked by counting braces -- the same shortcut
+    ``strip_comments`` takes, and it fails the same way: a brace inside a
+    string literal or a raw string would throw the depth off.  Headers that
+    do that are rare, and when it happens the effect is a *wrong* namespace
+    in a forward declaration, which the trial `forward-verify` then rejects
+    by compiling.  That is the right division of labour: this function
+    proposes, the compiler decides.
+    """
     text = _read(header)
     if text is None:
         return []
-    names: list[str] = []
-    for line in _strip_comments_preserving_lines(text).splitlines():
+
+    declarations: list[TypeDeclaration] = []
+    #: One frame per open brace: ``("namespace", name)`` or ``("block", None)``.
+    #: A declaration only counts when every enclosing frame is a namespace --
+    #: a class declared inside a function body cannot be forward-declared from
+    #: the outside, and proposing it would be advice nobody can act on.
+    frames: list[tuple[str, str | None]] = []
+
+    def record(match: re.Match[str], number: int) -> None:
+        if any(kind != "namespace" for kind, _ in frames):
+            return
+        scope = [name or "" for _, name in frames]
+        declarations.append(
+            TypeDeclaration(
+                name=match.group("name"),
+                kind=match.group("kind"),
+                template_params=(match.group("tmpl") or "").strip(),
+                # ``namespace a::b {`` is C++17 syntax; expanding it into
+                # nested names keeps the forward declaration valid under
+                # C++11/14 as well.
+                namespaces=tuple(
+                    part for name in scope for part in name.split("::") if part
+                ),
+                line=number,
+                internal_linkage="" in scope,
+            )
+        )
+
+    for number, raw in enumerate(
+        _strip_comments_preserving_lines(text).splitlines(), start=1
+    ):
         # __attribute__((...)) nests parentheses, so strip it rather than
         # trying to regex arbitrary nesting.
-        cleaned = _ATTRIBUTE_RE.sub(" ", line)
-        match = _DECL_RE.match(cleaned)
-        if match:
-            names.append(match.group(1))
-    return names
+        line = _ATTRIBUTE_RE.sub(" ", raw)
+        buffer: list[str] = []
+
+        for char in line:
+            if char == "{":
+                opened = "".join(buffer).strip()
+                namespace = _NAMESPACE_RE.match(opened)
+                if namespace:
+                    frames.append(("namespace", namespace.group("name")))
+                elif _ANON_NAMESPACE_RE.match(opened):
+                    # Unnamed namespace: members have internal linkage and
+                    # cannot be named from another translation unit, so the
+                    # frame is remembered but never yields a declaration.
+                    frames.append(("namespace", ""))
+                else:
+                    # ``class Foo : public Bar `` is a definition, not just a
+                    # block; record it before the body opens.
+                    match = _NAMED_DECL_RE.match(opened)
+                    if match:
+                        record(match, number)
+                    frames.append(("block", None))
+                buffer.clear()
+            elif char == "}":
+                if frames:
+                    frames.pop()
+                buffer.clear()
+            elif char == ";":
+                # ``class Foo;`` -- a declaration with no body.  Definitions
+                # ending in ``};`` were already recorded at the ``{``.
+                match = _NAMED_DECL_RE.match("".join(buffer).strip())
+                if match:
+                    record(match, number)
+                buffer.clear()
+            else:
+                buffer.append(char)
+
+    return declarations
+
+
+def declared_types(header: Path) -> list[str]:
+    """Names of classes/structs/unions declared in a header."""
+    return [declaration.name for declaration in type_declarations(header)]
 
 
 @dataclass(slots=True)

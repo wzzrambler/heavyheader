@@ -17,9 +17,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from ..models import AdviceVerdict, ProjectScan
+from .crosscheck import (
+    basename_of,
+    group_by_tu,
+    match_candidate,
+    points_to_removal,
+    verdict_of,
+)
 
 __all__ = [
     "IwyuComparison",
@@ -288,21 +294,21 @@ def compare_with_scan(
     按文件名匹配是模糊的，同名不同目录会串，读者有权知道他是被哪种口径
     给的结论。
     """
+    # 对位口径与 clang-include-cleaner 共用一份（attrib/crosscheck.py）：
+    # 两个后端的「我们对上了」必须是同一个意思，否则数字不可比。
     candidates = [c for c in scan.candidates if not c.is_header_site]
-    by_tu: dict[str, list] = {}
-    for candidate in candidates:
-        by_tu.setdefault(_basename(candidate.tu), []).append(candidate)
+    by_tu = group_by_tu(scan.candidates)
 
     comparison = IwyuComparison(records=list(records), ignored_lines=ignored_lines)
     comparison.incomplete_records = sum(1 for r in records if not r.is_complete)
 
     matched_candidates: set[int] = set()
     for record in records:
-        ours = by_tu.get(_basename(record.source), [])
+        ours = by_tu.get(basename_of(record.source), [])
         for suggestion in record.remove:
             if not suggestion.is_include:
                 continue
-            hit, how = _match(ours, suggestion)
+            hit, how = match_candidate(ours, suggestion.include_name, suggestion.lines)
             if hit is not None:
                 matched_candidates.add(id(hit))
             comparison.pairs.append(
@@ -311,12 +317,12 @@ def compare_with_scan(
                     include=suggestion.include or "",
                     matched_by=how,
                     has_candidate=hit is not None,
-                    our_verdict=_verdict(hit),
+                    our_verdict=verdict_of(hit),
                     our_usage_label=getattr(hit, "usage_label", None) if hit else None,
                     estimated_lines_saved=(
                         hit.estimated_lines_saved if hit is not None else None
                     ),
-                    we_agree=hit is not None and _points_to_removal(hit),
+                    we_agree=hit is not None and points_to_removal(hit),
                 )
             )
 
@@ -326,39 +332,9 @@ def compare_with_scan(
     return comparison
 
 
-def _basename(path) -> str:
-    return Path(str(path)).name
-
-
-def _match(candidates: list, suggestion: IwyuSuggestion):
-    """返回 ``(候选, 匹配方式)``；候选为 None 时方式说明为什么没对上。"""
-    name = suggestion.include_name
-    if suggestion.lines is not None:
-        start, end = suggestion.lines
-        for candidate in candidates:
-            if candidate.line is not None and start <= candidate.line <= end:
-                return candidate, "行号"
-    for candidate in candidates:
-        if _basename(candidate.header) == _basename(name):
-            return candidate, "文件名"
-    return None, "—"
-
-
-def _verdict(candidate) -> str | None:
-    if candidate is None:
-        return None
-    advice = getattr(candidate, "advice", None)
-    return advice.verdict.value if advice is not None else None
-
-
-def _points_to_removal(candidate) -> bool:
-    """我们这一侧是否也指向「删」。
-
-    ``advice`` 在时以它为准（三态判定，是本工具的正式结论）；没有
-    ``advice``（这一轮没跑 ``--probe``）时，退到静态的「疑似未使用」，
-    并在报告里说明这是静态口径而不是实测结论。
-    """
-    advice = getattr(candidate, "advice", None)
-    if advice is not None:
-        return advice.verdict is AdviceVerdict.REMOVE
-    return candidate.usage_label == "疑似未使用"
+# 对位口径已移到 attrib/crosscheck.py，由两个后端共用。下面这些名字保留
+# 下来只是为了不让外部 import 突然断掉（它们曾经是这里的私有实现）。
+_basename = basename_of
+_match = match_candidate
+_verdict = verdict_of
+_points_to_removal = points_to_removal

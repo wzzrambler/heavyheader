@@ -1127,6 +1127,103 @@ def render_iwyu_comparison(comparison, scan: ProjectScan | None = None) -> str:
     return "\n".join(lines)
 
 
+def render_include_cleaner_comparison(comparison, scan: ProjectScan | None = None) -> str:
+    """clang-include-cleaner 建议与本工具候选的对位结果。
+
+    与 ``render_iwyu_comparison`` 同一张脸、同一套措辞——两个后端答的是同一个
+    问题（这条 include 该不该出现），只有**有没有跑过**不同。所以这里不写
+    「未经端到端实测」那条边界提示，改为写明实测版本。
+    """
+    lines: list[str] = []
+    lines.append("# clang-include-cleaner 合并报告")
+    lines.append("")
+    lines.append(
+        "clang-include-cleaner 判**正确性**（这条 include 该不该出现），"
+        "本工具判**成本**（它让你多等几秒、删了会不会出事）。"
+        "两边都指向「删」的，才是最该动手的那几条。"
+    )
+    lines.append("")
+    lines.append(
+        "> **口径**：解析格式由本机 LLVM 23.1.3 的 `clang-include-cleaner` "
+        "**真实输出校准**（`--print=changes`），不是照文档推测。"
+    )
+    lines.append("")
+
+    if comparison.skipped_files:
+        lines.append(
+            f"> **{_fmt_int(comparison.skipped_files)} 个文件没被分析**（编译错误或"
+            "调用失败），它们**没有参加下面的对位**。这类文件不产出任何建议，"
+            "这**不等于**它认为这些 include 该留着——把「没分析」读成「没意见」，"
+            "会让这份报告凭空多出一批假的放心。"
+        )
+        lines.append("")
+        for record in comparison.records:
+            if record.analysed:
+                continue
+            reason = record.skip_reason or record.error or "未知原因"
+            first_diag = record.diagnostics[0] if record.diagnostics else ""
+            lines.append(f"> - `{record.source}`：{reason}")
+            if first_diag:
+                lines.append(f">   - 首条诊断：{first_diag}")
+        lines.append("")
+
+    lines.append("## 总览")
+    lines.append("")
+    lines.append("| 口径 | 条数 |")
+    lines.append("|---|---:|")
+    lines.append(f"| 参与分析的文件 | {_fmt_int(comparison.analysed_files)} |")
+    lines.append(f"| 未参与分析的文件 | {_fmt_int(comparison.skipped_files)} |")
+    lines.append(
+        f"| clang-include-cleaner 的删除建议 | {_fmt_int(comparison.removals)} |"
+    )
+    lines.append(f"| 其中本工具也判「删」 | {_fmt_int(comparison.agreement)} |")
+    lines.append(
+        f"| 本工具判 KEEP、它说删（分歧） | {_fmt_int(comparison.conflicts)} |"
+    )
+    lines.append(
+        f"| 本工具独有、它未提及的候选 | {_fmt_int(comparison.our_unmatched)} |"
+    )
+    lines.append("")
+
+    if not comparison.pairs:
+        lines.append(
+            "clang-include-cleaner 没有给出任何删除建议"
+            "（或参与分析的文件里没有可删的 include）。"
+        )
+        lines.append("")
+        return "\n".join(lines)
+
+    lines.append("## 逐条对位")
+    lines.append("")
+    lines.append(
+        "「对位方式」说明两边是靠什么认出是同一条的：**行号**最可靠；"
+        "**文件名**是退回的模糊口径（同名不同目录会串），读者有权知道自己被哪种给的结论。"
+    )
+    lines.append("")
+    lines.append("| 源文件 | include | 对位方式 | 本工具结论 | 预计省行数 | 两边一致 |")
+    lines.append("|---|---|---|---|---:|:--:|")
+    for pair in comparison.pairs:
+        # 三种状态必须分开，不能都塞进「无」：没有候选 / 有候选但没跑
+        # --probe / 有结论。「未实测」与主报告候选表的措辞一致。
+        if not pair.has_candidate:
+            verdict = "我们无此候选"
+        elif pair.our_verdict is None:
+            verdict = "未实测"
+        else:
+            verdict = pair.our_verdict
+        saved = (
+            _fmt_int(pair.estimated_lines_saved)
+            if pair.estimated_lines_saved is not None
+            else "—"
+        )
+        lines.append(
+            f"| `{pair.source}` | `{pair.include}` | {pair.matched_by} "
+            f"| {verdict} | {saved} | {'是' if pair.we_agree else '否'} |"
+        )
+    lines.append("")
+    return "\n".join(lines)
+
+
 def render_pch_trial(trial, root: Path | None = None) -> str:
     """PCH 实测闭环的报告。
 

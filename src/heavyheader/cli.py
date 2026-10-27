@@ -31,7 +31,14 @@ from pathlib import Path
 from . import __version__, codegen, evidence
 from .attrib.edgecost import aggregate_edge_costs
 from .attrib.fwdverify import run_forward_trial
-from .attrib.iwyu import compare_with_scan, parse_iwyu_log
+from .attrib.incclean import (
+    analyse_database,
+    compare_with_scan as compare_cleaner_with_scan,
+    find_binary as find_include_cleaner,
+    parse_include_cleaner_output,
+)
+from .attrib.iwyu import compare_with_scan as compare_iwyu_with_scan
+from .attrib.iwyu import parse_iwyu_log
 from .attrib.pchbuild import run_pch_trial
 from .attrib.semantic import SemanticBackend, default_mingw_args
 from .baseline import (
@@ -53,6 +60,7 @@ from .report.markdown import (
     compile_health_note,
     markdown_summary_line,
     render_forward_trial,
+    render_include_cleaner_comparison,
     render_iwyu_comparison,
     render_markdown,
     render_pch_trial,
@@ -403,6 +411,49 @@ def build_parser() -> argparse.ArgumentParser:
     # iwyu 不扫源码树、也不调编译器：它只读两份已经产出的文件。
     add_common(iw, with_path=False, with_compiler=False)
 
+    ic = subparsers.add_parser(
+        "include-cleaner",
+        help="与 clang-include-cleaner 对位（第二个后端，且本机可做端到端实测）",
+    )
+    ic.add_argument(
+        "--log",
+        type=Path,
+        default=None,
+        help=(
+            "clang-include-cleaner 的单次输出"
+            "（`clang-include-cleaner --print=changes <source> -- ...`）"
+        ),
+    )
+    ic.add_argument(
+        "--source",
+        type=Path,
+        default=None,
+        help="--log 对应的源文件（工具输出里不含文件名，归属只能由你给）",
+    )
+    ic.add_argument(
+        "--binary",
+        type=Path,
+        default=None,
+        help="clang-include-cleaner 可执行文件路径（默认从 PATH 与常见安装位置找）",
+    )
+    ic.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="自己调用工具时最多分析几个编译单元（默认 50；每个单元要起一次进程做完整 AST 分析）",
+    )
+    ic.add_argument(
+        "--scan",
+        type=Path,
+        required=True,
+        help="本工具的扫描 JSON（`scan --format json -o scan.json`）",
+    )
+    ic.add_argument(
+        "-o", "--output", type=Path, default=None, help="写入文件（默认标准输出）"
+    )
+    ic.add_argument("--format", choices=["md", "json"], default="md")
+    add_common(ic, with_path=False, with_compiler=False)
+
     fwdv = subparsers.add_parser(
         "forward-verify",
         help="实测：真的把 include 换成前向声明再重编，看它编不编得过、省多少",
@@ -720,11 +771,88 @@ def _cmd_iwyu(args) -> int:
         )
         return 2
 
-    comparison = compare_with_scan(records, scan, ignored_lines=ignored)
+    comparison = compare_iwyu_with_scan(records, scan, ignored_lines=ignored)
     if args.format == "json":
         _emit(_json_pretty(comparison.to_dict()), args.output)
     else:
         _emit(render_iwyu_comparison(comparison, scan), args.output)
+    return 0
+
+
+def _cmd_include_cleaner(args) -> int:
+    """与 clang-include-cleaner 对位。
+
+    两条输入路径：读它已经产出的输出（``--log`` + ``--source``），或本工具
+    自己逐个单元调用它（``--compile-commands``）。后者是这条命令相对
+    ``iwyu`` 的实质差别——**它真的跑过**。
+    """
+    try:
+        scan = load_baseline(args.scan)
+    except BaselineError as exc:
+        print(f"错误：读不了扫描结果 {args.scan}：{exc}", file=sys.stderr)
+        return 2
+
+    if args.log is not None:
+        if args.source is None:
+            # 不是形式主义：输出里真的没有文件名，不指定就无法归属。
+            print(
+                "错误：--log 必须配 --source。"
+                "clang-include-cleaner 的输出里不含文件名，"
+                "这条建议属于哪个源文件只能由你指定。",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            text = args.log.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            print(f"错误：读不了 {args.log}：{exc}", file=sys.stderr)
+            return 2
+        records = [parse_include_cleaner_output(text, source=str(args.source))]
+        only = records[0]
+        if only.is_empty and not only.analysed:
+            print(
+                f"错误：{args.log} 里没有识别到任何变更"
+                + (
+                    f"，且文件被标记为未分析（{only.skip_reason or only.error}）"
+                    if only.skipped
+                    else ""
+                )
+                + "。请确认它是 `clang-include-cleaner --print=changes <source> -- ...` 的输出。",
+                file=sys.stderr,
+            )
+            return 2
+    elif args.compile_commands is not None:
+        binary = find_include_cleaner(args.binary)
+        if binary is None:
+            print(
+                "错误：找不到 clang-include-cleaner。"
+                "用 --binary 指定路径，或安装 LLVM（该工具随 clang-tools-extra 分发）。",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            records = analyse_database(
+                args.compile_commands,
+                binary=binary,
+                jobs=max(1, args.jobs),
+                limit=args.limit,
+            )
+        except (OSError, ValueError) as exc:
+            print(f"错误：分析 {args.compile_commands} 失败：{exc}", file=sys.stderr)
+            return 2
+    else:
+        print(
+            "错误：需要两条输入之一——"
+            "`--log` 配 `--source`（读已有输出），或 `--compile-commands`（本工具自己调用）。",
+            file=sys.stderr,
+        )
+        return 2
+
+    comparison = compare_cleaner_with_scan(records, scan)
+    if args.format == "json":
+        _emit(_json_pretty(comparison.to_dict()), args.output)
+    else:
+        _emit(render_include_cleaner_comparison(comparison, scan), args.output)
     return 0
 
 
@@ -1663,6 +1791,7 @@ _COMMANDS = {
     "pch-verify": _cmd_pch_verify,
     "forward-verify": _cmd_forward_verify,
     "iwyu": _cmd_iwyu,
+    "include-cleaner": _cmd_include_cleaner,
 }
 
 

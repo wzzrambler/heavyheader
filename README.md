@@ -83,6 +83,7 @@ $ heavyheader scan ./src --format html -o report.html
 | `pch-verify` | PCH **实测**：真的生成 `.gch` 并重编计时，报出估算覆盖率与实测采用率（不做行数↔秒换算） |
 | `forward-verify` | 前向声明**实测**：真的把 `#include` 换成前向声明再重编，报「编不编得过、代码是否等价、省多少」 |
 | `iwyu` | 把 include-what-you-use 的输出与本工具对上：**它判正确性、我们判成本**，两边都指向删的才是最该动手的 |
+| `include-cleaner` | 与 clang-include-cleaner 对位（**第二个后端，且做过端到端实测**）：可自己逐单元调用它，被编译错误跳过的文件单列、不冒充「没意见」 |
 
 这张表由 `tests/test_readme_commands.py` 盯着：每新增一个子命令却没写进这里，
 测试就会失败。此前 `pch-verify` 漏了数周、`history` 与 `pr-comment` 漏到

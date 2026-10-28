@@ -381,6 +381,72 @@ heavyheader_gate(myapp BASELINE baseline.json)     # 成本回归超阈值则构
 `tests/test_cmake_integration.py` 在有 cmake 的环境里真跑一遍（配置 + 扫描 +
 门禁两种状态）；没有 cmake 或 C++ 编译器时**跳过，不假装通过**。
 
+### Meson 集成
+
+同样的两件事，Meson 版：
+
+```meson
+# meson.build
+heavyheader_baseline = 'baseline.json'   # 可选；只有 gate 目标需要
+subdir('vendor/heavyheader-meson')       # 见 meson/heavyheader/meson.build
+```
+
+```sh
+ninja -C builddir heavyheader-scan     # 产出 builddir/<subdir>/heavyheader-scan.json
+ninja -C builddir heavyheader-gate     # 成本回归超阈值则构建失败
+```
+
+与 CMake 版的一处实质差别：**Meson 总是生成 `compile_commands.json`**，不需要
+打开开关。少一个会静默失败的地方。
+
+门禁用 `run_target` 而不是 `custom_target`：门禁不产出任何文件，它的全部意义
+就是退出码；`custom_target` 要求声明 output，Ninja 会去检查那个文件是否真的
+生成了——而门禁通过时什么都不该留下。
+
+`tests/test_meson_integration.py` 在有 meson + ninja + C++ 编译器的环境里真跑
+一遍（配置 + 扫描 + 门禁两种状态 + 默认构建不碰扫描）；环境不具备时**跳过**。
+
+Bazel 适配**未做**：本机装不上 Bazel，无法端到端验证。与其写一个从没跑过的
+`.bzl`，不如先把能验证的做实——等有 Bazel 环境再动。
+
+### 编辑器集成（VSCode）
+
+`editors/vscode/` 是一个最小扩展：扫描一次，把候选挂到对应的 `#include` 行上
+变成 CodeLens，点开看详情。
+
+```sh
+# 开发模式：用扩展开发宿主打开
+code --extensionDevelopmentPath=editors/vscode .
+
+# 或者打包成 vsix 再装（需要 @vscode/vsce）
+cd editors/vscode && npx @vscode/vsce package && code --install-extension heavyheader-0.1.0.vsix
+```
+
+```
+heavyheader.scan         扫描当前工作区（显式触发，不自动跑）
+heavyheader.clear        清掉结果与 CodeLens
+heavyheader.showDetails  详情（由 CodeLens 点击触发）
+```
+
+三条刻意的取舍，都写在 `extension.js` 开头的注释里：
+
+- **只说行数，不说秒。** CodeLens 上是「约省 73,935 行解析量」，不是「省 N 秒」。
+  本工具测的是头文件解析量，与墙钟不能换算（换算会高估约 1.6 倍，见
+  `docs/methodology.md` 第 15 章）。换成秒，读者会以为那是计时结果。
+- **不自动扫描。** 全量扫描要把每个编译单元编译一遍，代价与一次完整构建同量级。
+  挂在保存事件上等于让编辑器每隔几分钟重编一次工程。
+- **只对候选出镜。** 不是每个 `#include` 都值得看；与 CLI 报告同一口径，避免
+  编辑器里冒出一份和报告对不上的数字。没有行号的候选直接跳过——位置不明的
+  提示比不提示更误导。
+
+扫描通过 CLI 完成（`heavyheader.command` 可指定可执行文件路径，`extraArgs`
+追加参数），扩展只负责呈现，因此判定逻辑没有第二份实现。
+
+验证边界：`tests/test_vscode_extension.py` 用 stub 顶掉 `vscode` 模块，真跑
+`activate()`，检查命令声明与注册**双向**一致、CodeLens 按编译单元归拢、行号
+从 1 起转成 0 起、行数文案里不出现「秒」。**未在真实 VSCode 窗口里端到端跑过**
+——本机没有可自动化的 VSCode 实例，CodeLens 的真实渲染效果不在测试覆盖范围内。
+
 ### 增量扫描
 
 全量扫描要真编译每一个编译单元，改一行代码也要全跑一遍。加 `--cache` 之后，

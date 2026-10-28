@@ -4,6 +4,37 @@
 
 ## [未发布]
 
+### 新增（VSCode 扩展，2026-10-28）
+
+`editors/vscode/`：扫描一次后把成本候选挂到对应的 `#include` 行上，做成 CodeLens。
+三条取舍 —— **只说行数不说秒**（解析量与墙钟不能换算，换算实测高估约 1.6 倍）、
+**不自动扫描**（全量扫描与一次完整构建同量级，挂保存事件等于让编辑器反复重编）、
+**只对候选出镜**（与 CLI 报告同一口径，避免两个数字对不上）。
+扫描仍走 CLI，扩展只做呈现，判定逻辑没有第二份实现。
+
+`tests/test_vscode_extension.py`（8 例）：清单合法、命令声明与注册**双向**一致、
+`node --check` 语法、用 stub 顶掉 `vscode` 模块真跑 `activate()`、CodeLens 按编译
+单元归拢、行号 1 起转 0 起、行数与秒的文案纪律。
+**未在真实 VSCode 窗口里端到端跑过**，CodeLens 真实渲染不在测试覆盖范围内。
+
+### 新增（Meson 集成，2026-10-28）
+
+新增 `meson/heavyheader/meson.build`，以 `subdir()` 引入，提供
+`heavyheader-scan` / `heavyheader-gate` 两个目标（同样默认不构建）。
+
+两个判断：
+
+- **门禁用 `run_target`，不用 `custom_target`。** 门禁不产出任何文件，它的
+  全部意义就是「命令的退出码」；而 `custom_target` 要求声明 output，Ninja
+  会去检查那个文件是否真的生成了——门禁通过时什么都不该留下。
+- **Meson 不需要为 `compile_commands.json` 发 warning。** 它总是生成，不像
+  CMake 要设 `CMAKE_EXPORT_COMPILE_COMMANDS`。少一个会静默失败的地方。
+
+**本机验证**：用 `pip install meson ninja` 装了 meson 1.12.1 + ninja
+（**仅用于验证，非运行时依赖**；零依赖由 `tests/test_no_deps.py` 守护）。
+实测 MinGW g++：配置通过、扫描目标产出 2 TU / 425 边 / 206,106 行 / 5 候选，
+门禁与自身基线比通过（+0.0%）、基线改小后触发 `FAILED: [code=1]`（+200.3%）。
+
 ### 新增（clang-include-cleaner 对位，2026-10-28）
 
 新增 `include-cleaner` 子命令与 `src/heavyheader/attrib/incclean.py`：把

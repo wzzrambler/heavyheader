@@ -168,8 +168,26 @@
   本机用 pip 装的 cmake（仅验证用，非运行时依赖）实测：配置通过、扫描产出
   2 TU / 229,031 行、门禁两种状态都验证过（通过 +0.0% / 拦住 +47.7%）。
   **未做**：Bazel / Meson 适配、把扫描挂进 `ALL` 的推荐配置。
-- [ ] Bazel / Meson 适配
-- [ ] VSCode 插件：在编辑器里直接看到「这个 include 让你多等几秒」
+- [x] **Meson 适配**（2026-10-28，`meson/heavyheader/meson.build`）：以
+  `subdir()` 引入，提供 `heavyheader-scan` / `heavyheader-gate` 两个目标。
+  与 CMake 集成的一处实质性差别：**Meson 总是生成 `compile_commands.json`**，
+  不需要打开开关——CMake 那边必须设 `CMAKE_EXPORT_COMPILE_COMMANDS`，少了它
+  就只能靠命令行猜编译选项，所以 CMake 模块要为它发一条 warning，这里不需要。
+  门禁用 `run_target` 而非 `custom_target`：门禁不产出文件，它的全部意义就是
+  退出码，而 `custom_target` 要求声明 output，Ninja 会去检查那个文件是否真
+  的生成了。
+  本机用 pip 装的 meson 1.12.1 + ninja（**仅验证用，非运行时依赖**）实测：
+  配置通过、扫描产出 2 TU / 425 边 / 206,106 行 / 5 候选，门禁两种状态都验证
+  过（与自身基线 +0.0% 通过 / 基线改小后 +200.3% 被拦）。
+- [ ] Bazel 适配（**未做**：本机装不上 Bazel，无法端到端验证；与其写一个
+  从没跑过的 `.bzl`，不如先把能验证的做实。等有人提供 Bazel 环境再动）
+- [x] **VSCode 插件**（2026-10-28，`editors/vscode/`）：扫描一次，把成本候选挂到
+  对应的 `#include` 行上做成 CodeLens。三条取舍：只说行数不说秒（解析量与墙钟
+  不能换算）、不自动扫描（与一次完整构建同量级，不能挂保存事件）、只对候选出镜
+  （与 CLI 报告同一口径）。扫描仍走 CLI，扩展只做呈现，**判定逻辑没有第二份实现**。
+  验证边界：8 例测试用 stub 顶掉 `vscode` 模块真跑 `activate()`，覆盖清单合法性、
+  命令双向一致、按单元归拢、行号 1 起转 0 起、文案纪律；**未在真实 VSCode 窗口
+  端到端跑过**——本机无可自动化的实例，CodeLens 的真实渲染不在覆盖范围内。
 - [x] **与 include-what-you-use 的输出互转**（2026-10-28，`iwyu` 子命令）：
   解析 IWYU 的诊断输出（格式口径取自它自己的 `fix_includes.py`），与本工具的
   候选对位，报「两边都指向删」的那几条。互补而非竞争——**它管正确性，我们管成本**。

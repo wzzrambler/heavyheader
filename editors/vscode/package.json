@@ -1,0 +1,60 @@
+{
+  "name": "heavyheader",
+  "displayName": "HeavyHeader — C++ 头文件成本",
+  "description": "在编辑器里直接看到每个 #include 让你多等几秒：按头文件解析量归因，只在成本候选上出镜。",
+  "version": "0.1.0",
+  "publisher": "heavyheader",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "c++",
+    "include",
+    "build time",
+    "header",
+    "performance"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:cpp",
+    "onLanguage:c"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "heavyheader.scan",
+        "title": "HeavyHeader: 扫描头文件成本"
+      },
+      {
+        "command": "heavyheader.clear",
+        "title": "HeavyHeader: 清除扫描结果"
+      },
+      {
+        "command": "heavyheader.showDetails",
+        "title": "HeavyHeader: 显示这条 include 的详情"
+      }
+    ],
+    "configuration": {
+      "title": "HeavyHeader",
+      "properties": {
+        "heavyheader.command": {
+          "type": "string",
+          "default": "heavyheader",
+          "description": "调用 heavyheader 的命令。pip install 之后它在 PATH 上；否则可填完整路径。"
+        },
+        "heavyheader.extraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "追加给 `heavyheader scan` 的参数，例如 --std c++17、-I include、--cache .cache.json。"
+        }
+      }
+    }
+  }
+}

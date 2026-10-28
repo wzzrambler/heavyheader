@@ -360,7 +360,7 @@ def build(path: str) -> None:
                 [
                     "<b>③ 这不是一次性分析工具</b>",
                     "而是一条<b>可复现、可审查、可接入 CI 的治理链路</b>："
-                    "上游 PR、门禁、成本考古、语义化发布与 759 个测试"
+                    "上游 PR、门禁、成本考古、语义化发布与 794 个测试"
                     "（<b>后两项的第三方使用证据为零，见 1.3 与第九章</b>）",
                     "第四章（上游 PR）；G3 门禁；6.4（成本考古）；第九章（治理）",
                 ],
@@ -406,7 +406,7 @@ def build(path: str) -> None:
             "<font face='%s'>docs/innovation.md</font>。" % _MONO
         ),
         P(
-            "项目已实现十四个命令：<font face='%s'>scan</font>（成本归因与报告）、"
+            "项目已实现十五个命令：<font face='%s'>scan</font>（成本归因与报告）、"
             "<font face='%s'>verify</font>（实测验证）、<font face='%s'>gate</font>"
             "（CI 门禁）、<font face='%s'>compare</font>（前后对比）、"
             "<font face='%s'>blame</font>（成本考古：把回归归因到具体 commit 与 include 行）、"
@@ -419,9 +419,10 @@ def build(path: str) -> None:
             "<font face='%s'>pch-verify</font>（真的生成 .gch 并重编，报实测采用率）、"
             "<font face='%s'>forward-verify</font>（真的把 include 换成前向声明再重编）、"
             "<font face='%s'>iwyu</font>（与 include-what-you-use 对位：它判正确性、"
-            "我们判成本），"
+            "我们判成本）、<font face='%s'>include-cleaner</font>（与 clang-include-cleaner "
+            "对位，且做过端到端实测），"
             "支持 GCC 9+、"
-            "Clang 17+ 与 MSVC 三种工具链；<b>759 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
+            "Clang 17+ 与 MSVC 三种工具链；<b>794 个单元测试</b>，CI 三个工作流共 <b>16 个岗位</b>"
             "（3 系统 × 4 个 Python 版本的 12 组测试矩阵 + 代码检查 + 自举扫描 + 覆盖率 + "
             "MSVC 证据）；2026-10-27 核实最新提交 239f85b 的 CI 运行：14 个岗位全绿——Windows/Linux 8 组、代码检查、"
             "自举扫描与 macOS 4 组全部通过。运行时<b>零第三方依赖</b>，"
@@ -430,7 +431,7 @@ def build(path: str) -> None:
             "在全新虚拟环境中 <font face='%s'>pip install heavyheader</font> 验证可用"
             "（2026-10-21 复验仍可用）。"
             % (_MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO,
-               _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
+               _MONO, _MONO, _MONO, _MONO, _MONO, _MONO, _MONO)
         ),
         P(
             "除成本归因外，项目还做了四件现有工具不做的事：<b>模板实例化成本归因</b>"
@@ -517,7 +518,7 @@ def build(path: str) -> None:
     story += [
         P("0. 一条主线：从成本热点到 CI 门禁", "h1"),
         P(
-            "十四个命令不是十四个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
+            "十五个命令不是十五个卖点，是同一条流水线上的六个环节。本章用一次完整的真实"
             "运行把主线走完——每一步都对应仓库里可复现的实验数据，细节在后续章节展开。"
         ),
         TABLE(
@@ -1831,7 +1832,7 @@ def build(path: str) -> None:
     story += [
         P("六、平台能力：从工具到流水线的一环", "h1"),
         P(
-            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十四个命令覆盖"
+            "如果只能跑一次、出一份报告，它是个玩具。HeavyHeader 的十五个命令覆盖"
             "「发现 → 验证 → 门禁 → 对比 → 破案 → 看趋势 → 进 PR」的完整闭环："
         ),
         TABLE(
@@ -1842,6 +1843,7 @@ def build(path: str) -> None:
                 ["<font face='%s'>pch-verify</font>" % _MONO, "真的生成 .gch 并重编，报估算覆盖率与实测采用率", "引入预编译头前的评估"],
                 ["<font face='%s'>forward-verify</font>" % _MONO, "把 include 换成前向声明再重编，报等价性与实测收益", "前向声明建议的裁决"],
                 ["<font face='%s'>iwyu</font>" % _MONO, "与 include-what-you-use 对位：它判正确性、我们判成本", "跨工具结论合并"],
+                ["<font face='%s'>include-cleaner</font>" % _MONO, "与 clang-include-cleaner 对位（第二个后端，做过端到端实测）", "跨工具结论合并"],
                 ["<font face='%s'>gate</font>" % _MONO, "成本相对基线回归超阈值则非零退出", "PR 门禁"],
                 ["<font face='%s'>compare</font>" % _MONO, "对比两份扫描，定位成本上升的具体头文件", "版本间对比"],
                 ["<font face='%s'>blame</font>" % _MONO, "把成本回归归因到 commit、文件与具体的 include 行", "门禁报警后的破案"],
@@ -1941,6 +1943,71 @@ def build(path: str) -> None:
             "补回被抑制的替代供给点；用「删掉后真消失的文件集合」作确定性真值验证："
             "25 条可删边的假阳性由 <b>45 个文件降到 0</b>，完全一致率 18/25 → 24/25。"
             % (_MONO, _MONO)
+        ),
+        P("6.6 集成层：构建系统、编辑器、外部检查器", "h2"),
+        P(
+            "工具要进入日常流程，得能被人碰到。三条接入路径各自只做一件事，判定逻辑"
+            "没有第二份实现："
+        ),
+        TABLE(
+            ["接入方式", "提供什么", "一条关键取舍", "验证到哪一步"],
+            [
+                [
+                    "CMake（<font face='%s'>cmake/HeavyHeader.cmake</font>）"
+                    % _MONO,
+                    "<font face='%s'>heavyheader_scan()</font> / "
+                    "<font face='%s'>heavyheader_gate()</font> 两个构建目标"
+                    % (_MONO, _MONO),
+                    "两个目标<b>默认不挂进 ALL</b>：扫描要把每个单元重编一遍，挂进默认构建等于"
+                    "让所有人的每次编译翻倍——代价大家担，收益只给关心构建成本的人",
+                    "本机 CMake + MinGW 真跑：2 TU / 452 边 / 229,031 行；门禁两态都验"
+                    "（与自身基线 +0.0% 通过 / 基线改小后 +47.7% 被拦）",
+                ],
+                [
+                    "Meson（<font face='%s'>meson/heavyheader/meson.build</font>）"
+                    % _MONO,
+                    "<font face='%s'>ninja heavyheader-scan</font> / "
+                    "<font face='%s'>heavyheader-gate</font>" % (_MONO, _MONO),
+                    "门禁用 <font face='%s'>run_target</font> 而非 "
+                    "<font face='%s'>custom_target</font>：门禁不产出文件，"
+                    "<font face='%s'>custom_target</font> 要求声明 output，"
+                    "而通过时什么都不该留下" % (_MONO, _MONO, _MONO),
+                    "本机 meson 1.12.1 + ninja 真跑：2 TU / 425 边 / 206,106 行；"
+                    "门禁两态都验（+0.0% 通过 / +200.3% 拦下，退出码 1）",
+                ],
+                [
+                    "VSCode（<font face='%s'>editors/vscode/</font>）" % _MONO,
+                    "把候选挂到对应的 <font face='%s'>#include</font> 行上做成 CodeLens"
+                    % _MONO,
+                    "<b>只说行数不说秒</b>：解析量与墙钟不能换算（换算实测高估约 1.6 倍），"
+                    "写「省 N 秒」读者会以为那是计时结果；<b>不自动扫描</b>——全量扫描与一次"
+                    "完整构建同量级，挂保存事件等于让编辑器反复重编",
+                    "8 例测试用 stub 顶掉 <font face='%s'>vscode</font> 模块真跑 "
+                    "<font face='%s'>activate()</font>：命令声明与注册双向一致、按单元归拢、"
+                    "行号 1 起转 0 起、文案纪律；"
+                    "<b>未在真实 VSCode 窗口端到端跑过</b>" % (_MONO, _MONO),
+                ],
+            ],
+            widths=[82, 108, 175, 175],
+        ),
+        SP(4),
+        P(
+            "另有一条不改变工具、只合并结论的路径：与外部检查器对位。"
+            "<font face='%s'>include-what-you-use</font> 判<b>正确性</b>（这条 include 该不该"
+            "出现，AST 级），本工具判<b>成本</b>；两边都指向「删」的才最该动手。"
+            "<font face='%s'>iwyu</font> 子命令的格式口径取自 IWYU 自己的 "
+            "<font face='%s'>fix_includes.py</font>，但<b>未做端到端实测</b>——本项目构建不出"
+            "IWYU 二进制，报告正文自己写明这一点。<font face='%s'>include-cleaner</font> 是"
+            "第二个后端，与前者相反：本机 LLVM 自带该二进制，解析格式由真实进程输出校准，"
+            "demo 语料 2 个单元全部分析成功、1 条删除建议按行号对位命中、分歧 0 条。"
+            "报告里刻意不出现「准确率」「谁更准」——两者答的不是同一个问题。"
+            % (_MONO, _MONO, _MONO, _MONO)
+        ),
+        P(
+            "这三条集成共享一条测试纪律：<b>门禁必须两种状态都会</b>（通过 + 拦住），"
+            "只测「与自身基线比通过」等于没有测试；环境不具备时<b>跳过而不是假装通过</b>。"
+            "Bazel 适配未做——本机装不上 Bazel，与其写一个从没跑过的 "
+            "<font face='%s'>.bzl</font>，不如先把能验证的做实。" % _MONO
         ),
     ]
 
@@ -2162,7 +2229,7 @@ def build(path: str) -> None:
         ),
         P("9.3 测试策略", "h2"),
         P(
-            "<b>759 个单元测试全部通过</b>（另有 7 个依赖特定编译器的用例按环境跳过）。"
+            "<b>794 个单元测试全部通过</b>（另有 10 个用例按环境跳过：缺 meson/ninja 或特定编译器时跳过，而不是假装通过）。"
             "样本优先用真实编译器输出逐字复制——例如 "
             "<font face='%s'>tests/test_parsers.py</font> 里的 <font face='%s'>-H</font> 和 "
             "<font face='%s'>-ftime-report</font> 输出是从 GCC 16.2 真实运行复制的。"

@@ -8,7 +8,7 @@
 | 项 | 状态 | 位置 |
 |---|---|---|
 | 代码 | ✅ 186 文件 | `src/heavyheader/` |
-| 测试 | ✅ **648 个全绿 / 7 跳过** + ruff 对 `src/` 0 违规（2026-10-21 实测） | `tests/` |
+| 测试 | ✅ **794 个全绿 / 10 跳过**（跳过的是缺 meson/ninja 或特定编译器的用例，不假装通过）+ ruff 对 `src/` 0 违规（2026-10-28 实测） | `tests/` |
 | 治理文件 | ✅ README/LICENSE/CONTRIBUTING/CoC/SECURITY/ROADMAP/CHANGELOG/**GOVERNANCE**/CODEOWNERS/Issue·PR 模板/CI | 仓库根 |
 | 独创性说明 | ✅ `docs/innovation.md`：反事实构建实验范式、三项创新点、消融表、不声称清单 | `docs/innovation.md` |
 | 场景落地说明 | ✅ `docs/scenario.md`：四步全链路 + 真实工程数据卡 + 部署/运行/测试证据 | `docs/scenario.md` |
@@ -23,6 +23,10 @@
 | 第五语料 + 按配置求值 | ✅ zstd 1.5.6（39 TU / 350 万行）单条 **−46.6%**（384→205 ms）；同一行 include 在 `-DZSTD_MULTITHREAD` 下删了**编不过**——该不该删是构建配置的属性；`configs` 命令三配置 90/91/93 候选、仅 3 条判定不同 | `src/heavyheader/configmatrix.py` + `experiments/results/config-matrix-zstd-cli-20261020.md` |
 | 实现片段与实例化站点 | ✅ brotli 1.1.0（32 TU / 295 万行）：无 guard 片段展开 31 个站点，实测 **0 条可删**（28 编错 + 3 汇编变了）；关掉强制闸门那 3 条会退化成「无变化 −8 ms」 | `tests/test_instantiation_sites.py` + `docs/benchmark-report.md` §9.18 |
 | 已验证层级 | ✅ 新命令 `verified` + `verify --tier`：三档证据（verified / equivalent / compiles_only），措辞由测试锁死；Lua 两遍 2 条 / 3 条且**成员零重合**，6 条闸门证据**全部来自判据不推荐侧** | `src/heavyheader/evidence.py` + `docs/benchmark-report.md` §9.20 |
+| PCH 实测闭环 | ✅ `pch-verify`：真的生成 `.gch` 逐单元双侧编译，**估算覆盖率（上界）与实测采用率（下界）分开报**；json 63 TU 实测 24 个单元里 **9 个加 PCH 后编不过**（`-include` 把预编译内容插到最前，先 `#define` 再 include 的单元看到的是已展开的头），据此做了编译前可算的预置宏预警 + 维护税 | `docs/benchmark-report.md` + `experiments/results/pch-verify-json63-20261025.md` |
+| 前向声明实测闭环 | ✅ `forward-verify`：真的把 include 换成前向声明再重编，结论分六档（已证等价 / 噪声内 / 仅编译通过 / 代码生成改变 / 编不过 / 需先拆头），默认过汇编指纹。**如实报出**：三个真实语料候选数都是 **0**（判据要求头里的类只以指针/引用出现，`shared_ptr<Widget>` 与 `auto` 都不匹配）；合成语料证明机制闭环（301.7→41.9 ms，指纹一致）但不能当效能证据 | `experiments/results/fwd-verify-20261027.md` |
+| 与两个外部检查器的对位 | ✅ `iwyu`（格式口径取自其 `fix_includes.py`，**未端到端实测**——本项目构建不出 IWYU 二进制，报告正文自己声明）与 `include-cleaner`（**端到端实测**：本机 LLVM 23.1.3 真实输出校准；demo 2 TU 全分析成功、1 条删除建议按行号对位命中、分歧 0）。两者分工一致：**它判正确性，我们判成本**，报告里不出现「谁更准」 | `src/heavyheader/attrib/crosscheck.py` + `CHANGELOG.md` |
+| 构建系统与编辑器集成 | ✅ CMake（`cmake/HeavyHeader.cmake`，2 TU / 452 边 / 229,031 行，门禁两态实测 +0.0% 通过 / +47.7% 拦住）+ Meson（`meson/heavyheader/meson.build`，2 TU / 425 边 / 206,106 行，run_target 承载门禁）+ VSCode（`editors/vscode/`，8 例测试用 stub 真跑 `activate()`，**未在真实 VSCode 窗口端到端跑过**）。各自的两条取舍写在模块注释里 | `cmake/`、`meson/`、`editors/vscode/` |
 | 竞品尽调 | ✅ 四层竞品地图 + 12 项能力矩阵 + 逐格证据等级 + 7 项产品风险 | `docs/competitor-matrix.md` |
 | 同任务基准计划 | ✅ 预注册协议、3 个工程、8 类数据、3 个门槛（阈值待基线后填） | `docs/benchmark-plan.md` |
 | G1 同任务对照（ClangBuildAnalyzer） | ✅ 同编译器/同候选规则/同构口径：Top-10 重合 7/10、ρ 0.68；**明确不支持「我们更准」** | `docs/benchmark-report.md` §8 + `experiments/results/cba-compare-20261018.{md,json}` |
@@ -31,9 +35,9 @@
 | G3 CI 门禁 | ✅ 成立（限归因行数型回归）：构造样本与**真实工程 25 TU** 双重复验——注入回归 3/3 检出、无回归 3/3 通过、构建损坏 3/3 拦截 | `docs/benchmark-report.md` §10 + `experiments/results/g3-{gate,real}-*.{md,json}` |
 | G4 工程开销 | ✅ 成立：1.15×（g++）/ 1.20×（clang++），峰值 9.2 MB，三次完全确定；MSVC 未测 | `docs/benchmark-report.md` §11 + `experiments/results/g4-overhead-*.{md,json}` |
 | MSVC 真实运行 | ✅ CI 实测：`scan --compiler cl` → TU=2、失败 0、归因 196,157 行；`gate` 通过。run #5/#6 success，产物可下载 | `.github/workflows/msvc-evidence.yml` + `docs/benchmark-report.md` §11 |
-| 作品介绍文档（完整版） | ✅ 34 页 PDF（含全部逐轮实验记录、复现入口、规模换算仿真与证据分级说明） | `HeavyHeader-作品介绍文档.pdf` |
+| 作品介绍文档（完整版） | ✅ **35 页 PDF**（含全部逐轮实验记录、复现入口、规模换算仿真与证据分级说明；2026-10-28 增补 §6.6 集成层） | `HeavyHeader-作品介绍文档.pdf` |
 | 作品介绍文档（精简评审版） | ✅ **18 页 PDF**：概览→方法→实验（含规模换算与仿真实测）→工程化→治理；章节映射在 `docs/restructure-map.md` | `HeavyHeader-作品介绍文档-精简评审版.pdf` |
-| 选题报告（补充） | ✅ 18 页 PDF（2026-10-21 第十轮刷新：同步 PR 实时状态） | `HeavyHeader-选题报告.pdf` |
+| 选题报告（补充） | ✅ 18 页 PDF（2026-10-28 刷新：命令数与测试数追平代码） | `HeavyHeader-选题报告.pdf` |
 | 演示视频 | ✅ 5 分 04 秒 MP4（10.7 MB，2026-10-22 重渲：模板实例化一处由无出处单点值改为有归档的 23.3%–31.7% 区间） | `HeavyHeader-演示视频.mp4` |
 | 公开仓库 | ✅ https://github.com/wzzrambler/heavyheader | 186 文件，CI 三工作流（首发展示为压缩提交，2026-10-19 起按逻辑分别提交） |
 | 报名表 | ⬜ 待填写（需本人信息） | 见下 |

@@ -59,11 +59,103 @@ def test_readme_mentions_the_command_count():
         int(m.group(1))
         for m in re.finditer(r"(\d+)\s*个命令", text)
     }
-    cn_numerals = {"十": 10, "十一": 11, "十二": 12, "十三": 13, "十四": 14}
+    cn_numerals = {
+        "十": 10,
+        "十一": 11,
+        "十二": 12,
+        "十三": 13,
+        "十四": 14,
+        "十五": 15,
+        "十六": 16,
+        "十七": 17,
+        "十八": 18,
+        "十九": 19,
+        "二十": 20,
+    }
     for word, value in cn_numerals.items():
         if f"{word}个命令" in text:
             claimed.add(value)
     assert claimed <= {count}, (
         f"README 声称有 {sorted(claimed)} 个命令，实际 {count} 个。"
         "命令数会随迭代变化，写死数字就一定会过时——要么别写，要么跟着改。"
+    )
+
+
+#: 三份交付 PDF 的生成脚本。它们不在 README 那张表里，却同样写死了命令总数，
+#: 而且**更难发现**——PDF 是二进制，过时的数字要解出文本才看得见。
+_PDF_SCRIPTS = (
+    _ROOT / "docs" / "make_pdf.py",
+    _ROOT / "docs" / "make_pdf_review.py",
+    _ROOT / "docs" / "make_topic_report.py",
+)
+
+_CN_SMALL = {
+    "十": 10,
+    "十一": 11,
+    "十二": 12,
+    "十三": 13,
+    "十四": 14,
+    "十五": 15,
+    "十六": 16,
+    "十七": 17,
+    "十八": 18,
+    "十九": 19,
+    "二十": 20,
+}
+
+
+def _claimed_counts(text: str) -> set[int]:
+    """抽出文中所有「N 个命令」/「十N个命令」形式的总数断言。"""
+    claimed = {int(m.group(1)) for m in re.finditer(r"(\d+)\s*个命令", text)}
+    for word, value in _CN_SMALL.items():
+        if f"{word}个命令" in text:
+            claimed.add(value)
+    return claimed
+
+
+def test_pdf_scripts_do_not_claim_a_stale_command_count():
+    """三份 PDF 生成脚本若写了命令总数，必须与 CLI 一致。
+
+    这条守卫是 2026-10-28 补的：新增 `iwyu` / `include-cleaner` 两个子命令后，
+    三个脚本里都还写着旧的数字，而 PDF 已经按旧数字渲染出去了。人工核对靠的是
+    「记得去看」——那不是机制。
+    """
+    count = len(_subcommands())
+    stale = {}
+    for script in _PDF_SCRIPTS:
+        claimed = _claimed_counts(script.read_text(encoding="utf-8"))
+        if claimed and claimed != {count}:
+            stale[script.name] = sorted(claimed)
+    assert not stale, (
+        f"这些 PDF 脚本声称的命令数与实际（{count}）不符：{stale}。"
+        "改完 CLI 记得重建三份 PDF，否则纸面数字会继续旧下去。"
+    )
+
+
+def test_pdf_scripts_agree_on_the_test_count():
+    """三份 PDF 脚本若都写了单元测试数，它们必须彼此一致。
+
+    **这条守卫能防的和不能防的要分清。** 它防的是「改了一处、漏了另两处」——
+    今天正是这么错的：数字从 759 涨到 792，三个脚本各写一份，改哪个全凭记性。
+    它**防不了**「三处一起旧」：真实测试数只能在执行时得到，静态读不出来，
+    而在这条测试里再跑一遍全量测试等于让测试套件自我递归。
+
+    所以这里比的是「三份脚本互相一致」，而不是「与真实值一致」。真实值的守卫
+    只能靠重建 PDF 时人工核一次（`pytest --no-header` 的汇总行）。
+    """
+    claimed = {}
+    for script in _PDF_SCRIPTS:
+        text = script.read_text(encoding="utf-8")
+        found = {
+            int(m.group(1))
+            # 「63 个测试二进制」「63 个测试套件」讲的是 json 工程的验收方式，
+            # 不是测试总数——负向前瞻把它们排除掉，否则这条守卫会误报。
+            for m in re.finditer(r"(\d+)\s*个(?:单元)?测试(?![二套])", text)
+        }
+        if found:
+            claimed[script.name] = sorted(found)
+    values = {tuple(v) for v in claimed.values()}
+    assert len(values) <= 1, (
+        f"三份 PDF 脚本写的测试数不一致：{claimed}。改一处就要改三处，"
+        "否则三份纸面材料会互相打脸。"
     )

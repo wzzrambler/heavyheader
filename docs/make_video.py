@@ -61,6 +61,8 @@ FONT = ImageFont.truetype("C:/Windows/Fonts/CascadiaMono.ttf", FONT_SIZE)
 FONT_BOLD = ImageFont.truetype("C:/Windows/Fonts/CascadiaCode.ttf", FONT_SIZE)
 FONT_CJK = ImageFont.truetype("C:/Windows/Fonts/msyh.ttc", FONT_SIZE, index=0)
 FONT_CJK_BOLD = ImageFont.truetype("C:/Windows/Fonts/msyhbd.ttc", FONT_SIZE, index=0)
+GREY_BAR = (96, 106, 122)
+
 #: 要点栏字号自适应：宽度固定 604px，长句自动降字号，绝不截断尾部字符。
 #: （第二稿渲染时发现 44px 大字放不下「−15.1%）」这类长尾，宁可字小也不丢数字。）
 _FONT_CACHE: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
@@ -132,6 +134,8 @@ def draw_mixed(
 class Step:
     lines: list[tuple[str, tuple, bool]]    # 本步一次性出现的终端行
     voice: str                              # 本步旁白子句（单独 TTS，精确对齐）
+    # 可选数据对比条形图：(标签, 数值, 颜色, 数值文本)，画在右侧要点栏下方
+    chart: list[tuple[str, float, tuple, str]] | None = None
 
 
 @dataclass
@@ -192,21 +196,23 @@ def seg_problem() -> Segment:
         name="① 问题",
         tab="问题",
         bullets=[
-            ("4700 行的头 × 3000 个编译单元", WHITE, False),
-            ("= 1410 万行解析量", YELLOW, True),
+            ("真实项目 nlohmann/json：25 个编译单元", WHITE, False),
+            ("4,866,676 行头文件解析量", YELLOW, True),
+            ("≈ 每个单元 19 万行", WHITE, False),
             ("已有工具能回答「哪个头贵」", DIM, False),
             ("没人回答「删了能省多少」", WHITE, False),
         ],
         steps=[
             Step(
                 [
-                    comment("构建慢，但看不到是哪几行 #include 造成的"),
+                    comment("真实痛点：nlohmann/json 的测试目标（归档实测）"),
                     L(""),
-                    L("一个 4700 行的头文件被 3000 个编译单元引用时，", DIM),
-                    L("项目要为它解析 1410 万行——这还只是它自身。", DIM),
+                    L("25 个编译单元，被迫解析 4,866,676 行头文件", YELLOW, True),
+                    L("平均每个单元约 19 万行——这还只是解析量，不是时间。", DIM),
                 ],
-                "一个四千七百行的头文件，被三千个编译单元引用，"
-                "项目要为它解析一千四百一十万行——这还只是它自己。",
+                "看一个真实的开源项目，nlohmann json："
+                "二十五个编译单元，被迫解析四百八十七万行头文件，"
+                "平均每个单元十九万行。构建慢的病根，就在头文件。",
             ),
             Step(
                 [
@@ -217,8 +223,9 @@ def seg_problem() -> Segment:
                     L("  lonely.h   被 main.cpp 包含但从未使用", YELLOW),
                     L("  unguarded.h 刻意不加 guard", DIM),
                 ],
-                "构建慢的病根在头文件。但已有的工具只能告诉你哪个头贵，"
-                "没人敢回答后半个问题：删掉这一行，到底是真省，还是白改。",
+                "已有的工具只能告诉你哪个头贵。"
+                "我们只回答后半个问题：删掉这一行 include，"
+                "到底是真省，还是白改。",
             ),
         ],
     )
@@ -251,9 +258,10 @@ def seg_scan() -> Segment:
                 [
                     L("## 成本热点 Top", WHITE, True),
                     L("| 头文件 | 行数 | 被引用 TU | 归因行数 |", DIM),
-                    L("| include\\core.h    |   5 | 2 |      10 |", FG),
+                    L("| include\\core.h    |   6 | 2 |      12 |", FG),
+                    L("| include\\heavy.h   |  12 | 1 |      12 |", FG),
                     L("| include\\bloated.h |   8 | 1 |       8 |", FG),
-                    L("| include\\lonely.h  |   3 | 1 |       3 |", YELLOW),
+                    L("| include\\lonely.h  |   4 | 1 |       4 |", YELLOW),
                 ],
                 "成本最高的这一条，独占闭包三十六行，预计省两万两千行。",
             ),
@@ -263,7 +271,7 @@ def seg_scan() -> Segment:
                     L("| 编译单元    | include          | 独占闭包 | 预计省行数 | 使用状态 |", DIM),
                     L("| app\\main.cpp | include\\lonely.h |      36 |  22,316 | 正在使用 |",
                       YELLOW, True),
-                    L("| app\\util.cpp | include\\core.h   |     115 |  66,014 | 正在使用 |", FG),
+                    L("| app\\util.cpp | include\\core.h   |     116 |  66,020 | 正在使用 |", FG),
                     L(""),
                     comment("「疑似未使用」只是文本启发式，不是安全保证。"),
                     comment("权威结论来自 verify：真的删掉、重新编译、实测。"),
@@ -321,6 +329,10 @@ def seg_verify() -> Segment:
                 "七百二十毫秒降到六百一十二毫秒，省百分之十五点一，"
                 "汇编指纹一致，复测仍然成立。"
                 "判据说「在用」的头，编译器说：可以删。",
+                chart=[
+                    ("基线", 720.0, GREY_BAR, "720 ms"),
+                    ("移除后", 612.0, GREEN, "612 ms"),
+                ],
             ),
         ],
     )
@@ -400,7 +412,7 @@ def seg_evidence() -> Segment:
             ),
             Step(
                 [
-                    L("$ heavyheader edge-cost …/zstd-1.5.6/lib   # 单条最大收益", BLUE),
+                    L("$ heavyheader verify …/zstd-1.5.6/lib --top 5   # 单条最大收益", BLUE),
                     L("pool.c → allocations.h：384 ms → 205 ms（−46.6%）", GREEN, True),
                     L("解析文件数 184 → 32", DIM),
                     L(""),
@@ -409,6 +421,10 @@ def seg_evidence() -> Segment:
                 ],
                 "单条最大收益来自 zstd：删一行 include，"
                 "三百八十四毫秒降到二百零五，省百分之四十六点六。",
+                chart=[
+                    ("修改前", 384.0, GREY_BAR, "384 ms"),
+                    ("修改后", 205.0, GREEN, "205 ms"),
+                ],
             ),
             Step(
                 [
@@ -465,6 +481,10 @@ def seg_gate() -> Segment:
                 ],
                 "成本回归超预算，它当场失败，并且指出是哪个头。"
                 "一个会误报的门禁会被关掉——关掉的门禁，保护不了任何东西。",
+                chart=[
+                    ("本次回归", 17.1, RED, "+17.1%"),
+                    ("预算上限", 5.0, GREY_BAR, "+5.0%"),
+                ],
             ),
         ],
     )
@@ -588,8 +608,25 @@ def draw_chrome(draw: ImageDraw.ImageDraw, seg_idx: int, segments: list[Segment]
         )
 
 
+def draw_chart(draw: ImageDraw.ImageDraw, bars: list[tuple[str, float, tuple, str]]) -> None:
+    """要点栏下方的横向对比条形图：把大数字变成一眼可比的长度。"""
+    y0 = 660
+    max_v = max(v for _, v, _, _ in bars)
+    for i, (label, value, color, vtext) in enumerate(bars):
+        y = y0 + i * 64
+        draw.text((SIDE_X0, y + 2), label, font=_cjk_dim_font(22), fill=DIM)
+        bar_x = SIDE_X0 + 148
+        w = int(330 * value / max_v)
+        draw.rounded_rectangle(
+            [(bar_x, y), (bar_x + max(w, 6), y + 32)], radius=7, fill=color
+        )
+        draw.text((bar_x + max(w, 6) + 14, y), vtext, font=_cjk_font(25), fill=WHITE)
+
+
 def render_terminal(
-    lines: list[tuple[str, tuple, bool]], seg_idx: int, segments: list[Segment]
+    lines: list[tuple[str, tuple, bool]],
+    chart: list[tuple[str, float, tuple, str]] | None,
+    seg_idx: int, segments: list[Segment],
 ) -> Image.Image:
     img = Image.new("RGB", (W, H), PAGE_BG)
     draw = ImageDraw.Draw(img)
@@ -619,6 +656,9 @@ def render_terminal(
     for text, color, bold in visible:
         draw_mixed(draw, (TERM_X0 + PAD, y), text, color, bold)
         y += LINE_H
+
+    if chart:
+        draw_chart(draw, chart)
 
     return img
 
@@ -752,11 +792,23 @@ def build_frames(
     count = 0
     audio_parts: list[Path] = []
     term: list[tuple[str, tuple, bool]] = []
+    prev: Image.Image | None = None  # 上一步画面，用于步骤间的淡入过渡
 
     def emit(img: Image.Image) -> None:
         nonlocal count
         img.save(frames_dir / f"f{count:05d}.png")
         count += 1
+
+    def emit_faded(img: Image.Image) -> None:
+        """步骤切换不做硬切：前 6 帧与上一画面线性混合（淡入），其余原样。"""
+        nonlocal prev
+        if prev is None:
+            emit(img)
+        else:
+            fade = 6
+            for i in range(1, fade + 1):
+                emit(Image.blend(prev, img, i / fade))
+        prev = img
 
     for idx, seg in enumerate(segments):
         # 思维导图段：每个 step = (已展开分支数, 该步旁白)，展开节奏与旁白同步。
@@ -786,13 +838,14 @@ def build_frames(
                 img = render_card(title, subtitle, tail, idx, segments)
             else:
                 term.extend(step.lines)
-                img = render_terminal(term, idx, segments)
+                img = render_terminal(term, step.chart, idx, segments)
 
             # 停留时长 = 旁白 + 0.4s 缓冲；再加可读下限（至少 1.2s，每行 +1 帧），
             # 防止旁白短、行多时翻页太快看不清。
             frames = math.ceil((dur + 0.4) * FPS)
             frames = max(frames, int(1.2 * FPS) + len(step.lines))
-            for _ in range(frames):
+            emit_faded(img)  # 淡入的第一帧也算停留时长的一部分
+            for _ in range(max(0, frames - 6)):
                 emit(img)
 
     return count, audio_parts

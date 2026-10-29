@@ -141,6 +141,8 @@ class Segment:
     bullets: list[tuple[str, str, bool]]        # (文字, 颜色, 是否大字)
     steps: list[Step] = field(default_factory=list)
     card: tuple[str, str, list[tuple[str, tuple]]] | None = None  # 全屏卡内容
+    # 思维导图段：每个 step = (已展开的分支数, 该步旁白)。渲染走 render_diagram。
+    diagram_steps: list[tuple[int, str]] | None = None
 
 
 def L(text: str, color=FG, bold: bool = False):
@@ -468,6 +470,29 @@ def seg_gate() -> Segment:
     )
 
 
+def seg_overview() -> Segment:
+    """工具全景思维导图（用户要求加在片头之后）：中心 + 四条主线，
+    分两步渐次展开，旁白与展开同步。"""
+    return Segment(
+        name="工具全景",
+        tab="全景",
+        bullets=[],
+        diagram_steps=[
+            (
+                2,
+                "整个工具围绕一条主线。发现：让编译器报告每个头文件的成本；"
+                "验证：真的删掉、重新编译，用实测数据下结论，而不是猜。",
+            ),
+            (
+                4,
+                "治理：把结论固化成基线，进 CI 当门禁；"
+                "集成：融入 CMake、Meson、VSCode 和现有工具链。"
+                "四步合起来，把「看起来能省」，变成「确认能省」。",
+            ),
+        ],
+    )
+
+
 def seg_outro() -> Segment:
     return Segment(
         name="",
@@ -496,6 +521,7 @@ def seg_outro() -> Segment:
 def build_segments() -> list[Segment]:
     return [
         seg_intro(),
+        seg_overview(),
         seg_problem(),
         seg_scan(),
         seg_verify(),
@@ -597,6 +623,67 @@ def render_terminal(
     return img
 
 
+#: 思维导图的四条主线（标题 / 命令 / 说明两行 / 主题色）。
+DIAGRAM_BRANCHES = [
+    ("① 发现", "scan · edge-cost", "让编译器报告", "每个头的成本", CYAN),
+    ("② 验证", "verify · pch-verify", "真的删掉重编", "用实测下结论", GREEN),
+    ("③ 治理", "gate · configs · blame", "结论固化成基线", "进 CI 当门禁", YELLOW),
+    ("④ 集成", "CMake · VSCode · iwyu", "融入构建系统", "与现有工具链", BLUE),
+]
+
+DIAGRAM_CX = [300, 740, 1180, 1620]     # 四个分支节点的中心 x
+
+
+def render_diagram(
+    visible: int, seg_idx: int, segments: list[Segment]
+) -> Image.Image:
+    """工具全景思维导图：中心节点 + 四条主线，前 visible 条已展开。"""
+    img = Image.new("RGB", (W, H), PAGE_BG)
+    draw = ImageDraw.Draw(img)
+    draw_chrome(draw, seg_idx, segments)
+    draw.rectangle([(0, 80), (W, 1000)], fill=TITLE_BG)
+
+    # 中心节点
+    draw.rounded_rectangle([(780, 170), (1140, 300)], radius=16, fill=(30, 38, 50),
+                           outline=BLUE, width=2)
+    tw = draw.textlength("HeavyHeader", font=_cjk_font(44))
+    draw.text(((W - tw) / 2, 192), "HeavyHeader", font=_cjk_font(44), fill=WHITE)
+    sw = draw.textlength("反事实构建实验", font=_cjk_dim_font(24))
+    draw.text(((W - sw) / 2, 252), "反事实构建实验", font=_cjk_dim_font(24), fill=BLUE)
+
+    # 分支节点（前 visible 条）
+    for i in range(visible):
+        title, cmds, note1, note2, color = DIAGRAM_BRANCHES[i]
+        bx = DIAGRAM_CX[i]
+        draw.line([(960, 300), (bx, 540)], fill=(70, 82, 100), width=2)
+        draw.rounded_rectangle(
+            [(bx - 160, 540), (bx + 160, 780)], radius=14, fill=(28, 36, 48),
+            outline=color, width=2,
+        )
+        tw = draw.textlength(title, font=_cjk_font(32))
+        draw.text((bx - tw / 2, 562), title, font=_cjk_font(32), fill=color)
+        # 命令行宽度自适应：节点内宽约 300px，放不下就降字号，不截断尾部
+        cmd_font = FONT_MONO_CARD
+        for size in (26, 23, 20):
+            cmd_font = ImageFont.truetype("C:/Windows/Fonts/CascadiaCode.ttf", size)
+            if draw.textlength(cmds, font=cmd_font) <= 296:
+                break
+        cw = draw.textlength(cmds, font=cmd_font)
+        draw.text((bx - cw / 2, 622), cmds, font=cmd_font, fill=WHITE)
+        for k, note in enumerate((note1, note2)):
+            nw = draw.textlength(note, font=_cjk_dim_font(21))
+            draw.text((bx - nw / 2, 668 + k * 32), note,
+                      font=_cjk_dim_font(21), fill=DIM)
+
+    # 收束句：四条全部展开后才出现
+    if visible >= len(DIAGRAM_BRANCHES):
+        tail = "把「看起来能省」，变成「确认能省」"
+        tw = draw.textlength(tail, font=_cjk_font(34))
+        draw.text(((W - tw) / 2, 860), tail, font=_cjk_font(34), fill=WHITE)
+
+    return img
+
+
 def render_card(
     title: str, subtitle: str, tail_lines: list[tuple[str, tuple]],
     seg_idx: int, segments: list[Segment],
@@ -672,6 +759,21 @@ def build_frames(
         count += 1
 
     for idx, seg in enumerate(segments):
+        # 思维导图段：每个 step = (已展开分支数, 该步旁白)，展开节奏与旁白同步。
+        if seg.diagram_steps is not None:
+            for j, (n_vis, voice) in enumerate(seg.diagram_steps):
+                voice_path = voice_dir / f"voice_{idx:02d}_{j:02d}.mp3"
+                if not voice_path.exists():
+                    synth_voice(voice, voice_path)
+                dur = audio_seconds(voice_path)
+                audio_parts.append(voice_path)
+                img = render_diagram(n_vis, idx, segments)
+                frames = math.ceil((dur + 0.4) * FPS)
+                frames = max(frames, int(1.5 * FPS))
+                for _ in range(frames):
+                    emit(img)
+            continue
+
         for j, step in enumerate(seg.steps):
             voice_path = voice_dir / f"voice_{idx:02d}_{j:02d}.mp3"
             if not voice_path.exists():

@@ -145,6 +145,8 @@ class Segment:
     bullets: list[tuple[str, str, bool]]        # (文字, 颜色, 是否大字)
     steps: list[Step] = field(default_factory=list)
     card: tuple[str, str, list[tuple[str, tuple]]] | None = None  # 全屏卡内容
+    #: 片尾卡的数字块：(数值, 标签)，横排四块
+    stats: list[tuple[str, str]] | None = None
     # 思维导图段：每个 step = (已展开的分支数, 该步旁白)。渲染走 render_diagram。
     diagram_steps: list[tuple[int, str]] | None = None
 
@@ -429,14 +431,17 @@ def seg_evidence() -> Segment:
                     L("墙上时间 −7.1% · 编译 CPU −11.4%", GREEN, True),
                     L("4,264,414 条断言逐个一致", GREEN, True),
                     L(""),
-                    comment("与 clang-include-cleaner 同工程同任务对照："),
-                    comment("它 0 条删除建议 / 101 条补充建议；"),
-                    comment("我们 1 条实测有效（−43.5%，三个维度全部实测）。"),
+                    comment("clang-include-cleaner：LLVM 自带的头文件检查器，"),
+                    comment("判「这个头有没有必要存在」（正确性），不测成本。"),
+                    comment("同一批候选：它 0 条删除建议 / 101 条补充建议；"),
+                    comment("本工具 1 条实测有效（−43.5%，三个维度全测）。"),
+                    comment("详细逐项对照见 docs/competitor-matrix.md。"),
                 ],
-                "完整构建对照：nlohmann/json 63 个单元，墙上时间降 7.1%，"
-                "编译 CPU 降 11.4%，426 万条断言逐条一致。"
-                "和 clang-include-cleaner 同任务比：它给 0 条删除建议，"
-                "我们给的那条实测有效，降百分之四十三点五。",
+                "这里要交代清楚对手是谁。clang-include-cleaner 是 LLVM 自带的头文件检查器，"
+                "它判断某个头有没有必要存在，管的是正确性，不测一个头让你多等多久。"
+                "同一批候选上它给 0 条删除建议、101 条补充建议；"
+                "我们给的那条经过实测，降百分之四十三点五。"
+                "两个工具回答的不是同一个问题，逐项对照见作品介绍文档的竞品章节。",
             ),
         ],
     )
@@ -512,19 +517,28 @@ def seg_outro() -> Segment:
         tab="片尾",
         bullets=[],
         card=(
-            "有证据才建议，无证据不下结论",
-            "HeavyHeader · Apache-2.0",
+            "有证据才建议",
+            "HeavyHeader · Apache-2.0 · 学生团队（1 人）",
             [
-                ("15 个子命令 · 794 个单元测试 · 零第三方运行时依赖", WHITE),
-                ("pip install heavyheader", CYAN),
                 ("github.com/wzzrambler/heavyheader", CYAN),
+                ("全部实验记录可逐条复现：experiments/results/", DIM),
             ],
         ),
+        stats=[
+            ("1430 万行", "四项目解析量"),
+            ("−46.6%", "zstd 单条最大收益"),
+            ("794", "单元测试全绿"),
+            ("0", "空头承诺"),
+        ],
         steps=[
             Step(
                 [],
-                "HeavyHeader：15 个子命令，794 个单元测试，零第三方依赖，"
-                "Apache-2.0，PyPI 上能装。一句话：有证据才建议。",
+                "回到开头那个问题：删掉一条 include，到底能省多少。"
+                "答案不是一个数字，是一套判定：编译过不过，汇编指纹变没变，"
+                "省下的那一点有没有越过噪声线。三道都过，才写「建议删除」。"
+                "15 个子命令，794 个单元测试，零第三方依赖。"
+                "四个真实项目的数据、每一条实验记录都在仓库里，可以逐条复现。"
+                "有证据才建议，没证据不下结论。",
             )
         ],
     )
@@ -721,6 +735,7 @@ def render_diagram(
 def render_card(
     title: str, subtitle: str, tail_lines: list[tuple[str, tuple]],
     seg_idx: int, segments: list[Segment],
+    stats: list[tuple[str, str]] | None = None,
 ) -> Image.Image:
     img = Image.new("RGB", (W, H), PAGE_BG)
     draw = ImageDraw.Draw(img)
@@ -729,16 +744,30 @@ def render_card(
     draw.rectangle([(0, 80), (W, 86)], fill=BLUE)
 
     tw = draw.textlength(title, font=FONT_TITLE)
-    draw.text(((W - tw) / 2, 280), title, font=FONT_TITLE, fill=WHITE)
+    draw.text(((W - tw) / 2, 210 if stats else 280), title, font=FONT_TITLE, fill=WHITE)
     sw = draw.textlength(subtitle, font=FONT_CARD)
-    draw.text(((W - sw) / 2, 420), subtitle, font=FONT_CARD, fill=BLUE)
+    draw.text(((W - sw) / 2, 340 if stats else 420), subtitle, font=FONT_CARD, fill=BLUE)
 
-    y = 550
+    y = 410 if stats else 550
     for text, color in tail_lines:
         font = FONT_MONO_CARD if text.startswith(("http", "pip", "$")) else FONT_CARD
         cw = draw.textlength(text, font=font)
         draw.text(((W - cw) / 2, y), text, font=font, fill=color)
-        y += 56
+        y += 52
+
+    # 片尾数字块：四个关键结论横排，比纯文字更有收束力
+    if stats:
+        bx0, bw, gap = 200, 350, 40
+        for i, (value, label) in enumerate(stats):
+            x = bx0 + i * (bw + gap)
+            draw.rounded_rectangle(
+                [(x, 620), (x + bw, 840)], radius=16, fill=(30, 38, 50),
+                outline=(58, 70, 90), width=2,
+            )
+            vw = draw.textlength(value, font=_cjk_font(52))
+            draw.text((x + (bw - vw) / 2, 655), value, font=_cjk_font(52), fill=CYAN)
+            lw = draw.textlength(label, font=_cjk_dim_font(22))
+            draw.text((x + (bw - lw) / 2, 760), label, font=_cjk_dim_font(22), fill=DIM)
     return img
 
 
@@ -776,16 +805,20 @@ def audio_seconds(path: Path) -> float:
 
 def build_frames(
     segments: list[Segment], frames_dir: Path, voice_dir: Path
-) -> tuple[int, list[Path]]:
-    """渲染全部帧；返回 (帧数, 按顺序拼接的每步旁白 mp3 列表)。
+) -> tuple[int, list[Path], list[float]]:
+    """渲染全部帧；返回 (帧数, 每步旁白 mp3, 每步需要补的静音秒数)。
 
-    同步机制：每个步骤的画面停留帧数 = ceil(该步旁白时长 * FPS) + 缓冲，
-    音频轨按相同顺序拼接——旁白讲到哪一步，画面正好停在哪一步。
+    同步机制（这是正确性的关键）：
+    每个步骤的画面停留帧数 = ceil((旁白时长 + 0.4) * FPS)；
+    相应地在编码时给该步音频尾部补 pad 静音，使 **音频段起点与画面段起点逐段对齐**。
+    只在最后统一 apad 是不够的——每段多出的 0.4s 会累积成整片偏移
+    （18 段累计 6.8 秒，听感就是「越往后越不同步」）。
     """
     frames_dir.mkdir(parents=True, exist_ok=True)
     voice_dir.mkdir(parents=True, exist_ok=True)
     count = 0
     audio_parts: list[Path] = []
+    gaps: list[float] = []
     term: list[tuple[str, tuple, bool]] = []
     prev: Image.Image | None = None  # 上一步画面，用于步骤间的淡入过渡
 
@@ -794,16 +827,24 @@ def build_frames(
         img.save(frames_dir / f"f{count:05d}.png")
         count += 1
 
-    def emit_faded(img: Image.Image) -> None:
-        """步骤切换不做硬切：前 6 帧与上一画面线性混合（淡入），其余原样。"""
+    def emit_faded(img: Image.Image) -> int:
+        """步骤切换不做硬切：前 6 帧与上一画面线性混合（淡入）。返回本步已发的帧数。
+
+        **返回值必须用**：早期版本在首步（prev 为 None）只发 1 帧，
+        导致整片画面相对音频提前 5 帧；而每段画面又比旁白长 0.4s，
+        偏移会逐段累积——到第 18 段时已差 6 秒多，听感就是"越往后越不同步"。
+        """
         nonlocal prev
         if prev is None:
             emit(img)
+            emitted = 1
         else:
             fade = 6
             for i in range(1, fade + 1):
                 emit(Image.blend(prev, img, i / fade))
+            emitted = fade
         prev = img
+        return emitted
 
     for idx, seg in enumerate(segments):
         # 思维导图段：每个 step = (已展开分支数, 该步旁白)，展开节奏与旁白同步。
@@ -817,8 +858,10 @@ def build_frames(
                 img = render_diagram(n_vis, idx, segments)
                 frames = math.ceil((dur + 0.4) * FPS)
                 frames = max(frames, int(1.5 * FPS))
+                gaps.append(max(0.0, frames / FPS - dur))
                 for _ in range(frames):
                     emit(img)
+                prev = img
             continue
 
         for j, step in enumerate(seg.steps):
@@ -830,7 +873,7 @@ def build_frames(
 
             if seg.card is not None:
                 title, subtitle, tail = seg.card
-                img = render_card(title, subtitle, tail, idx, segments)
+                img = render_card(title, subtitle, tail, idx, segments, seg.stats)
             else:
                 term.extend(step.lines)
                 img = render_terminal(term, step.chart, idx, segments)
@@ -839,29 +882,38 @@ def build_frames(
             # 防止旁白短、行多时翻页太快看不清。
             frames = math.ceil((dur + 0.4) * FPS)
             frames = max(frames, int(1.2 * FPS) + len(step.lines))
-            emit_faded(img)  # 淡入的第一帧也算停留时长的一部分
-            for _ in range(max(0, frames - 6)):
+            gaps.append(max(0.0, frames / FPS - dur))
+            emitted = emit_faded(img)
+            for _ in range(max(0, frames - emitted)):
                 emit(img)
 
-    return count, audio_parts
+    return count, audio_parts, gaps
 
 
-def encode(frames_dir: Path, parts: list[Path], output: Path, frame_count: int) -> None:
-    """帧序列 + 多段旁白。音频不先拼 mp3（-c copy 拼 mp3 不可靠），在编码时
-    用 filter_concat 做采样级拼接，再 apad 补静音到视频长度。"""
+def encode(
+    frames_dir: Path, parts: list[Path], gaps: list[float], output: Path, frame_count: int
+) -> None:
+    """帧序列 + 多段旁白。每段音频按 `gaps[i]` 补静音后再拼接，使音频段起点
+    与画面段起点逐段对齐；最后 apad 兜底到视频长度。
+
+    （不先拼 mp3：`-c copy` 拼 mp3 不可靠，实测 8 段 176 s 只出来 58 s。）"""
     inputs: list[str] = []
     for p in parts:
         inputs += ["-i", str(p)]
     n = len(parts)
-    # 输入 0 是帧序列（无音频），旁白 mp3 是输入 1..n——concat 索引别数错。
-    concat_in = "".join(f"[{i + 1}:a]" for i in range(n))
+    # 输入 0 是帧序列（无音频），旁白 mp3 是输入 1..n——索引别数错。
+    pads = "".join(
+        f"[{i + 1}:a]apad=pad_dur={max(0.0, g):.3f}[v{i}];"
+        for i, g in enumerate(gaps)
+    )
+    concat_in = "".join(f"[v{i}]" for i in range(n))
     cmd = [
         str(_ffmpeg()), "-y",
         "-framerate", str(FPS),
         "-i", str(frames_dir / "f%05d.png"),
         *inputs,
         "-filter_complex",
-        f"{concat_in}concat=n={n}:v=0:a=1[voice];[voice]apad[a]",
+        f"{pads}{concat_in}concat=n={n}:v=0:a=1[voice];[voice]apad[a]",
         "-map", "0:v",
         "-map", "[a]",
         "-c:v", "libx264",
@@ -891,9 +943,9 @@ def main() -> None:
     segments = build_segments()
     steps_total = sum(len(s.steps) for s in segments)
     print(f"{len(segments)} segments, {steps_total} steps")
-    frames, audio_parts = build_frames(segments, out_dir, out_dir / "voice")
+    frames, audio_parts, gaps = build_frames(segments, out_dir, out_dir / "voice")
     print(f"rendered {frames} frames")
-    encode(out_dir, audio_parts, output, frames)
+    encode(out_dir, audio_parts, gaps, output, frames)
     print("done")
 
 

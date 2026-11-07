@@ -44,7 +44,7 @@ from make_pdf import (  # noqa: E402
 
 COURSE = "智能云原生系统设计与内核生态实践"
 AUTHOR = "王子周"
-STUDENT_ID = "【学号】"
+STUDENT_ID = "202430552721"
 TITLE = "HeavyHeader：C/C++ 构建效能治理平台"
 
 
@@ -381,7 +381,11 @@ def build(path: str) -> None:
         P(
             "仓库：<font face='{0}'>https://github.com/wzzrambler/heavyheader</font>"
             "（Apache-2.0，含全部源码、测试、基准数据与实验归档）。"
-            "已在 PyPI 发布 v0.1.0，可直接安装。".format(_MONO)
+            "已在 PyPI 发布 v0.1.0，可直接安装。"
+            "<b>随本作业一并提交源码压缩包</b>"
+            "（<font face='{0}'>HeavyHeader-source.zip</font>：src/ tests/ benchmarks/ "
+            "experiments/ docs/ 与工程配置，不含构建产物与演示视频）。"
+            .format(_MONO, _MONO)
         ),
         SP(2),
         CODE(

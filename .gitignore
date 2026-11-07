@@ -50,3 +50,6 @@ desktop.ini
 
 # Windows 保留名，由 clang -o NUL 误建
 nul
+
+# 课程作业提交用源码包（本地产物，不入库）
+HeavyHeader-source*.zip
